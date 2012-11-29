@@ -1,5 +1,6 @@
 
     cwatch - Monitor file system activity using the inotify linux kernel library
+             and trigger user defined commands.
 
 Author:
 
