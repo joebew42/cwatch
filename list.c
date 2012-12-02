@@ -119,8 +119,9 @@ void list_free(LIST *list){
     
     while(node)
     {
+        LIST_NODE *next = node->next;
         free(node);
-        node = node->next;
+        node = next;
     }
     
     free(list);
