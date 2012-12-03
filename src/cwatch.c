@@ -418,8 +418,8 @@ void watch(char *path, bool is_link)
         while (dir = readdir(dir_stream))
         {
             if (dir->d_type == DT_DIR &&
-                strcmp(dir->d_name, ".") == 1 &&
-                strcmp(dir->d_name, "..") == 1)
+                strcmp(dir->d_name, ".") != 0 &&
+                strcmp(dir->d_name, "..") != 0)
             {
                 char *path_to_watch = (char*) malloc(sizeof(char) * (strlen(p) + strlen(dir->d_name) + 2));
                 strcpy(path_to_watch, p);
