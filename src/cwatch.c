@@ -250,22 +250,22 @@ int main(int argc, char *argv[])
                 path = (char*) malloc(sizeof(char) * (strlen(argv[1]) + 2));
                 strcpy(path, argv[1]);
                 strcat(path, "/");
-    
-                // Check if it is a directory 
-                DIR *dir = opendir(path);
-                if (dir == NULL)
-                {
-                    help();
-                    return -1;
-                }
-                closedir(dir);
             }
             else
             {
                 path = (char*) malloc(sizeof(char) * strlen(argv[1]));
                 strcpy(path, argv[1]);
             }
-            
+      
+            // Check if it is a directory 
+            DIR *dir = opendir(path);
+            if (dir == NULL)
+            {
+                help();
+                return -1;
+            }
+            closedir(dir);
+           
             // Check if the path is absolute or not. 
             if( path[0] != '/' )
             {
