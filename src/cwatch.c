@@ -43,14 +43,9 @@ typedef struct wd_data_s
 {
     int wd;     // Watch Descriptor
     char *path;
+    bool symbolic_link;
+    LIST *links;
 } WD_DATA;
-
-// Used to mantain information about link and a references count
-typedef struct wd_link_s
-{
-    int count;          // Count references
-    LIST_NODE *node;   // Pointer to a LIST_NODE
-} WD_LINK;
 
 // Global option
 bool be_syslog;
@@ -64,7 +59,6 @@ char *path = NULL;
 char *command = NULL;
 int fd;
 LIST *list_wd;
-LIST *list_link;
 
 /**
  * Help
@@ -130,9 +124,10 @@ void watch(char *, bool);
  *
  * This function is used to append a directory into watch list
  * @param char* : The absolute path of the directory to watch
+ * @param bool : specify if the path is a symbolic link
  * @return LIST_NODE* : the pointer of the node of the watch list
  */
-LIST_NODE *add_to_watch_list(char *);
+LIST_NODE *add_to_watch_list(char *, bool);
 
 /**
  * Unwatch a directory
@@ -144,15 +139,6 @@ LIST_NODE *add_to_watch_list(char *);
  *          if an error occurred
  */
 void unwatch(char *);
-
-/**
- * Add a link to the list of symbolic links
- *
- * Search if a link already exists into link list.
- * @param LIST_NODE* : the node of the watch_list
- * @return int : the reference count of the link
- */
-int add_to_link_list(LIST_NODE *);
 
 /**
  * Start monitoring
@@ -292,11 +278,12 @@ int main(int argc, char *argv[])
     // List of all watch directories 
     list_wd = list_init();
 
-    // List of all symbolic links
-    list_link = list_init();
-
     // Watch the path
     watch(path, 0); 
+    
+    //DEBUG
+    printf("\nlist_watched:\n");
+    print_list (list_wd);
     
     // Start monitoring
     return monitor();
@@ -338,11 +325,25 @@ void print_list(LIST *list_wd)
     while (node)
     {
         WD_DATA *wd_data = (WD_DATA *) node->data;
-        printf("%s, WD:%d\n", wd_data->path, wd_data->wd);
+        printf("%s, WD:%d, LNK:%d\n", wd_data->path, wd_data->wd, wd_data->symbolic_link);
+        
+        // print the content of links list
+        if (wd_data->symbolic_link == 1)
+        {
+            LIST_NODE *n_node = wd_data->links->first;
+            printf ("\tLinks that point him:\n");
+
+            while (n_node)
+            {
+                char *p = (char*) n_node->data;
+                printf("\t\t%s\n", p);
+                n_node = n_node->next;
+            }
+
+        }
         node = node->next;
     }
 }
-
 char *resolve_real_path(const char *path)
 {
     // DEBUG ONLY:
@@ -358,6 +359,20 @@ char *resolve_real_path(const char *path)
     strcat(resolved, "/");
      
     return resolved;
+}
+
+///CRISTO SANTO
+LIST_NODE *search_path (char *path, LIST *list)
+{
+    LIST_NODE *node = list->first;
+    while (node)
+    {
+        char *p = (char*) node->data;
+        if (strcmp(path, p) == 0)
+            return node;
+        node = node->next;
+    }
+    return NULL;
 }
 
 LIST_NODE *get_from_path(char *path)
@@ -392,12 +407,7 @@ void watch(char *path, bool is_link)
     // Add initial path to the watch list
     LIST_NODE *node = get_from_path(path);
     if (node == NULL)
-        node = add_to_watch_list(path);
-    
-    // Searchs and increments the reference counter
-    // of the link in list_link
-    if (is_link)
-        add_to_link_list(node);
+        node = add_to_watch_list(path, is_link);   
     
     // Temporary list to perform breath-first-search
     LIST *list = list_init();
@@ -426,12 +436,18 @@ void watch(char *path, bool is_link)
                 strcat(path_to_watch, dir->d_name);
                 strcat(path_to_watch, "/");
 
-                // Add to the watch list
+                // Add to the watch list with is_link = 0 because is a folder
                 if (get_from_path(path_to_watch) == NULL)
-                    add_to_watch_list(path_to_watch);
+                    add_to_watch_list(path_to_watch, 0);
+                ////
+                // XXX: [it] prima di inserire path_to_watch
+                // in `list` sarebbe opportuto controllare che
+                // non sia già stata inserita in passato da un qualche ln
+                // che, risolto, puntava ad essa
                 
                 // Continue directory traversing
-                list_push(list, (void*) path_to_watch);
+                if ( search_path (path_to_watch, list) == NULL)
+	                list_push(list, (void*) path_to_watch);
             }
             // Resolve symbolic link
             else if (dir->d_type == DT_LNK)
@@ -447,18 +463,23 @@ void watch(char *path, bool is_link)
                 // 2. is a directory
                 if (real_path != NULL && opendir(real_path) != NULL)
                 {
-                    // Add to the watch list if it's not present
+                    // Add to the watch list with is_link = 1 because is a link,
+                    // if it's not present.
                     LIST_NODE *node = get_from_path(real_path);
                     if (node == NULL)
-                        node = add_to_watch_list(real_path);
-                    
-                    // Searchs and increments the reference counter
-                    // of the link in list_link
-                    add_to_link_list(node);
-                    
-                    // Continue directory traversing
-                    list_push(list, (void*) real_path);
-                }
+                        node = add_to_watch_list(real_path, 1);
+
+                    // Otherwise path_to_watch is a symbolic_link that point
+                    // to real_path, so add path_to_watch in links LIST in node->data
+             		WD_DATA *wd_data = (WD_DATA*) node->data;
+             		list_push (wd_data->links, (char*) path_to_watch);
+             		
+             		// wd_data->links->first != NULL means that in past was
+             		// added in `list` the real_path. So is useless add it.
+             		if (wd_data->links->first == NULL)
+	                    // Continue directory traversing
+    	                list_push(list, (void*) real_path);
+				}
             }
         }
         closedir(dir_stream);
@@ -468,7 +489,7 @@ void watch(char *path, bool is_link)
     list_free(list);
 }
 
-LIST_NODE *add_to_watch_list(char *path)
+LIST_NODE *add_to_watch_list(char *path, bool is_link)
 {
     // Append directory to watchlist
     int wd = inotify_add_watch(fd, path, mask);
@@ -488,6 +509,8 @@ LIST_NODE *add_to_watch_list(char *path)
     WD_DATA *wd_data = malloc(sizeof(WD_DATA));
     wd_data->wd = wd;
     wd_data->path = path;
+    wd_data->symbolic_link = is_link;
+    wd_data->links = list_init();
     
     LIST_NODE *list_node = list_push(list_wd, (void *) wd_data);
     
@@ -527,39 +550,6 @@ void unwatch(char *path)
         // int i = inotify_rm_watch(fd, wd_data->wd);
         list_remove(list_wd, node);
     }
-}
-
-int add_to_link_list(LIST_NODE *list_node)
-{
-    if (list_node == NULL)
-        return -1;
-    
-    WD_LINK *wd_link;
-    
-    LIST_NODE *node = list_link->first;
-    while (node)
-    {
-        wd_link = (WD_LINK *) node->data;
-        
-        if (list_node == wd_link->node)
-        {
-            ++wd_link->count;
-            printf("AGGIORNATO LINK SIMBOLICO IN LISTA, %d\n", wd_link->count);
-            return wd_link->count;
-        }
-        
-        node = node->next;
-    }
-
-    wd_link = malloc(sizeof(WD_LINK));
-    wd_link->count = 1;
-    wd_link->node = list_node;
-
-    printf("AGGIUNTO LINK SIMBOLICO IN LISTA\n");
-    
-    list_push(list_link, (void *) wd_link);
-    
-    return 1;
 }
 
 int monitor()
