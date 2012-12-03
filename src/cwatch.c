@@ -361,20 +361,6 @@ char *resolve_real_path(const char *path)
     return resolved;
 }
 
-///CRISTO SANTO
-LIST_NODE *search_path (char *path, LIST *list)
-{
-    LIST_NODE *node = list->first;
-    while (node)
-    {
-        char *p = (char*) node->data;
-        if (strcmp(path, p) == 0)
-            return node;
-        node = node->next;
-    }
-    return NULL;
-}
-
 LIST_NODE *get_from_path(char *path)
 {
     LIST_NODE *node = list_wd->first;
@@ -444,10 +430,13 @@ void watch(char *path, bool is_link)
                 // in `list` sarebbe opportuto controllare che
                 // non sia già stata inserita in passato da un qualche ln
                 // che, risolto, puntava ad essa
-                
+				// prima di inserire questo controllo bisogna assicurarsi che sia
+				// effettivamente necessario per evetitare spreco di risorse.
+				// Ad ogni modo senza, effettuerebbe cicli inutili ma non dovrebbe essere compromessa
+				// la stabilità.
+				                
                 // Continue directory traversing
-                if ( search_path (path_to_watch, list) == NULL)
-	                list_push(list, (void*) path_to_watch);
+                list_push(list, (void*) path_to_watch);
             }
             // Resolve symbolic link
             else if (dir->d_type == DT_LNK)
