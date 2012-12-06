@@ -27,6 +27,7 @@
 #include <sys/inotify.h>
 #include <sys/param.h>
 #include <syslog.h>
+#include <errno.h>
 
 #include "list.h"
 
@@ -115,19 +116,20 @@ LIST_NODE *get_from_wd(int);
  * It performs a breath-first-search to traverse a directory and
  * call the add_to_watch_list(path) for each directory, either if it's pointed by a symbolic link or not.
  * @param char* : The path of directory to watch
- * @param bool : specify if the watched path is a link or not
+ * @param char* : The symbolic link that point to the path
+ * @return int : -1 (An error occurred), 0 (Resource added correctly)
  */
-void watch(char *, bool);
+int watch(char *, char *);
 
 /**
  * Add a directory into watch list
  *
  * This function is used to append a directory into watch list
  * @param char* : The absolute path of the directory to watch
- * @param bool : specify if the path is a symbolic link
+ * @param char* : The symbolic link that point to the path
  * @return LIST_NODE* : the pointer of the node of the watch list
  */
-LIST_NODE *add_to_watch_list(char *, bool);
+LIST_NODE *add_to_watch_list(char *, char *);
 
 /**
  * Unwatch a directory
@@ -135,10 +137,9 @@ LIST_NODE *add_to_watch_list(char *, bool);
  * Used to remove a file or directory
  * from the list of watched resources
  * @param char* : the path of the resource to remove
- * @return: see inotify_rm_watch() returns zero on success, or -1
- *          if an error occurred
+ * @param bool : true (1) if the path to unwatch is a symlink, false (0) otherwise.
  */
-void unwatch(char *);
+int unwatch(char *, bool);
 
 /**
  * Start monitoring
@@ -278,11 +279,15 @@ int main(int argc, char *argv[])
     list_wd = list_init();
 
     /* Watch the path */
-    watch(path, 0); 
+    if (watch(path, NULL) == -1)
+    {
+        printf("An error occured while adding \"%s\" as watched resource!", path);
+        return -1;
+    } 
     
     /* DEBUG */
-    printf("\nlist_watched:\n");
-    print_list(list_wd);
+    //printf("\nlist_watched:\n");
+    //print_list(list_wd);
     
     /* Start monitoring */
     return monitor();
@@ -344,8 +349,8 @@ void print_list(LIST *list_wd)
 }
 char *resolve_real_path(const char *path)
 {
-    /* DEBUG ONLY: */
-    printf("Resolving: \"%s\" ...\n", path);
+    /* DEBUG */
+    //printf("Resolving: \"%s\" ...\n", path);
 
     char *resolved = malloc(sizeof(char) * MAXPATHLEN + 1);
     
@@ -386,21 +391,21 @@ LIST_NODE *get_from_wd(int wd)
     return NULL;
 }
 
-void watch(char *path, bool is_link)
+int watch(char *real_path, char *symlink)
 {
     /* Add initial path to the watch list */
-    LIST_NODE *node = get_from_path(path);
+    LIST_NODE *node = add_to_watch_list(real_path, symlink);
     if (node == NULL)
-        node = add_to_watch_list(path, is_link);   
-    
+        return -1; // An error occurred!!!
+
     /* Temporary list to perform breath-first-search */
     LIST *list = list_init();
-    list_push(list, (void *) path);
+    list_push(list, (void *) real_path);
 
     /* Traverse directory */
     DIR *dir_stream;
     struct dirent *dir;
-
+    
     while (list->first != NULL)
     {
         /* Directory to watch */
@@ -408,31 +413,27 @@ void watch(char *path, bool is_link)
         
         /* Traverse directory */
         dir_stream = opendir(p);
+
+        if (dir_stream == NULL)
+        {
+            printf("UNABLE TO OPEN DIRECTORY:\t\"%s\" -> %d\n", p, errno);
+            return -1;
+        }
         
         while (dir = readdir(dir_stream))
         {
-            if (dir->d_type == DT_DIR &&
-                strcmp(dir->d_name, ".") != 0 &&
-                strcmp(dir->d_name, "..") != 0)
+            if (dir->d_type == DT_DIR
+                && strcmp(dir->d_name, ".") != 0
+                && strcmp(dir->d_name, "..") != 0)
             {
+                /* Absolute path to watch */
                 char *path_to_watch = (char*) malloc(sizeof(char) * (strlen(p) + strlen(dir->d_name) + 2));
                 strcpy(path_to_watch, p);
                 strcat(path_to_watch, dir->d_name);
                 strcat(path_to_watch, "/");
-
-                /* Add to the watch list with is_link = 0 because is a folder */
-                if (get_from_path(path_to_watch) == NULL)
-                    add_to_watch_list(path_to_watch, 0);
-                /**
-                 * XXX: [it] prima di inserire path_to_watch
-                 * in `list` sarebbe opportuto controllare che
-                 * non sia gia' stata inserita in passato da un qualche ln
-                 * che, risolto, puntava ad essa
-				 * prima di inserire questo controllo bisogna assicurarsi che sia
-				 * effettivamente necessario per evetitare spreco di risorse.
-				 * Ad ogni modo senza, effettuerebbe cicli inutili ma non dovrebbe essere compromessa
-				 * la stabilita'.
-                 */
+                
+                /* Append to watched resources */
+                add_to_watch_list(path_to_watch, NULL);
 				                
                 /* Continue directory traversing */
                 list_push(list, (void*) path_to_watch);
@@ -440,11 +441,13 @@ void watch(char *path, bool is_link)
             /* Resolve symbolic link */
             else if (dir->d_type == DT_LNK)
             {
-                char *path_to_watch = (char*) malloc(sizeof(char) * (strlen(p) + strlen(dir->d_name) + 1));
-                strcpy(path_to_watch, p);
-                strcat(path_to_watch, dir->d_name);
+                /* Absolute path of symlink */
+                char *symlink = (char*) malloc(sizeof(char) * (strlen(p) + strlen(dir->d_name) + 2));
+                strcpy(symlink, p);
+                strcat(symlink, dir->d_name);
+                strcat(symlink, "/");
                 
-                char *real_path = resolve_real_path(path_to_watch);
+                char *real_path = resolve_real_path(symlink);
                 
                 /**
                  * Test for:
@@ -453,21 +456,8 @@ void watch(char *path, bool is_link)
                  */
                 if (real_path != NULL && opendir(real_path) != NULL)
                 {
-                    /**
-                     * If it's not present add to the watch list with is_link = 1,
-                     * because is pointed by a symbolic link.
-                     */
-                    LIST_NODE *node = get_from_path(real_path);
-                    if (node == NULL)
-                        node = add_to_watch_list(real_path, 1);
-                    
-                    /**
-                     * Otherwise path_to_watch is a symbolic_link that point
-                     * to real_path, so add path_to_watch in links LIST in node->data
-                     */
-                    WD_DATA *wd_data = (WD_DATA*) node->data;
-                    wd_data->symbolic_link = 1;
-                    list_push(wd_data->links, (char*) path_to_watch);
+                    /* Append to watched resources */
+                    add_to_watch_list(real_path, symlink);
 
                     /* Continue directory traversing */
                     list_push(list, (void*) real_path);
@@ -478,63 +468,137 @@ void watch(char *path, bool is_link)
     }
     
     list_free(list);
+
+    return 0;
 }
 
-LIST_NODE *add_to_watch_list(char *path, bool is_link)
+LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
 {
-    /* Append directory to watchlist */
-    int wd = inotify_add_watch(fd, path, mask);
+    /* Check if the resource is already in the watch_list */
+    LIST_NODE *node = get_from_path(real_path);
     
-    /**
-     * Check limit in:
-     * proc/sys/fs/inotify/max_user_watches
-     */
-    if (wd == -1)
+    /* If the resource is not watched yet, then add it into the watch_list */
+    if (node == NULL)
     {
-        printf("AN ERROR OCCURRED WHILE ADDING PATH %s:\n", path);
-        printf("Please, take in consideration these possibilities:\n");
-        printf(" - Max user's watches reached! See /proc/sys/fs/inotify/max_user_watches\n");
-        printf(" - Resource is no more available!?\n");
-        printf(" - An infinite loop generated by cyclic symbolic link?\n");
-        return NULL;
-    }
+        /* Append directory to watch_list */
+        int wd = inotify_add_watch(fd, real_path, mask);
     
-    WD_DATA *wd_data = malloc(sizeof(WD_DATA));
-    wd_data->wd = wd;
-    wd_data->path = path;
-    wd_data->symbolic_link = is_link;
-    wd_data->links = list_init();
+        /**
+         * Check limit in:
+         * proc/sys/fs/inotify/max_user_watches
+         */
+        if (wd == -1)
+        {
+            printf("AN ERROR OCCURRED WHILE ADDING PATH %s:\n", real_path);
+            printf("Please, take in consideration these possibilities:\n");
+            printf(" - Max user's watches reached! See /proc/sys/fs/inotify/max_user_watches\n");
+            printf(" - Resource is no more available!?\n");
+            printf(" - An infinite loop generated by cyclic symbolic link?\n");
+            return NULL;
+        }
+        
+        /* Create the entry */
+        WD_DATA *wd_data = malloc(sizeof(WD_DATA));
+        wd_data->wd = wd;
+        wd_data->path = real_path;
+        wd_data->links = list_init();
+        wd_data->symbolic_link = (symlink == NULL) ? 0 : 1;
+
+        node = list_push(list_wd, (void*) wd_data);
     
-    LIST_NODE *list_node = list_push(list_wd, (void *) wd_data);
-    
-    /* Log Message */
-    if (be_verbose || be_syslog)
-    {
+        /* Log Message */
         char *message = malloc(sizeof(char) * MAXPATHLEN);
-        sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t%s", fd, wd_data->wd, path);
+        sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
         log_message(message);
     }
-    
-    return list_node;
+
+    /* Check to add symblink (if any) to the symlink list of the watched resource */
+    if (node != NULL && symlink != NULL)
+    {
+        WD_DATA *wd_data = (WD_DATA*) node->data;
+
+        bool found = 0;
+        LIST_NODE *node_link = wd_data->links->first;
+        while (node_link)
+        {
+            char *link = (char*) node_link->data;
+            if (strcmp(link, symlink) == 0)
+            {
+                found = 1;
+                break;
+            }
+
+            node_link = node_link->next;
+        }
+
+        if (found == 0)
+        {
+            list_push(wd_data->links, (void*) symlink);
+
+            /* Log Message */
+            char *message = malloc(sizeof(char) * MAXPATHLEN);
+            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
+            log_message(message);
+        }
+    }
+
+    return node;
 }
 
-void unwatch(char *path)
+int unwatch(char *path, bool is_link)
 {
-    /* Retrieve the watch descriptor id from path */
-    LIST_NODE *node = get_from_path(path);
-    if (node != NULL)
-    {   
-        WD_DATA *wd_data = (WD_DATA *) node->data;
+    /* Remove a real path from watched resources */
+    if (is_link == 0)
+    {
+        /* Retrieve the watch descriptor id from path */
+        LIST_NODE *node = get_from_path(path);
+        if (node != NULL)
+        {   
+            WD_DATA *wd_data = (WD_DATA *) node->data;
         
-        /* Log Message */
-        if (be_verbose || be_syslog)
-        {
+            /* Log Message */
             char *message = malloc(sizeof(char) * MAXPATHLEN);
             sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, wd_data->wd, path);
             log_message(message);
+            
+            inotify_rm_watch(fd, wd_data->wd);
+            list_remove(list_wd, node);
         }
-        
-        list_remove(list_wd, node);
+    }
+    /* Remove a symbolic link from watched resources */
+    else
+    {
+        LIST_NODE *node = list_wd->first;
+        while (node)
+        {
+            WD_DATA *wd_data = (WD_DATA*) node->data;
+            
+            LIST_NODE *link_node = wd_data->links->first;
+            while (link_node)
+            {
+                char *p = (char*) link_node->data;
+                if (strcmp(path, p) == 0)
+                {
+                    /* Log Message */
+                    char *message = malloc(sizeof(char) * MAXPATHLEN);
+                    sprintf(message, "UNWATCHING SYMLINK: \t\t%s", path);
+                    log_message(message);
+
+                    list_remove(wd_data->links, link_node);
+
+                    /** 
+                     * if there is no other symbolic links that point to the
+                     * watched resources then unwatch it
+                     */
+                    if (wd_data->links->first == NULL && wd_data->symbolic_link == 1)
+                        unwatch(wd_data->path, 0);
+
+                    return;
+                }
+                link_node = link_node->next;
+            }
+            node = node->next;
+        }
     }
 }
 
@@ -546,7 +610,7 @@ int monitor()
     /* inotify_event of the event */
     struct inotify_event *event = NULL;
 
-    /* The path of touched directory or file */
+    /* The real path of touched directory or file */
     char *path = NULL;
     int len;
 
@@ -585,7 +649,7 @@ int monitor()
             {
                 /* Check if it is a folder. If yes watch it */
                 if (event->mask & IN_ISDIR)
-                    watch(path, 0);
+                    watch(path, NULL);
                 else
                 {
                     /* check if it is a link. if yes watch it. */
@@ -593,8 +657,22 @@ int monitor()
                     if (dir_stream != NULL)
                     {
                         /* resolve symbolic link */
-                        char *realpath = resolve_real_path(path);
-                        watch(realpath, 1);
+                        char *real_path = resolve_real_path(path);
+
+                        /* check if the real path is already monitored */
+                        LIST_NODE *node = get_from_path(real_path);
+                        if (node == NULL)
+                        {
+                            watch(real_path, path);
+                        }
+                        else
+                        {
+                            /** 
+                             * Append the new symbolic link
+                             * to the watched resource
+                             */
+                            add_to_watch_list(real_path, path);
+                        }
                     }
                     closedir(dir_stream);
                 }
@@ -602,18 +680,18 @@ int monitor()
             /* IN_DELETE event */
             else if (event->mask & IN_DELETE)
             {
-                /* Starts build the full path of the */
-                
                 /* Check if it is a folder. If yes unwatch it */
                 if (event->mask & IN_ISDIR)
-                    unwatch(path);
+                    unwatch(path, 0);
                 else
                 {
-                    /* Resolve the real path of the symbolic link */
-                    char* resolved = resolve_real_path(path);
-                    
-                    /* DEBUG */
-                    printf("PATH TO DELETE: %s\n", resolved);
+                    /**
+                     * XXX Since it is not possible to know if the
+                     * inotify event belongs to a file or a symbolic link,
+                     * the unwatch function will be called for each file.
+                     * This is a big computational issue to be treated.
+                     */
+                    unwatch(path, 1);
                 }
             }
 

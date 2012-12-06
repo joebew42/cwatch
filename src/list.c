@@ -95,7 +95,8 @@ void list_remove(LIST* list, LIST_NODE *node)
     if (node == list->first)
     {
         list->first = list->first->next;
-        list->first->prev = NULL;
+        if (list->first != NULL)
+            list->first->prev = NULL;
     }
     else if (node == list->last)
     {
