@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
     /* Watch the path */
     if (watch(path, NULL) == -1)
     {
-        printf("An error occured while adding \"%s\" as watched resource!", path);
+        printf("An error occured while adding \"%s\" as watched resource!\n", path);
         return -1;
     } 
     
@@ -681,8 +681,14 @@ int monitor()
                              * Append the new symbolic link
                              * to the watched resource
                              */
-                         //   add_to_watch_list(real_path, path);
-                        
+                            
+                            WD_DATA *wd_data = (WD_DATA*) node->data;
+                            list_push(wd_data->links, (void*) path);
+
+                            /* Log Message */
+                            char *message = malloc(sizeof(char) * MAXPATHLEN);
+                            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
+                            log_message(message);
                         }
                     }
                     closedir(dir_stream);
