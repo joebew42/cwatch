@@ -624,7 +624,7 @@ int monitor()
     {
         if (len < 0)
         {
-            printf("Read() error");
+            printf("ERROR: UNABLE TO READ INOTIFY QUEUE EVENTS!!!\n");
             return -1;
         }
 
@@ -647,7 +647,11 @@ int monitor()
                 strcat(path, "/");
             }
             else
+            {
+                /* Next event */
+                i += EVENT_SIZE + event->len;
                 continue;
+            }
             
             /* IN_CREATE Event */
             if (event->mask & IN_CREATE)
@@ -658,8 +662,13 @@ int monitor()
                 else
                 {
                     /* check if it is a link. if yes watch it. */
+                    bool is_dir = 0;
                     DIR *dir_stream = opendir(path);
                     if (dir_stream != NULL)
+                        is_dir = 1;
+                    closedir(dir_stream);
+
+                    if (is_dir == 1)
                     {
                         /* resolve symbolic link */
                         char *real_path = resolve_real_path(path);
@@ -691,7 +700,6 @@ int monitor()
                             log_message(message);
                         }
                     }
-                    closedir(dir_stream);
                 }
             }
             /* IN_DELETE event */
