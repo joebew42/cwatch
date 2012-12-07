@@ -139,7 +139,7 @@ LIST_NODE *add_to_watch_list(char *, char *);
  * @param char* : the path of the resource to remove
  * @param bool : true (1) if the path to unwatch is a symlink, false (0) otherwise.
  */
-int unwatch(char *, bool);
+void unwatch(char *, bool);
 
 /**
  * Start monitoring
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
     /* Watch the path */
     if (watch(path, NULL) == -1)
     {
-        printf("An error occured while adding \"%s\" as watched resource!", path);
+        printf("An error occured while adding \"%s\" as watched resource!\n", path);
         return -1;
     } 
     
@@ -545,7 +545,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
     return node;
 }
 
-int unwatch(char *path, bool is_link)
+void unwatch(char *path, bool is_link)
 {
     /* Remove a real path from watched resources */
     if (is_link == 0)
@@ -671,7 +671,13 @@ int monitor()
                              * Append the new symbolic link
                              * to the watched resource
                              */
-                            add_to_watch_list(real_path, path);
+                            WD_DATA *wd_data = (WD_DATA*) node->data;
+                            list_push(wd_data->links, (void*) path);
+
+                            /* Log Message */
+                            char *message = malloc(sizeof(char) * MAXPATHLEN);
+                            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
+                            log_message(message);
                         }
                     }
                     closedir(dir_stream);
