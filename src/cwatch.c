@@ -139,7 +139,7 @@ LIST_NODE *add_to_watch_list(char *, char *);
  * @param char* : the path of the resource to remove
  * @param bool : true (1) if the path to unwatch is a symlink, false (0) otherwise.
  */
-int unwatch(char *, bool);
+void unwatch(char *, bool);
 
 /**
  * Start monitoring
@@ -236,8 +236,6 @@ int main(int argc, char *argv[])
                 path = (char*) malloc(sizeof(char) * (strlen(argv[1]) + 2));
                 strcpy(path, argv[1]);
                 strcat(path, "/");
-<<<<<<< HEAD
-=======
     
                 /* Is a dir? */
                 DIR *dir = opendir(path);
@@ -247,14 +245,12 @@ int main(int argc, char *argv[])
                     return -1;
                 }
                 closedir(dir);
->>>>>>> joebew42/master
             }
             else
             {
                 path = (char*) malloc(sizeof(char) * strlen(argv[1]));
                 strcpy(path, argv[1]);
             }
-<<<<<<< HEAD
       
             // Check if it is a directory 
             DIR *dir = opendir(path);
@@ -266,10 +262,8 @@ int main(int argc, char *argv[])
             closedir(dir);
            
             // Check if the path is absolute or not. 
-=======
             
             /* Check if the path is absolute or not */
->>>>>>> joebew42/master
             if( path[0] != '/' )
             {
                 char *real_path = resolve_real_path(path);
@@ -301,10 +295,6 @@ int main(int argc, char *argv[])
         printf("An error occured while adding \"%s\" as watched resource!", path);
         return -1;
     } 
-    
-    /* DEBUG */
-    //printf("\nlist_watched:\n");
-    //print_list(list_wd);
     
     /* Start monitoring */
     return monitor();
@@ -366,9 +356,7 @@ void print_list(LIST *list_wd)
 }
 char *resolve_real_path(const char *path)
 {
-    /* DEBUG */
-    //printf("Resolving: \"%s\" ...\n", path);
-
+    
     char *resolved = malloc(sizeof(char) * MAXPATHLEN + 1);
     
     realpath(path, resolved);
@@ -562,7 +550,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
     return node;
 }
 
-int unwatch(char *path, bool is_link)
+void unwatch(char *path, bool is_link)
 {
     /* Remove a real path from watched resources */
     if (is_link == 0)
@@ -684,11 +672,17 @@ int monitor()
                         }
                         else
                         {
+                            WD_DATA *n = (WD_DATA*) node->data;
+                            list_push (n->links, (void*) path);
+
+                            printf ("*ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"\n", path ,real_path);
+
                             /** 
                              * Append the new symbolic link
                              * to the watched resource
                              */
-                            add_to_watch_list(real_path, path);
+                         //   add_to_watch_list(real_path, path);
+                        
                         }
                     }
                     closedir(dir_stream);
