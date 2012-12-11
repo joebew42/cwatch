@@ -30,288 +30,34 @@
 #include <errno.h>
 
 #include "list.h"
+#include "cwatch.h"
 
-#define EVENT_SIZE      ( sizeof (struct inotify_event) )
-#define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
-
+/* Events mask */
 uint32_t mask = IN_ISDIR | IN_CREATE | IN_DELETE;
 
-/* Boolean data type */
-typedef char bool;
-
-/* Used to maintain information about watched resource */
-typedef struct wd_data_s
-{
-    int wd;     // Watch Descriptor
-    char *path;
-    bool symbolic_link;
-    LIST *links;
-} WD_DATA;
+/* Environment variables */
+extern char *program_name;
+extern char *program_version;
+extern char *path;
+extern char *command;
+extern int fd;
+extern LIST *list_wd;
 
 /* Global option */
-bool be_syslog;
-bool be_verbose;
-bool be_easter;
-
-/* Environment variables */
-char *program_name = "cwatch";
-char *program_version = "0.0 00/00/0000"; // maj.rev MM/DD/YYYY
-char *path = NULL;
-char *command = NULL;
-int fd;
-LIST *list_wd;
-
-/**
- * Help
- * 
- * Print out the help
- */
-void help();
-
-/**
- * Log
- * 
- * Log message via syslog or via standard output
- * @param char* : Message to log
- */
-void log_message(char *);
-
-/**
- * Print List
- * 
- * Only an help fuction that print list_wd
- * @param LIST* : the list_wd you want print
- */
-void print_list(LIST *);
-
-/**
- * Resolve the real path
- * 
- * This function is used to resolve the
- * absolute real_path of a symbolic link or a relative path.
- * @param char* : the path of the symbolic link to resolve
- * @return char* : the resolved real_path, NULL otherwise
- */
-char *resolve_real_path(const char *);
-
-/**
- * Searchs and returns the node for the path passed
- * as argument.
- * @param char* : The path to find
- * @return LIST_NODE* : a pointer to node, NULL otherwise.
- */
-LIST_NODE *get_from_path(char *);
-
-/**
- * Searchs and returns the node for the wd passed
- * as argument.
- * @param int : The wd to find
- * @return LIST_NODE* : a pointer to node, NULL otherwise.
- */
-LIST_NODE *get_from_wd(int);
-
-/**
- * Watch a directory
- *
- * It performs a breath-first-search to traverse a directory and
- * call the add_to_watch_list(path) for each directory, either if it's pointed by a symbolic link or not.
- * @param char* : The path of directory to watch
- * @param char* : The symbolic link that point to the path
- * @return int : -1 (An error occurred), 0 (Resource added correctly)
- */
-int watch(char *, char *);
-
-/**
- * Add a directory into watch list
- *
- * This function is used to append a directory into watch list
- * @param char* : The absolute path of the directory to watch
- * @param char* : The symbolic link that point to the path
- * @return LIST_NODE* : the pointer of the node of the watch list
- */
-LIST_NODE *add_to_watch_list(char *, char *);
-
-/**
- * Unwatch a directory
- * 
- * Used to remove a file or directory
- * from the list of watched resources
- * @param char* : the path of the resource to remove
- * @param bool : true (1) if the path to unwatch is a symlink, false (0) otherwise.
- */
-void unwatch(char *, bool);
-
-/**
- * Start monitoring
- * 
- * Used to monitor inotify event on watched resources
- */
-int monitor();
-
-/**
- * MAIN
- */
-int main(int argc, char *argv[])
-{   
-    
-    if (argc == 1)
-    {
-        help();
-        return -1;
-    }
-
-    /* Handle command line arguments */
-    while (argc > 1)
-    {	
-        /* Parsing '-' options */
-        if (argv[1][0] == '-')
-        {
-            /* Single option */
-            switch (argv[1][1])
-            {
-                case 'c':
-                    /* Move at command */
-                    if (argc > 2)
-                    {
-                        ++argv;
-                        --argc;
-                    }
-                    else
-                    {
-                        help();
-                        return -1;
-                    }
-                    
-                    /* Check for a valid command */
-                    if (strcmp(argv[1], "") == 0 || argv[1][0] == '-')
-                    {
-                        help();
-                        return -1;
-                    }
-                    
-                    /* Store command */
-                    command = malloc(sizeof(char) * strlen(argv[1]) + 1);
-                    strcpy(command, argv[1]);
-                    break;
-                case 'l':
-                    /* Enable syslog */
-                    be_syslog = 1;
-                    break;
-                case 'v':
-                    /* Be verbose */
-                    be_verbose = 1;
-                    break;
-                case 'V':
-                    /* Print version and exit */
-                    printf("%s - Version: %s\n", program_name, program_version);
-                    return 0;
-                case 'n':
-                    be_easter = 1;
-                    break;
-                case 'h':
-                default:
-                    help();
-                    return -1;
-            }
-        }
-        else
-        {
-            /* Check if errors occurred */
-            if (argc != 2 || command == NULL)
-            {
-                help();
-                return -1;
-            }
-
-            /* Check if the path isn't empty */
-            if (strcmp(argv[1], "") == 0)
-            {
-                help();
-                return -1;
-            }
-    
-            /* Check if the path has the final slash */
-            if (argv[1][strlen(argv[1])-1] != '/')
-            {
-                path = (char*) malloc(sizeof(char) * (strlen(argv[1]) + 2));
-                strcpy(path, argv[1]);
-                strcat(path, "/");
-    
-                /* Is a dir? */
-                DIR *dir = opendir(path);
-                if (dir == NULL)
-                {
-                    help();
-                    return -1;
-                }
-                closedir(dir);
-            }
-            else
-            {
-                path = (char*) malloc(sizeof(char) * strlen(argv[1]));
-                strcpy(path, argv[1]);
-            }
-      
-            // Check if it is a directory 
-            DIR *dir = opendir(path);
-            if (dir == NULL)
-            {
-                help();
-                return -1;
-            }
-            closedir(dir);
-           
-            // Check if the path is absolute or not. 
-            
-            /* Check if the path is absolute or not */
-            if( path[0] != '/' )
-            {
-                char *real_path = resolve_real_path(path);
-                free(path);
-                path = real_path;
-            }
-        }
-
-        /* Next argument */
-        --argc;
-        ++argv;
-    }
-    
-    if (path == NULL)
-    {
-        help();
-        return -1;
-    }
-
-    /* File descriptor inotify */
-    fd = inotify_init();
-    
-    /* List of all watch directories */
-    list_wd = list_init();
-
-    /* Watch the path */
-    if (watch(path, NULL) == -1)
-    {
-        printf("An error occured while adding \"%s\" as watched resource!\n", path);
-        return -1;
-    } 
-    
-    /* Start monitoring */
-    return monitor();
-}
+extern bool be_syslog;
+extern bool be_verbose;
+extern bool be_easter;
 
 void help()
 {
-    printf(
-"Usage: %s -c COMMAND [OPTIONS] DIRECTORY\n"
-"Monitors changes in a directory through inotify system call and executes"
-" the specified COMMAND with the -c option\n\n"
-"  -c\t\tthe command to executes when changes happens\n"
-"  -l\t\tLog all messages through syslog\n"
-"  -v\t\tBe verbose\n"
-"  -h\t\tOutput this help and exit\n"
-"  -V\t\tOutput version and exit\n",
-    program_name);
+    printf ("Usage: %s -c COMMAND [OPTIONS] DIRECTORY\n", program_name);
+    printf ("Monitors changes in a directory through inotify system call and executes");
+    printf (" the specified COMMAND with the -c option\n\n");
+    printf (" -c\t\tthe command to executes when changes happens\n");
+    printf (" -l\t\tLog all messages through syslog\n");
+    printf (" -v\t\tBe verbose\n");
+    printf (" -h\t\tOutput this help and exit\n");
+    printf (" -V\t\tOutput version and exit\n");
 }
 
 void log_message(char *message)
@@ -336,7 +82,7 @@ void print_list(LIST *list_wd)
     {
         WD_DATA *wd_data = (WD_DATA *) node->data;
         printf("%s, WD:%d, LNK:%d\n", wd_data->path, wd_data->wd, wd_data->symbolic_link);
-        
+
         /* print the content of links list */
         if (wd_data->symbolic_link == 1)
         {
@@ -354,9 +100,10 @@ void print_list(LIST *list_wd)
         node = node->next;
     }
 }
+
 char *resolve_real_path(const char *path)
 {
-    
+
     char *resolved = malloc(sizeof(char) * MAXPATHLEN + 1);
     
     realpath(path, resolved);
