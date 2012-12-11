@@ -112,7 +112,8 @@ void list_remove(LIST* list, LIST_NODE *node)
     free(node);
 }
 
-void list_free(LIST *list){
+void list_free(LIST *list)
+{
     if (list == NULL)
         return;
 

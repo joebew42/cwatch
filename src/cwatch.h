@@ -31,6 +31,19 @@
 /* Boolean data type */
 typedef char bool;
 
+/* Environment variables */
+char *program_name;
+char *program_version;
+char *path;
+char *command;
+int fd;
+LIST *list_wd;
+
+/* Global option */
+bool be_syslog;
+bool be_verbose;
+bool be_easter;
+
 /* Used to maintain information about watched resource */
 typedef struct wd_data_s
 {
@@ -39,6 +52,11 @@ typedef struct wd_data_s
     bool symbolic_link;
     LIST *links;
 } WD_DATA;
+
+/**
+ * Print the version of the program and exit
+ */
+void print_version();
 
 /**
  * Help
@@ -90,6 +108,16 @@ LIST_NODE *get_from_path(char *);
 LIST_NODE *get_from_wd(int);
 
 /**
+ * Parse command line
+ *
+ * This function is used to parse command line and initialize some environment variables
+ * @param int : arguments count
+ * @param char** : arguments value
+ * @return int
+ */
+int parse_command_line(int, char**);
+
+/**
  * Watch a directory
  *
  * It performs a breath-first-search to traverse a directory and
@@ -127,4 +155,4 @@ void unwatch(char *, bool);
  */
 int monitor();
 
-#endif
+#endif /* !__CWATCH_H */

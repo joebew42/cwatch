@@ -32,21 +32,17 @@
 #include "list.h"
 #include "cwatch.h"
 
+/* Define program name and version */
+char *program_name = "cwatch";
+char *program_version = "0.0 00/00/0000"; // maj.rev mm/dd/yyyy
+
 /* Events mask */
 uint32_t mask = IN_ISDIR | IN_CREATE | IN_DELETE;
 
-/* Environment variables */
-extern char *program_name;
-extern char *program_version;
-extern char *path;
-extern char *command;
-extern int fd;
-extern LIST *list_wd;
-
-/* Global option */
-extern bool be_syslog;
-extern bool be_verbose;
-extern bool be_easter;
+void print_version()
+{
+    printf("%s - Version: %s\n", program_name, program_version);
+}
 
 void help()
 {
@@ -141,6 +137,144 @@ LIST_NODE *get_from_wd(int wd)
     }
     
     return NULL;
+}
+
+int parse_command_line(int argc, char *argv[])
+{
+    if (argc == 1)
+    {
+        help();
+        return -1;
+    }
+
+    /* Handle command line arguments */
+    while (argc > 1)
+    {
+        /* Parsing '-' options */
+        if (argv[1][0] == '-')
+        {
+            /* Single option */
+            switch (argv[1][1])
+            {
+                case 'c':
+                    /* Move at command */
+                    if (argc > 2)
+                    {
+                        ++argv;
+                        --argc;
+                    }
+                    else
+                    {
+                        help();
+                        return -1;
+                    }
+
+                    /* Check for a valid command */
+                    if (strcmp(argv[1], "") == 0 || argv[1][0] == '-')
+                    {
+                        help();
+                        return -1;
+                    }
+
+                    /* Store command */
+                    command = malloc(sizeof(char) * strlen(argv[1]) + 1);
+                    strcpy(command, argv[1]);
+                    break;
+
+                case 'l':
+                    /* Enable syslog */
+                    be_syslog = 1;
+                    break;
+
+                case 'v':
+                    /* Be verbose */
+                    be_verbose = 1;
+                    break;
+
+                case 'V':
+                    /* Print version and exit */
+                    print_version();
+                    return -1;
+
+                case 'n':
+                    be_easter = 1;
+                    break;
+
+                case 'h':
+
+                default:
+                    help();
+                    return -1;
+            }
+        }
+        else
+        {
+            /* Check if errors occurred */
+            if (argc != 2 || command == NULL)
+            {
+                help();
+                return -1;
+            }
+
+            /* Check if the path isn't empty */
+            if (strcmp(argv[1], "") == 0)
+            {
+                help();
+                return -1;
+            }
+
+            /* Check if the path has the final slash */
+            if (argv[1][strlen(argv[1])-1] != '/')
+            {
+                path = (char*) malloc(sizeof(char) * (strlen(argv[1]) + 2));
+                strcpy(path, argv[1]);
+                strcat(path, "/");
+
+                /* Is a dir? */
+                DIR *dir = opendir(path);
+                if (dir == NULL)
+                {
+                    help();
+                    return -1;
+                }
+                closedir(dir);
+            }
+            else
+            {
+                path = (char*) malloc(sizeof(char) * strlen(argv[1]));
+                strcpy(path, argv[1]);
+            }
+
+            // Check if it is a directory
+            DIR *dir = opendir(path);
+            if (dir == NULL)
+            {
+                help();
+                return -1;
+            }
+            closedir(dir);
+
+            /* Check if the path is absolute or not */
+            if( path[0] != '/' )
+            {
+                char *real_path = resolve_real_path(path);
+                free(path);
+                path = real_path;
+            }
+        }
+
+        /* Next argument */
+        --argc;
+        ++argv;
+    }
+
+    if (path == NULL)
+    {
+        help();
+        return -1;
+    }
+
+    return 0; // Everything gone ok!
 }
 
 int watch(char *real_path, char *symlink)
@@ -431,13 +565,10 @@ int monitor()
                             WD_DATA *n = (WD_DATA*) node->data;
                             list_push (n->links, (void*) path);
 
-                            printf ("*ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"\n", path ,real_path);
-
                             /** 
                              * Append the new symbolic link
                              * to the watched resource
                              */
-                            
                             WD_DATA *wd_data = (WD_DATA*) node->data;
                             list_push(wd_data->links, (void*) path);
 
