@@ -43,7 +43,7 @@ LIST_NODE *list_push(LIST *list, void *data)
         return;
 
     node->data = data;
-    node->next = NULL;
+    node->next = node->prev = NULL;
 
     // If the first element of list is NULL
     // then put it as the first

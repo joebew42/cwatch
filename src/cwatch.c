@@ -20,16 +20,6 @@
  *
  */
 
-#include <stdio.h>
-#include <dirent.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/inotify.h>
-#include <sys/param.h>
-#include <syslog.h>
-#include <errno.h>
-
-#include "list.h"
 #include "cwatch.h"
 
 /* Define program name and version */
@@ -467,17 +457,31 @@ void unwatch(char *path, bool is_link)
                 {
                     /* Log Message */
                     char *message = malloc(sizeof(char) * MAXPATHLEN);
-                    sprintf(message, "UNWATCHING SYMLINK: \t\t%s", path);
+                    sprintf(message, "UNWATCHING SYMLINK: \t\t%s -> %s", path, wd_data->path);
                     log_message(message);
 
                     list_remove(wd_data->links, link_node);
-
+                    
                     /** 
                      * if there is no other symbolic links that point to the
                      * watched resources then unwatch it
                      */
                     if (wd_data->links->first == NULL && wd_data->symbolic_link == 1)
-                        unwatch(wd_data->path, 0);
+                    {
+                        /**
+                         * Descend to all subdirectories of wd_data->path and unwatch them all
+                         */
+                        LIST_NODE *sub_node = list_wd->first;
+                        while (sub_node)
+                        {
+                            WD_DATA *sub_wd_data = (WD_DATA*) sub_node->data;
+                            if ( strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0 )
+                                unwatch(sub_wd_data->path, 0);
+
+                            sub_node = sub_node->next;
+                        }
+
+                    }
 
                     return;
                 }
@@ -562,9 +566,6 @@ int monitor()
                         }
                         else
                         {
-                            WD_DATA *n = (WD_DATA*) node->data;
-                            list_push (n->links, (void*) path);
-
                             /** 
                              * Append the new symbolic link
                              * to the watched resource

@@ -22,6 +22,15 @@
 #ifndef __CWATCH_H
 #define __CWATCH_H
 
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/inotify.h>
+#include <sys/param.h>
+#include <syslog.h>
+#include <errno.h>
+
 #include "list.h"
 
 /* Size of an event */
