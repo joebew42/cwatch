@@ -373,6 +373,11 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             return NULL;
         }
         
+        /** 
+         * TODO check if the parent dir is reached by symbolic link, 
+         * if yes, then set wd_data->symbolic_link to 1.
+         */
+
         /* Create the entry */
         WD_DATA *wd_data = malloc(sizeof(WD_DATA));
         wd_data->wd = wd;
@@ -388,7 +393,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         log_message(message);
     }
 
-    /* Check to add symblink (if any) to the symlink list of the watched resource */
+    /* Check to add symlink (if any) to the symlink list of the watched resource */
     if (node != NULL && symlink != NULL)
     {
         WD_DATA *wd_data = (WD_DATA*) node->data;
@@ -470,13 +475,17 @@ void unwatch(char *path, bool is_link)
                     {
                         /**
                          * Descend to all subdirectories of wd_data->path and unwatch them all
+                         * only if they are not pointed by some symbolic link, anymore.
                          */
                         LIST_NODE *sub_node = list_wd->first;
                         while (sub_node)
                         {
                             WD_DATA *sub_wd_data = (WD_DATA*) sub_node->data;
-                            if ( strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0 )
+                            if (strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
+                                && sub_wd_data->links->first == NULL)
+                            {
                                 unwatch(sub_wd_data->path, 0);
+                            }
 
                             sub_node = sub_node->next;
                         }
@@ -503,6 +512,10 @@ int monitor()
     /* The real path of touched directory or file */
     char *path = NULL;
     int len;
+    int i;
+    
+    /* Temporary node information */
+    LIST_NODE *node = NULL;
 
     /* Wait for events */
     while (len = read(fd, buffer, EVENT_BUF_LEN))
@@ -514,14 +527,14 @@ int monitor()
         }
 
         /* index of the event into file descriptor */
-        int i = 0;
+        i = 0;
         while (i < len)
         {
             /* inotify_event */
             event = (struct inotify_event*) &buffer[i];
 
             /* Build the full path of the directory or symbolic link */
-            LIST_NODE *node = get_from_wd(event->wd);
+            node = get_from_wd(event->wd);
             if (node != NULL)
             {
                 WD_DATA *wd_data = (WD_DATA *) node->data;
