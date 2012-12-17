@@ -426,6 +426,62 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
     return node;
 }
 
+char *levelUp (char *absPath)
+{
+    /*pre: last char of absPath is '/' */
+
+    int len = strlen( absPath ) - 1;
+    
+    /* If it is '/' return it */
+    if (!len)
+        return absPath;
+
+    /* Search the latest '/' */
+    int i = len - 1;
+    for( i; i >= 0 && absPath[i] != '/'; i--);
+
+    /* Create new path */
+    char *up = (char*) malloc (sizeof(char) * i+2);
+    sprintf (up, "%.*s", i+1, absPath);
+
+    return up;
+}
+
+bool isAlone (char *path)
+{
+
+    /* level up of path */
+    path = levelUp (path);
+    
+    // come capisco dove mi devo fermare?
+    // 1) Ci si potrebbe salvare man a mano il percorso più "alto"
+    //    in watching.
+    //
+    // XXX: ATTUALMENTE SALE FINO ALLA RADICE
+    // OVVIAMENTE È UNO SPRECO DI RISORSE CHE DEVE ESSERE
+    // ASSOLUTAMENTE CORRETTO, PERÒ CI PENSEREMO SOLO SE
+    // DECIDIAMO CHE QUESTO APPROCCIO SIA UNA SOLUZIONE
+    // CORRETTA.
+     
+    /* Check if path is equals to root*/
+    if ( strcmp(path,"/") == 0)
+        return 1;
+
+    /* Check if path is in watching. 
+     * If it's, path has a father.
+     * otherwise call isAlone() with
+     * the new path */
+    LIST_NODE *node = get_from_path (path);
+    if (node == NULL){
+        return isAlone (path);
+    }
+    else
+    {
+        return 0;
+    }
+
+}
+
 void unwatch(char *path, bool is_link)
 {
     /* Remove a real path from watched resources */
@@ -481,10 +537,12 @@ void unwatch(char *path, bool is_link)
                         while (sub_node)
                         {
                             WD_DATA *sub_wd_data = (WD_DATA*) sub_node->data;
+                            
                             if (strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
                                 && sub_wd_data->links->first == NULL)
                             {
-                                unwatch(sub_wd_data->path, 0);
+                                if ( isAlone( sub_wd_data->path ))
+                                    unwatch(sub_wd_data->path, 0);
                             }
 
                             sub_node = sub_node->next;

@@ -148,6 +148,20 @@ int watch(char *, char *);
 LIST_NODE *add_to_watch_list(char *, char *);
 
 /**
+ * Jump of a level up in directory hierarchy.
+ *
+ * @param char* : the absolute path
+ * */
+char *levelUp (char *);
+
+/**
+ * Search recursively if a level up directory of path is in watching.
+ *
+ * @param char* : the path to process
+ */
+bool isAlone (char *path);
+
+/**
  * Unwatch a directory
  * 
  * Used to remove a file or directory
