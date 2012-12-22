@@ -373,17 +373,15 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             return NULL;
         }
         
-        /** 
-         * TODO check if the parent dir is reached by symbolic link, 
-         * if yes, then set wd_data->symbolic_link to 1.
-         */
-
         /* Create the entry */
         WD_DATA *wd_data = malloc(sizeof(WD_DATA));
         wd_data->wd = wd;
         wd_data->path = real_path;
         wd_data->links = list_init();
-        wd_data->symbolic_link = (symlink == NULL) ? 0 : 1;
+        wd_data->symbolic_link = (strncmp(path, real_path, strlen(path)) == 0) ? 0 : 1;
+        
+        /* Check if set symbolic link flag to true */
+        // printf("is a link: %d\n", wd_data->symbolic_link);
 
         node = list_push(list_wd, (void*) wd_data);
     
@@ -422,64 +420,27 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             log_message(message);
         }
     }
-
+    
     return node;
 }
 
-char *levelUp (char *absPath)
+int exists(char* child_path, LIST *parents)
 {
-    /*pre: last char of absPath is '/' */
-
-    int len = strlen( absPath ) - 1;
-    
-    /* If it is '/' return it */
-    if (!len)
-        return absPath;
-
-    /* Search the latest '/' */
-    int i = len - 1;
-    for( i; i >= 0 && absPath[i] != '/'; i--);
-
-    /* Create new path */
-    char *up = (char*) malloc (sizeof(char) * i+2);
-    sprintf (up, "%.*s", i+1, absPath);
-
-    return up;
-}
-
-bool isAlone (char *path)
-{
-
-    /* level up of path */
-    path = levelUp (path);
-    
-    // come capisco dove mi devo fermare?
-    // 1) Ci si potrebbe salvare man a mano il percorso più "alto"
-    //    in watching.
-    //
-    // XXX: ATTUALMENTE SALE FINO ALLA RADICE
-    // OVVIAMENTE È UNO SPRECO DI RISORSE CHE DEVE ESSERE
-    // ASSOLUTAMENTE CORRETTO, PERÒ CI PENSEREMO SOLO SE
-    // DECIDIAMO CHE QUESTO APPROCCIO SIA UNA SOLUZIONE
-    // CORRETTA.
-     
-    /* Check if path is equals to root*/
-    if ( strcmp(path,"/") == 0)
-        return 1;
-
-    /* Check if path is in watching. 
-     * If it's, path has a father.
-     * otherwise call isAlone() with
-     * the new path */
-    LIST_NODE *node = get_from_path (path);
-    if (node == NULL){
-        return isAlone (path);
-    }
-    else
-    {
+    if (parents == NULL || parents->first == NULL)
         return 0;
-    }
 
+    LIST_NODE *node = parents->first;
+    while(node)
+    {
+        char* parent_path = (char*) node->data;
+        if (strlen(parent_path) <= strlen(child_path)
+            && strncmp(parent_path, child_path, strlen(parent_path)) == 0)
+        {
+            return 1;
+        }
+        node = node->next;
+    }
+    return 0;
 }
 
 void unwatch(char *path, bool is_link)
@@ -529,27 +490,46 @@ void unwatch(char *path, bool is_link)
                      */
                     if (wd_data->links->first == NULL && wd_data->symbolic_link == 1)
                     {
+                        // printf("I have to unwatch it!\n");
+
+                        /**
+                         * Temporary list of resources that are pointed
+                         * by symbolic links.
+                         */
+                        LIST *tmp_linked_path = list_init();
+
                         /**
                          * Descend to all subdirectories of wd_data->path and unwatch them all
-                         * only if they are not pointed by some symbolic link, anymore.
+                         * only if they are not pointed by some symbolic link, anymore
+                         * (check if parent is not pointed by symlinks too).
                          */
                         LIST_NODE *sub_node = list_wd->first;
                         while (sub_node)
                         {
                             WD_DATA *sub_wd_data = (WD_DATA*) sub_node->data;
-                            
                             if (strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
-                                && sub_wd_data->links->first == NULL)
+                                && exists(sub_wd_data->path, tmp_linked_path) == 0)
                             {
-                                if ( isAlone( sub_wd_data->path ))
-                                    unwatch(sub_wd_data->path, 0);
+                                if (sub_wd_data->links->first == NULL)
+                                {
+                                    /* Log Message */
+                                    char *message = malloc(sizeof(char) * MAXPATHLEN);
+                                    sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, sub_wd_data->wd, sub_wd_data->path);
+                                    log_message(message);
+            
+                                    inotify_rm_watch(fd, sub_wd_data->wd);
+                                    list_remove(list_wd, sub_node);
+                                }
+                                else
+                                {
+                                    /* Save current path into linked_path */
+                                    list_push(tmp_linked_path, (void*) sub_wd_data->path);
+                                }
                             }
-
                             sub_node = sub_node->next;
                         }
-
+                        list_free(tmp_linked_path);
                     }
-
                     return;
                 }
                 link_node = link_node->next;

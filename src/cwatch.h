@@ -148,18 +148,12 @@ int watch(char *, char *);
 LIST_NODE *add_to_watch_list(char *, char *);
 
 /**
- * Jump of a level up in directory hierarchy.
+ * Checks whetever a string exists in a list
  *
- * @param char* : the absolute path
- * */
-char *levelUp(char *);
-
-/**
- * Search recursively if a level up directory of path is in watching.
- *
- * @param char* : the path to process
+ * @param char* : string to check
+ * @param LIST* : list containing string
  */
-bool isAlone(char *);
+int exists(char *, LIST *);
 
 /**
  * Unwatch a directory
