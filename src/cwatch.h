@@ -152,14 +152,14 @@ LIST_NODE *add_to_watch_list(char *, char *);
  *
  * @param char* : the absolute path
  * */
-char *levelUp (char *);
+char *levelUp(char *);
 
 /**
  * Search recursively if a level up directory of path is in watching.
  *
  * @param char* : the path to process
  */
-bool isAlone (char *path);
+bool isAlone(char *);
 
 /**
  * Unwatch a directory
