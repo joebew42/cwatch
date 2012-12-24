@@ -549,7 +549,7 @@ int monitor()
 
     /* The real path of touched directory or file */
     char *path = NULL;
-    int len;
+    size_t len;
     int i;
     
     /* Temporary node information */
