@@ -30,12 +30,17 @@
 #include <sys/param.h>
 #include <syslog.h>
 #include <errno.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "list.h"
 
 /* Size of an event */
 #define EVENT_SIZE      ( sizeof (struct inotify_event) )
 #define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
+
+/* extension for the log file of a command */
+#define ext ".log"
 
 /* Boolean data type */
 typedef char bool;
@@ -115,6 +120,16 @@ LIST_NODE *get_from_path(char *);
  * @return LIST_NODE* : a pointer to node, NULL otherwise.
  */
 LIST_NODE *get_from_wd(int);
+
+/**
+ * Execute a command
+ *
+ * This function handle the execution of a command 
+ * @param char* : the command to launch
+ * @param char* : the event
+ * @return int: -1 in case of error
+ */
+int execute (char*, char*);
 
 /**
  * Parse command line
