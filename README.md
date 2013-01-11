@@ -1,4 +1,6 @@
 cwatch(1)
 ==========
 
-A lightweight program that monitor activity of filesystem through inotify kernel library and triggers user defined commands.
+A lightweight program that monitors the file system activity using inotify and executes a user defined command.
+
+Note: It is still in development stage.
