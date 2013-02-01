@@ -131,35 +131,6 @@ LIST_NODE *get_from_wd(int wd)
 
 int execute (char* cmd, char* event)
 {
-    /* filename for the log file*/
-    char *logf;
-
-    /* for log purpose*/
-    char *message = malloc(sizeof(char) * MAXPATHLEN);
-
-    /* get the time.
-     * XXX: da gestire l'errore che ritorna timer */
-    time_t timer = time(NULL);
-    if ( timer == (time_t) -1 )
-        return -1;
-
-    struct tm *time_data = localtime (&timer);
-    char *time = (char*) malloc(sizeof(char) * 14);
-    sprintf(time, "%d-%d,%02d:%02d:%d", time_data->tm_mday,
-                                           time_data->tm_mon,
-                                           time_data->tm_hour,
-                                           time_data->tm_min,
-                                           time_data->tm_sec);
-
-    /**
-     * XXX:per ora chiamo il file di log CWATCH_[time].log perché bisogna scrivere
-     * una piccola funzioncina che ricava il nome del comando esclusi gli argomenti
-     * per avere una cosa del timo [cmd]_time.log di gran lunga più utile.
-     */
-    
-    logf = (char*) malloc(sizeof(char) * (strlen("CWATCH_") + strlen(time) + strlen(ext)));
-    sprintf (logf, "CWATCH_%s%s", time, ext);
-
     /* create the command with the output conf */
     char *real_cmd = (char*) malloc(sizeof(char) * (strlen(cmd) + strlen(logf) + 4));
     sprintf (real_cmd, "%s &> %s", cmd, logf);
