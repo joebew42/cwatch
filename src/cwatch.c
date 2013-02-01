@@ -131,17 +131,16 @@ LIST_NODE *get_from_wd(int wd)
 
 int execute (char* cmd, char* event)
 {
-    /* create the command with the output conf */
-    char *real_cmd = (char*) malloc(sizeof(char) * (strlen(cmd) + strlen(logf) + 4));
-    sprintf (real_cmd, "%s &> %s", cmd, logf);
-    
+    /* for log purpose*/
+    char *message = malloc(sizeof(char) * MAXPATHLEN);
+
     /* fork this process */
     pid_t pid = fork();
 
     if (pid > 0)
     {
         /* parent */
-        sprintf(message, "%s, [%d] -> %s", event, pid, real_cmd);
+        sprintf(message, "%s, [%d] -> %s", event, pid, cmd);
         log_message(message); 
     }
     else if (pid == 0)
@@ -149,7 +148,7 @@ int execute (char* cmd, char* event)
         /* child */
 
         /* exec the process */
-        if ( execlp("/bin/sh", "sh", "-c", real_cmd, NULL) < 0)
+        if ( execlp("/bin/sh", "sh", "-c", cmd, NULL) < 0)
         {
             /* XXX: see errno of execlp*/
             sprintf(message, "ERROR in exec()");
