@@ -144,14 +144,14 @@ int execute (char* cmd, char* event, char* path)
     struct tm *time_data = localtime( &timer );
     char *time = (char*) malloc(sizeof(char) * 14);
     sprintf (time, "%d-%d,%02d:%02d:%d", time_data->tm_mday,
-                                          time_data->tm_mon+1,
+                                          time_data->tm_mon,
                                           time_data->tm_hour,
                                           time_data->tm_min,
                                           time_data->tm_sec);
     
     /* replace special pattern */
-    char *real_cmd = replace(cmd, EVENT_DIR, path);
-    real_cmd = replace(real_cmd, EVENT_TIME, time);
+    char *real_cmd = replace(cmd, PATTERN_DIR, path);
+    real_cmd = replace(real_cmd, PATTERN_TIME, time);
 
     /* fork this process */
     pid_t pid = fork();

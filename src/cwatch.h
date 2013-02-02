@@ -43,8 +43,8 @@
  * where the event occur.
  * EVENT_TIME when cwatch launched a command its will be replaced with the time
  */
-#define EVENT_DIR "{d}"
-#define EVENT_TIME "{t}"
+#define PATTERN_DIR "{d}"
+#define PATTERN_TIME "{t}"
 
 /* Boolean data type */
 typedef char bool;
@@ -131,7 +131,6 @@ LIST_NODE *get_from_wd(int);
  * This function handle the execution of a command 
  * @param char* : the command to launch
  * @param char* : the event
- * @param char* : the path where the event has occured
  * @return int: -1 in case of error
  */
 int execute (char*, char*, char*);
