@@ -39,8 +39,12 @@
 #define EVENT_SIZE      ( sizeof (struct inotify_event) )
 #define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
 
-/* extension for the log file of a command */
-#define ext ".log"
+/* EVENT_DIR when cwatch launches a command will be replaced with the directory
+ * where the event occur.
+ * EVENT_TIME when cwatch launched a command its will be replaced with the time
+ */
+#define EVENT_DIR "{d}"
+#define EVENT_TIME "{t}"
 
 /* Boolean data type */
 typedef char bool;
@@ -127,9 +131,10 @@ LIST_NODE *get_from_wd(int);
  * This function handle the execution of a command 
  * @param char* : the command to launch
  * @param char* : the event
+ * @param char* : the path where the event has occured
  * @return int: -1 in case of error
  */
-int execute (char*, char*);
+int execute (char*, char*, char*);
 
 /**
  * Parse command line
@@ -186,5 +191,17 @@ void unwatch(char *, bool);
  * Used to monitor inotify event on watched resources
  */
 int monitor();
+
+
+/**
+ * Replace all the occurrence of "old" in "new"
+ *
+ * @param char* : the source
+ * @param char* : the old pattern
+ * @param char* : the new pattern
+ *
+ * @return char* : the processed string
+ */
+char* replace(char*, char*, char*);
 
 #endif /* !__CWATCH_H */
