@@ -129,41 +129,30 @@ LIST_NODE *get_from_wd(int wd)
     return NULL;
 }
 
-int execute (char* cmd, char* event)
+int execute (char* cmd, char* event, char* path)
 {
-    /* filename for the log file*/
-    char *logf;
-
     /* for log purpose*/
     char *message = malloc(sizeof(char) * MAXPATHLEN);
 
-    /* get the time.
-     * XXX: da gestire l'errore che ritorna timer */
+    /* Get the time and the date */
     time_t timer = time(NULL);
+    
     if ( timer == (time_t) -1 )
+        /* XXX: heandle time error */
         return -1;
 
-    struct tm *time_data = localtime (&timer);
+    struct tm *time_data = localtime( &timer );
     char *time = (char*) malloc(sizeof(char) * 14);
-    sprintf(time, "%d-%d,%02d:%02d:%d", time_data->tm_mday,
-                                           time_data->tm_mon,
-                                           time_data->tm_hour,
-                                           time_data->tm_min,
-                                           time_data->tm_sec);
-
-    /**
-     * XXX:per ora chiamo il file di log CWATCH_[time].log perché bisogna scrivere
-     * una piccola funzioncina che ricava il nome del comando esclusi gli argomenti
-     * per avere una cosa del timo [cmd]_time.log di gran lunga più utile.
-     */
+    sprintf (time, "%d-%d,%02d:%02d:%d", time_data->tm_mday,
+                                          time_data->tm_mon,
+                                          time_data->tm_hour,
+                                          time_data->tm_min,
+                                          time_data->tm_sec);
     
-    logf = (char*) malloc(sizeof(char) * (strlen("CWATCH_") + strlen(time) + strlen(ext)));
-    sprintf (logf, "CWATCH_%s%s", time, ext);
+    /* replace special pattern */
+    char *real_cmd = replace(cmd, PATTERN_DIR, path);
+    real_cmd = replace(real_cmd, PATTERN_TIME, time);
 
-    /* create the command with the output conf */
-    char *real_cmd = (char*) malloc(sizeof(char) * (strlen(cmd) + strlen(logf) + 4));
-    sprintf (real_cmd, "%s &> %s", cmd, logf);
-    
     /* fork this process */
     pid_t pid = fork();
 
@@ -177,10 +166,11 @@ int execute (char* cmd, char* event)
     {
         /* child */
 
+        
         /* exec the process */
         if ( execlp("/bin/sh", "sh", "-c", real_cmd, NULL) < 0)
         {
-            /* XXX: see errno of execlp*/
+            /*XXX: see errno of execlp*/
             sprintf(message, "ERROR in exec()");
             log_message(message);
         }
@@ -279,7 +269,7 @@ int parse_command_line(int argc, char *argv[])
                 return -1;
             }
 
-            /* Check if the path has the final slash */
+            /* Check if the path has the source slash */
             if (argv[1][strlen(argv[1])-1] != '/')
             {
                 path = (char*) malloc(sizeof(char) * (strlen(argv[1]) + 2));
@@ -688,7 +678,7 @@ int monitor()
             if (event->mask & IN_CREATE)
             {
                 /* execute the command */
-                if ( execute (command, "IN_CREATE") == -1 )
+                if ( execute (command, "IN_CREATE", path) == -1 )
                     return -1;
                 
                 /* Check if it is a folder. If yes watch it */
@@ -735,7 +725,7 @@ int monitor()
             else if (event->mask & IN_DELETE)
             {
                 /* execute the command */
-                if ( execute (command, "IN_DELETE") == -1 )
+                if ( execute (command, "IN_DELETE", path) == -1 )
                     return -1;
 
                 /* Check if it is a folder. If yes unwatch it */
@@ -759,4 +749,26 @@ int monitor()
     }
 
     return 0;
+}
+
+
+char* replace (char *source, char *old, char *new){
+/* N.B: ciclo infinito se si fa un replace con old = new.
+ */
+
+    char *sub;
+
+    while ( (sub = strstr(source, old)) != NULL){
+
+        char* t_new = malloc(sizeof(char) * (strlen(source) - strlen(old) + strlen(new) + 1));
+      
+        snprintf(t_new, strlen(source) - strlen(sub) + 1, "%s", source);
+        strcat(t_new, new);
+        strcat(t_new, sub+(sizeof(char) * strlen(old)));
+
+        source = (char *) malloc(sizeof(char) * (strlen(t_new)+1));
+        sprintf(source,"%s", t_new);
+    }
+   
+   return source;
 }
