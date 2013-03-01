@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <errno.h>
-#include <time.h>
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
@@ -40,11 +39,14 @@
 #define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
 
 /*
- * EVENT_DIR  when cwatch execute the command will be replaced with the
- *            absolute full path of the directory where the event occured.
- * EVENT_TYPE when cwatch execute the command will be replaced with the
- *            event type occured
+ * _ROOT when cwatch execute the command will be replaced with the
+ *       root monitored directory
+ * _DIR  when cwatch execute the command will be replaced with the
+ *       absolute full path of the directory where the event occured.
+ * _TYPE when cwatch execute the command will be replaced with the
+ *       event type occured
  */
+#define COMMAND_PATTERN_ROOT   "{r}"
 #define COMMAND_PATTERN_DIR    "{d}"
 #define COMMAND_PATTERN_EVENT  "{e}"
 

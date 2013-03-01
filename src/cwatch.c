@@ -637,7 +637,7 @@ STR_SPLIT_S *str_split(char *str, char *sep)
     return r;
 }
 
-int execute_command(char *event, char *path)
+int execute_command(char *event, char *event_path)
 {
     /* TODO maybe will be necessary to add a burst limit */
     
@@ -649,8 +649,10 @@ int execute_command(char *event, char *path)
                                                  
     int i;
     for (i = 0; i < scommand->size - 1; ++i) {
-        if (strcmp(scommand->substring[i], COMMAND_PATTERN_DIR) == 0) {
+        if (strcmp(scommand->substring[i], COMMAND_PATTERN_ROOT) == 0) {
             command_to_execute[i] = path;
+        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_DIR) == 0) {
+            command_to_execute[i] = event_path;
         } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_EVENT) == 0) {
             command_to_execute[i] = event;
         } else {
@@ -662,7 +664,7 @@ int execute_command(char *event, char *path)
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-        sprintf(message, "%s on %s, [%d] -> %s", event, path, pid, command);
+        sprintf(message, "%s on %s, [%d] -> %s", event, event_path, pid, command);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
