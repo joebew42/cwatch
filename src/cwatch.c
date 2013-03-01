@@ -71,7 +71,7 @@ void print_list(LIST *list_wd)
         printf("%s, WD:%d, LNK:%d\n", wd_data->path, wd_data->wd, wd_data->symbolic_link);
         
         /* print the content of links list */
-        if (wd_data->symbolic_link == 1) {
+        if (wd_data->symbolic_link == TRUE) {
             LIST_NODE *n_node = wd_data->links->first;
             printf ("\tList of links that point to this path:\n");
             
@@ -156,11 +156,11 @@ int parse_command_line(int argc, char *argv[])
             break;
                 
         case 'l': /* Enable syslog */
-            be_syslog = 1;
+            be_syslog = TRUE;
             break;
                 
         case 'v': /* Be verbose */
-            be_verbose = 1;
+            be_verbose = TRUE;
             break;
                 
         case 'f': /* lib_inotify flag handling */
@@ -175,7 +175,7 @@ int parse_command_line(int argc, char *argv[])
             return -1;
                 
         case 'n': /* Easter eggs */
-            be_easter = 1;
+            be_easter = TRUE;
             break;
                 
         case 'd': /* Directory to watch */
@@ -421,7 +421,7 @@ void unwatch(char *path, bool_t is_link)
                      * if there is no other symbolic links that point to the
                      * watched resource then unwatch it
                      */
-                    if (wd_data->links->first == NULL && wd_data->symbolic_link == 1) {
+                    if (wd_data->links->first == NULL && wd_data->symbolic_link == TRUE) {
                         WD_DATA *sub_wd_data;
                         
                         /*

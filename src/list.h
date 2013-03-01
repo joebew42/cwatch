@@ -41,21 +41,21 @@ typedef struct list
 
 /**
  * Initialize list data structure
- * @return list: a pointer to the new allocated list structure
+ * @return list * : a pointer to the new allocated list structure
  */
 LIST *list_init();
 
 /**
  * Push an element at the end of list
- * @param list : a LIST pointer
- * @param data : a void pointer
+ * @param LIST * : a LIST pointer
+ * @param void * : a void pointer
  * @return LIST_NODE: return the pointer of the node added
  */
 LIST_NODE *list_push(LIST *, void *);
 
 /**
  * Remove and return the first element of the list
- * @param list *  : a LIST pointer
+ * @param LIST *  : a LIST pointer
  * @return void * : a VOID pointer to destination data pointer
  */
 void *list_pop(LIST *);
