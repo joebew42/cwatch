@@ -26,12 +26,12 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/inotify.h>
-#include <sys/param.h>
 #include <syslog.h>
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/inotify.h>
+#include <sys/param.h>
 
 #include "list.h"
 
@@ -39,37 +39,46 @@
 #define EVENT_SIZE      ( sizeof (struct inotify_event) )
 #define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
 
-/* EVENT_DIR when cwatch launches a command will be replaced with the directory
- * where the event occur.
- * EVENT_TIME when cwatch launched a command its will be replaced with the time
+/*
+ * EVENT_DIR  when cwatch execute the command will be replaced with the
+ *            absolute full path of the directory where the event occured.
+ * EVENT_TYPE when cwatch execute the command will be replaced with the
+ *            event type occured
  */
-#define PATTERN_DIR "{d}"
-#define PATTERN_TIME "{t}"
+#define COMMAND_PATTERN_DIR    "{d}"
+#define COMMAND_PATTERN_EVENT  "{e}"
 
 /* Boolean data type */
-typedef char bool;
-
-/* Environment variables */
-char *program_name;
-char *program_version;
-char *path;
-char *command;
-int fd;
-LIST *list_wd;
-
-/* Global option */
-bool be_syslog;
-bool be_verbose;
-bool be_easter;
+typedef enum {FALSE,TRUE} bool_t;
 
 /* Used to maintain information about watched resource */
 typedef struct wd_data_s
 {
-    int wd;     // Watch Descriptor
-    char *path;
-    bool symbolic_link;
-    LIST *links;
+    int wd;               /* watch descriptor */
+    char *path;           /* absoulete real path of the directory */
+    bool_t symbolic_link; /* used to know if is reached by symbolic link */
+    LIST *links;          /* list of sym links that point to this resource */
 } WD_DATA;
+
+/* Used by str_split (see function definition below) */
+typedef struct str_split_s
+{
+    unsigned short size;
+    char **substring;
+} STR_SPLIT_S;
+
+/* Environment and variables */
+char *program_name;
+char *program_version;
+char *path;
+char *command;
+STR_SPLIT_S *scommand;
+int fd;
+LIST *list_wd;
+
+bool_t be_syslog;
+bool_t be_verbose;
+bool_t be_easter;
 
 /**
  * Print the version of the program and exit
@@ -87,7 +96,7 @@ void help();
  * Log
  * 
  * Log message via syslog or via standard output
- * @param char* : Message to log
+ * @param char * : Message to log
  */
 void log_message(char *);
 
@@ -95,7 +104,7 @@ void log_message(char *);
  * Print List
  * 
  * Only an help fuction that print list_wd
- * @param LIST* : the list_wd you want print
+ * @param LIST * : the list_wd you want print
  */
 void print_list(LIST *);
 
@@ -104,55 +113,45 @@ void print_list(LIST *);
  * 
  * This function is used to resolve the
  * absolute real_path of a symbolic link or a relative path.
- * @param char* : the path of the symbolic link to resolve
- * @return char* : the resolved real_path, NULL otherwise
+ * @param char *  : the path of the symbolic link to resolve
+ * @return char * : the resolved real_path, NULL otherwise
  */
 char *resolve_real_path(const char *);
 
 /**
  * Searchs and returns the node for the path passed
  * as argument.
- * @param char* : The path to find
- * @return LIST_NODE* : a pointer to node, NULL otherwise.
+ * @param char *       : The path to find
+ * @return LIST_NODE * : A pointer to node, NULL otherwise.
  */
 LIST_NODE *get_from_path(char *);
 
 /**
  * Searchs and returns the node for the wd passed
  * as argument.
- * @param int : The wd to find
- * @return LIST_NODE* : a pointer to node, NULL otherwise.
+ * @param int          : The wd to find
+ * @return LIST_NODE * : a pointer to node, NULL otherwise.
  */
 LIST_NODE *get_from_wd(int);
-
-/**
- * Execute a command
- *
- * This function handle the execution of a command 
- * @param char* : the command to launch
- * @param char* : the event
- * @return int: -1 in case of error
- */
-int execute (char*, char*, char*);
 
 /**
  * Parse command line
  *
  * This function is used to parse command line and initialize some environment variables
- * @param int : arguments count
- * @param char** : arguments value
+ * @param int     : arguments count
+ * @param char ** : arguments value
  * @return int
  */
-int parse_command_line(int, char**);
+int parse_command_line(int, char **);
 
 /**
  * Watch a directory
  *
  * It performs a breath-first-search to traverse a directory and
  * call the add_to_watch_list(path) for each directory, either if it's pointed by a symbolic link or not.
- * @param char* : The path of directory to watch
- * @param char* : The symbolic link that point to the path
- * @return int : -1 (An error occurred), 0 (Resource added correctly)
+ * @param char * : The path of directory to watch
+ * @param char * : The symbolic link that point to the path
+ * @return int   : -1 (An error occurred), 0 (Resource added correctly)
  */
 int watch(char *, char *);
 
@@ -169,8 +168,8 @@ LIST_NODE *add_to_watch_list(char *, char *);
 /**
  * Checks whetever a string exists in a list
  *
- * @param char* : string to check
- * @param LIST* : list containing string
+ * @param char * : string to check
+ * @param LIST * : list containing string
  */
 int exists(char *, LIST *);
 
@@ -179,10 +178,10 @@ int exists(char *, LIST *);
  * 
  * Used to remove a file or directory
  * from the list of watched resources
- * @param char* : the path of the resource to remove
- * @param bool : true (1) if the path to unwatch is a symlink, false (0) otherwise.
+ * @param char * : the path of the resource to remove
+ * @param bool_t : TRUE if the path to unwatch is a symlink, FALSE otherwise.
  */
-void unwatch(char *, bool);
+void unwatch(char *, bool_t);
 
 /**
  * Start monitoring
@@ -191,16 +190,25 @@ void unwatch(char *, bool);
  */
 int monitor();
 
+/**
+ * str_split
+ *
+ * subdivide a string into n-substring, that are separate
+ * by a specified separator symbol.
+ * @param char *      : the string to subdivide
+ * @param char *      : separator symbol
+ * @param STR_SPLIT_R : a data structure contains the splitted string
+ */
+STR_SPLIT_S *str_split(char *, char *);
 
 /**
- * Replace all the occurrence of "old" in "new"
+ * Execute a command
  *
- * @param char* : the source
- * @param char* : the old pattern
- * @param char* : the new pattern
- *
- * @return char* : the processed string
+ * This function handle the execution of a command 
+ * @param char * : the inotify event (maybe is not a char * ...)
+ * @param char * : the path where event occured
+ * @return int:  : -1 in case of error, 0 otherwise
  */
-char* replace(char*, char*, char*);
+int execute_command(char *, char *);
 
 #endif /* !__CWATCH_H */
