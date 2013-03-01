@@ -27,8 +27,7 @@
  */
 int main(int argc, char *argv[])
 { 
-    if (parse_command_line(argc, argv) == 0)
-    {
+    if (parse_command_line(argc, argv) == 0) {
         /* File descriptor inotify */
         fd = inotify_init();
 
@@ -36,8 +35,7 @@ int main(int argc, char *argv[])
         list_wd = list_init();
 
         /* Watch the path */
-        if (watch(path, NULL) == -1)
-        {
+        if (watch(path, NULL) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", path);
             return -1;
         }

@@ -23,7 +23,7 @@
 #ifndef __LIST_H
 #define __LIST_H
 
-// List node
+/* List node */
 typedef struct list_node_s
 {
     void *data;
@@ -31,10 +31,10 @@ typedef struct list_node_s
     struct list_node_s *next;
 } LIST_NODE;
 
-// List
+/* List data structure */
 typedef struct list
 {
-    // Pointer to first and last node
+    /* Pointer to first and last node */
     LIST_NODE *first;
     LIST_NODE *last;
 } LIST;
@@ -47,22 +47,23 @@ LIST *list_init();
 
 /**
  * Push an element at the end of list
- * @param list: a LIST pointer
- * @param data: a void pointer
+ * @param list : a LIST pointer
+ * @param data : a void pointer
  * @return LIST_NODE: return the pointer of the node added
  */
 LIST_NODE *list_push(LIST *, void *);
 
 /**
  * Remove and return the first element of the list
- * @param list: a LIST pointer
- * @return void: a VOID pointer to destination data pointer
+ * @param list *  : a LIST pointer
+ * @return void * : a VOID pointer to destination data pointer
  */
 void *list_pop(LIST *);
 
 /**
  * Remove a node from list
- * @param node: a POINTER to list_node to remove
+ * @param LIST *      : a pointer to the list
+ * @param LIST_NODE * : a to the list_node to remove
  */
 void list_remove(LIST *, LIST_NODE *);
 

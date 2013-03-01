@@ -37,7 +37,7 @@ LIST *list_init()
 
 LIST_NODE *list_push(LIST *list, void *data)
 {
-    // Allocate memory for the new node list
+    /* Allocate memory for the new node list */
     LIST_NODE *node = malloc(sizeof(LIST_NODE));
     if (node == NULL)
         return;
@@ -45,13 +45,14 @@ LIST_NODE *list_push(LIST *list, void *data)
     node->data = data;
     node->next = node->prev = NULL;
 
-    // If the first element of list is NULL
-    // then put it as the first
-    if (list->first == NULL)
+    /*
+     * If the first element of list is NULL
+     * then put it as the first
+     */
+    if (list->first == NULL) {
         list->first = list->last = node;
-    else
-    {
-        // Put it as last node
+    } else {
+        /* Put it as last node */
         node->prev = list->last;
         list->last->next = node;
         list->last = node;
@@ -62,26 +63,24 @@ LIST_NODE *list_push(LIST *list, void *data)
 
 void *list_pop(LIST *list)
 {
-    // Empty list
+    /* Empty list */
     if (list->first == NULL)
         return NULL;
 
-    // Return the data pointed to first node 
+    /* Return the data pointed to first node */
     void *data = list->first->data;
 
-    // Retrieve th first node of the list
+    /* Retrieve th first node of the list */
     LIST_NODE *node = list->first;
     
-    if (list->first == list->last)
+    if (list->first == list->last) {
         list->first = list->last = NULL;
-    else
-    {
-        // Update the reference to first node   
+    } else {
+        /* Update the reference to first node */
         list->first = node->next;
         list->first->prev = NULL;
     }
     
-    // Deallocate memory
     free(node);
 
     return data;
@@ -92,19 +91,14 @@ void list_remove(LIST* list, LIST_NODE *node)
     if (list->first == NULL)
         return;
     
-    if (node == list->first)
-    {
+    if (node == list->first) {
         list->first = list->first->next;
         if (list->first != NULL)
             list->first->prev = NULL;
-    }
-    else if (node == list->last)
-    {
+    } else if (node == list->last) {
         list->last = list->last->prev;
         list->last->next = NULL;
-    }
-    else
-    {
+    } else {
         node->prev->next = node->next;
         node->next->prev = node->prev;
     }
@@ -119,8 +113,7 @@ void list_free(LIST *list)
 
     LIST_NODE *node = list->first;
     
-    while(node)
-    {
+    while(node) {
         LIST_NODE *next = node->next;
         free(node);
         node = next;
