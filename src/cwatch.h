@@ -34,9 +34,12 @@
 
 #include "list.h"
 
+#define PROGRAM_NAME    "cwatch"
+#define PROGRAM_VERSION "0.0 00/00/0000" /* MAJ.REV MM/DD/YYYY */
+
 /* Size of an event */
-#define EVENT_SIZE      ( sizeof (struct inotify_event) )
-#define EVENT_BUF_LEN   ( 1024 * ( EVENT_SIZE + 16 ) )
+#define EVENT_SIZE      sizeof (struct inotify_event)
+#define EVENT_BUF_LEN   1024 * ( EVENT_SIZE + 16 )
 
 /*
  * _ROOT when cwatch execute the command will be replaced with the
@@ -70,11 +73,10 @@ typedef struct str_split_s
 } STR_SPLIT_S;
 
 /* Environment and variables */
-char *program_name;
-char *program_version;
 char *path;
 char *command;
 STR_SPLIT_S *scommand;
+
 int fd;
 LIST *list_wd;
 

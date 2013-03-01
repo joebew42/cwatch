@@ -22,21 +22,17 @@
 
 #include "cwatch.h"
 
-/* Define program name and version */
-char *program_name = "cwatch";
-char *program_version = "0.0 00/00/0000"; // maj.rev mm/dd/yyyy
-
 /* Events mask */
 uint32_t mask = IN_ISDIR | IN_CREATE | IN_DELETE;
 
 void print_version()
 {
-    printf("%s - Version: %s\n", program_name, program_version);
+    printf("%s - Version: %s\n", PROGRAM_NAME, PROGRAM_VERSION);
 }
 
 void help()
 {
-    printf("Usage: %s -c COMMAND [OPTIONS] -d DIRECTORY\n", program_name);
+    printf("Usage: %s -c COMMAND [OPTIONS] -d DIRECTORY\n", PROGRAM_NAME);
     printf("Monitors changes in a directory through inotify system call and\n");
     printf("executes the COMMAND specified with the -c option\n\n");
     printf("   -c\t the command to execute when changes occurs\n");
@@ -55,7 +51,7 @@ void log_message(char *message)
         printf("%s\n", message);
     
     if (be_syslog) {
-        openlog(program_name, LOG_PID, LOG_LOCAL1);
+        openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
         syslog(LOG_INFO, message);
         closelog();
     }
