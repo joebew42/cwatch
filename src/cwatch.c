@@ -655,7 +655,8 @@ int execute_command(char *event, char *event_path)
             command_to_execute[i] = scommand->substring[i];
         }
     }
-
+    command_to_execute[i] = NULL;
+    
     /* Execute the command */
     pid_t pid = fork();
     if (pid > 0) {
