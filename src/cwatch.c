@@ -325,21 +325,12 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         log_message(message);
     }
 
-    /* Check to add symlink (if any) to the symlink list of the watched resource */
+    /*
+     * Check if the symbolic link (if any) is not been added before.
+     * This control is necessary to avoid that cyclic links counts twice.
+     */
     if (node != NULL && symlink != NULL) {
         WD_DATA *wd_data = (WD_DATA*) node->data;
-        
-        /*
-         * XXX consider that is not possible that exists two symlink with the same path!!!
-         *     The code below that control for duplicate can be deleted (think about it)
-         */
-        /*
-        list_push(wd_data->links, (void *) symlink);
-            
-        char *message = malloc(MAXPATHLEN);
-        sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
-        log_message(message);
-        */
 
         bool_t found = FALSE;
         LIST_NODE *node_link = wd_data->links->first;
@@ -355,7 +346,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         
         if (found == FALSE) {
             list_push(wd_data->links, (void *) symlink);
-            
+            /* Log Message */
             char *message = (char *) malloc(MAXPATHLEN);
             sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
             log_message(message);
