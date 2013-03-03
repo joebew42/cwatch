@@ -87,7 +87,7 @@ void *list_pop(LIST *list)
 }
 
 void list_remove(LIST* list, LIST_NODE *node)
-{
+{   
     if (list->first == NULL)
         return;
     

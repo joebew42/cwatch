@@ -320,7 +320,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         node = list_push(list_wd, (void*) wd_data);
         
         /* Log Message */
-        char *message = malloc(MAXPATHLEN);
+        char *message = (char *) malloc(MAXPATHLEN);
         sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
         log_message(message);
     }
@@ -333,6 +333,14 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
          * XXX consider that is not possible that exists two symlink with the same path!!!
          *     The code below that control for duplicate can be deleted (think about it)
          */
+        /*
+        list_push(wd_data->links, (void *) symlink);
+            
+        char *message = malloc(MAXPATHLEN);
+        sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
+        log_message(message);
+        */
+
         bool_t found = FALSE;
         LIST_NODE *node_link = wd_data->links->first;
         while (node_link) {
@@ -348,8 +356,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         if (found == FALSE) {
             list_push(wd_data->links, (void *) symlink);
             
-            /* Log Message */
-            char *message = malloc(MAXPATHLEN);
+            char *message = (char *) malloc(MAXPATHLEN);
             sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
             log_message(message);
         }
@@ -387,11 +394,15 @@ void unwatch(char *path, bool_t is_link)
             WD_DATA *wd_data = (WD_DATA *) node->data;
             
             /* Log Message */
-            char *message = malloc(MAXPATHLEN);
+            char *message = (char *) malloc(MAXPATHLEN);
             sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, wd_data->wd, path);
             log_message(message);
             
             inotify_rm_watch(fd, wd_data->wd);
+            
+            if (wd_data->links->first != NULL)
+                list_free(wd_data->links);
+            
             list_remove(list_wd, node);
         }
     } else {
@@ -407,8 +418,8 @@ void unwatch(char *path, bool_t is_link)
                 /* Symbolic link match. Remove it! */
                 if (strcmp(path, p) == 0) {
                     /* Log Message */
-                    char *message = malloc(sizeof(MAXPATHLEN));
-                    sprintf(message, "UNWATCHING SYMLINK: \t\t%s -> %s", path, wd_data->path);
+                    char *message = (char *) malloc(MAXPATHLEN);
+                    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\t%s -> %s", path, wd_data->path);
                     log_message(message);
                     
                     list_remove(wd_data->links, link_node);
@@ -466,7 +477,7 @@ void unwatch(char *path, bool_t is_link)
                                 && exists(sub_wd_data->path, tmp_linked_path) == 0)
                             {
                                 /* Log Message */
-                                char *message = malloc(MAXPATHLEN);
+                                char *message = (char *) malloc(MAXPATHLEN);
                                 sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, sub_wd_data->wd, sub_wd_data->path);
                                 log_message(message);
                                 
@@ -568,7 +579,7 @@ int monitor()
                             list_push(wd_data->links, (void*) path);
                             
                             /* Log Message */
-                            char *message = malloc(MAXPATHLEN);
+                            char *message = (char *) malloc(MAXPATHLEN);
                             sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
                             log_message(message);
                         }
@@ -638,7 +649,7 @@ int execute_command(char *event, char *event_path)
     /* TODO maybe will be necessary to add a burst limit */
     
     /* For log purpose */
-    char *message = malloc(MAXPATHLEN);
+    char *message = (char *) malloc(MAXPATHLEN);
 
     /* Replace special pattern */
     char **command_to_execute = (char **) malloc(sizeof(char *) * scommand->size);
