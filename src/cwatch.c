@@ -544,6 +544,25 @@ int monitor()
                 i += EVENT_SIZE + event->len;
                 continue;
             }
+
+            /* Catch the event and execute it dependent handler */
+            /* TODO this is another stub code example */
+            switch (event->mask & mask) {
+            case IN_CREATE:
+                /* IN_CREATE Event */
+                printf("CREATE\n");
+                break;
+                
+            case IN_DELETE:
+                /* IN_DELETE Event */
+                printf("DELETE\n");
+                break;
+
+            case IN_ACCESS:
+                /* IN_ACCESS Event */
+                printf("ACCESS\n");
+                break;
+            }
             
             /* IN_CREATE Event */
             if (event->mask & IN_CREATE) {
