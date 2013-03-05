@@ -28,14 +28,16 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <errno.h>
-#include <unistd.h>
+//#include <unistd.h>
+#include <getopt.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
 
 #include "list.h"
 
 #define PROGRAM_NAME    "cwatch"
-#define PROGRAM_VERSION "0.0 00/00/0000" /* MAJ.REV MM/DD/YYYY */
+#define PROGRAM_VERSION "1.0"
+#define PROGRAM_STAGE   "experimental"
 
 /* Size of an event */
 #define EVENT_SIZE      sizeof (struct inotify_event)
@@ -44,8 +46,8 @@
 /*
  * _ROOT when cwatch execute the command will be replaced with the
  *       root monitored directory
- * _DIR  when cwatch execute the command will be replaced with the
- *       absolute full path of the directory where the event occured.
+ * _FILE when cwatch execute the command will be replaced with the
+ *       absolute full path of the file where the event occured.
  * _TYPE when cwatch execute the command will be replaced with the
  *       event type occured
  */
@@ -56,7 +58,7 @@
 /* Boolean data type */
 typedef enum {FALSE,TRUE} bool_t;
 
-/* Used to maintain information about watched resource */
+/* Used to store information about watched resource */
 typedef struct wd_data_s
 {
     int wd;               /* watch descriptor */
@@ -81,9 +83,26 @@ STR_SPLIT_S *sevents;
 int fd;
 LIST *list_wd;
 
-bool_t be_syslog;
-bool_t be_verbose;
-bool_t be_easter;
+bool_t verbose_flag;
+bool_t syslog_flag;
+
+/* Command line long options */
+static struct option long_options[] =
+{
+    /* Options that set flags */
+    //{"verbose",       no_argument, &verbose_flag, TRUE},
+    //{"log",           no_argument, &syslog_flag,  TRUE},
+    
+    /* Options that set index */
+    {"command",       required_argument, 0, 'c'},
+    {"directory",     required_argument, 0, 'd'},
+    {"events",        required_argument, 0, 'e'},
+    {"verbose",       no_argument,       0, 'v'},
+    {"syslog",        no_argument,       0, 'l'},
+    {"version",       no_argument,       0, 'V'},
+    {"help",          no_argument,       0, 'h'},
+    {0, 0, 0, 0}
+};
 
 /**
  * Print the version of the program and exit
