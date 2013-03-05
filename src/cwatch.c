@@ -32,12 +32,14 @@ void print_version()
 
 void help()
 {
-    printf("Usage: %s -c COMMAND [OPTIONS] -d DIRECTORY\n", PROGRAM_NAME);
+    printf("Usage: %s -c COMMAND -d DIRECTORY [-v] [-l] [-e event,[event,[,..]]]\n", PROGRAM_NAME);
+    printf("Usage: %s [-V]\n", PROGRAM_NAME);
+    printf("Usage: %s [-h]\n", PROGRAM_NAME);
     printf("Monitors changes in a directory through inotify system call and\n");
     printf("executes the COMMAND specified with the -c option\n\n");
     printf("   -c\t the command to execute when changes occurs\n");
     printf("   -d\t the directory to monitor\n");
-    printf("   -f\t indicate which type of events to monitors (e.g. -f IN_CREATE,IN_DELETE)\n");
+    printf("   -e\t indicate which type of events to monitors (e.g. -e create,delete)\n");
     printf("   -l\t Log all messages through syslog\n");
     printf("   -v\t Be verbose\n");
     printf("   -h\t Output this help and exit\n");
@@ -130,7 +132,7 @@ int parse_command_line(int argc, char *argv[])
     
     /* Handle command line arguments */
     int c;
-    while ((c = getopt(argc, argv, "lvVnhf:c:d:")) != -1) {
+    while ((c = getopt(argc, argv, "lvVnhe:c:d:")) != -1) {
         switch (c) {
         case 'c': /* Command */                
             /* Check for a valid command */
@@ -159,11 +161,18 @@ int parse_command_line(int argc, char *argv[])
             be_verbose = TRUE;
             break;
                 
-        case 'f': /* lib_inotify flag handling */
+        case 'e': /* lib_inotify events handling */
             /*
-             * TODO optarg will be of the form "CREATE,DELETE,MODIFY"
-             * use str_split with "," as a separator symbol.
+             * TODO this is just a stub example, complete it
              */
+            sevents = str_split(optarg, ",");
+            if (sevents != NULL) {
+                printf("Events specified %d:\n", sevents->size);
+                int i;
+                for (i = 0; i < sevents->size - 1; ++i) {
+                    printf("E: %s\n", sevents->substring[i]);
+                }
+            }
             break;
                 
         case 'V': /* Print version and exit */
@@ -649,7 +658,7 @@ int execute_command(char *event, char *event_path)
     for (i = 0; i < scommand->size - 1; ++i) {
         if (strcmp(scommand->substring[i], COMMAND_PATTERN_ROOT) == 0) {
             command_to_execute[i] = path;
-        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_DIR) == 0) {
+        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_FILE) == 0) {
             command_to_execute[i] = event_path;
         } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_EVENT) == 0) {
             command_to_execute[i] = event;

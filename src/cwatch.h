@@ -49,9 +49,9 @@
  * _TYPE when cwatch execute the command will be replaced with the
  *       event type occured
  */
-#define COMMAND_PATTERN_ROOT   "{r}"
-#define COMMAND_PATTERN_DIR    "{d}"
-#define COMMAND_PATTERN_EVENT  "{e}"
+#define COMMAND_PATTERN_ROOT   "%r"
+#define COMMAND_PATTERN_FILE   "%f"
+#define COMMAND_PATTERN_EVENT  "%e"
 
 /* Boolean data type */
 typedef enum {FALSE,TRUE} bool_t;
@@ -76,6 +76,7 @@ typedef struct str_split_s
 char *path;
 char *command;
 STR_SPLIT_S *scommand;
+STR_SPLIT_S *sevents;
 
 int fd;
 LIST *list_wd;
