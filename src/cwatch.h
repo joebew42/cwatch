@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <errno.h>
-//#include <unistd.h>
 #include <getopt.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
@@ -61,17 +60,17 @@ typedef enum {FALSE,TRUE} bool_t;
 /* Used to store information about watched resource */
 typedef struct wd_data_s
 {
-    int wd;               /* watch descriptor */
-    char *path;           /* absoulete real path of the directory */
-    bool_t symbolic_link; /* used to know if is reached by symbolic link */
-    LIST *links;          /* list of sym links that point to this resource */
+    int    wd;               /* watch descriptor */
+    char   *path;            /* absoulete real path of the directory */
+    bool_t symbolic_link;    /* used to know if is reached by symbolic link */
+    LIST   *links;           /* list of sym links that point to this resource */
 } WD_DATA;
 
 /* Used by str_split (see function definition below) */
 typedef struct str_split_s
 {
     unsigned short size;
-    char **substring;
+    char           **substring;
 } STR_SPLIT_S;
 
 /* Environment and variables */
@@ -79,6 +78,7 @@ char *path;
 char *command;
 STR_SPLIT_S *scommand;
 STR_SPLIT_S *sevents;
+uint32_t event_mask;
 
 int fd;
 LIST *list_wd;

@@ -22,9 +22,6 @@
 
 #include "cwatch.h"
 
-/* Events mask */
-uint32_t mask = IN_ISDIR | IN_CREATE | IN_DELETE;
-
 void print_version()
 {
     printf("%s %s (%s)\n"
@@ -56,8 +53,8 @@ void help()
            "        close_nowrite    : File closed, after being opened in read-only mode\n"
            "        close            : File closed, regardless of read/write mode\n"
            "        open             : File was opened\n"
-           "        moved_from       : File was moved away from.\n"
-           "        moved_t          : File was moved to.\n"
+           "        moved_from       : File was moved out of watched directory.\n"
+           "        moved_to         : File was moved into watched directory.\n"
            "        move             : A file/dir within watched directory was moved\n"
            "        create           : A file was created within watched directory\n"
            "        delete           : A file was deleted within watched directory\n"
@@ -82,23 +79,6 @@ void help()
            "Reports bugs to: <https://github.com/joebew42/cwatch/issues/>\n"
            "%1$s home page: <https://github.com/joebew42/cwatch/>\n",
            PROGRAM_NAME, "%");
-    
-    /*
-    printf(, PROGRAM_NAME);
-    printf("Usage: %s [-V]\n", PROGRAM_NAME);
-    printf("Usage: %s [-h]\n", PROGRAM_NAME);
-    printf("Monitors file system changes through inotify system call and\n");
-    printf("executes the COMMAND specified with the -c option\n\n");
-    printf("   -c command\t the command to execute when changes occurs\n");
-    printf("   -d\t the directory to monitor\n");
-    printf("   -e\t indicate which type of events to monitors (e.g. -e create,delete)\n");
-    printf("   -l\t Log all messages through syslog\n");
-    printf("   -v\t Be verbose\n");
-    printf("   -h\t Output this help and exit\n");
-    printf("   -V\t Output version and exit\n\n");
-    printf("Reports bugs to: <https://github.com/joebew42/cwatch/issues/>\n");
-    printf("%s home page: <https://github.com/joebew42/cwatch/>\n", PROGRAM_NAME);
-    */
 }
 
 void log_message(char *message)
@@ -241,15 +221,53 @@ int parse_command_line(int argc, char *argv[])
             break;
         
         case 'e': /* --events */
-            /*
-             * TODO this is just a stub example, complete it
-             */
+            /* Set inotify events mask */
             sevents = str_split(optarg, ",");
             if (sevents != NULL) {
-                printf("Events specified %d:\n", sevents->size);
                 int i;
                 for (i = 0; i < sevents->size - 1; ++i) {
-                    printf("E: %s\n", sevents->substring[i]);
+                    if (strcmp(sevents->substring[i], "access") == 0) {
+                        event_mask |= IN_ACCESS;
+                    } else if (strcmp(sevents->substring[i], "modify") == 0) {
+                        event_mask |= IN_MODIFY;
+                    } else if (strcmp(sevents->substring[i], "attrib") == 0) {
+                        event_mask |= IN_ATTRIB;
+                    } else if (strcmp(sevents->substring[i], "close_write") == 0) {
+                        event_mask |= IN_CLOSE_WRITE;
+                    } else if (strcmp(sevents->substring[i], "close_nowrite") == 0) {
+                        event_mask |= IN_CLOSE_NOWRITE;
+                    } else if (strcmp(sevents->substring[i], "close") == 0) {
+                        event_mask |= IN_CLOSE;
+                    } else if (strcmp(sevents->substring[i], "open") == 0) {
+                        event_mask |= IN_OPEN;
+                    } else if (strcmp(sevents->substring[i], "moved_from") == 0) {
+                        event_mask |= IN_MOVED_FROM;
+                    } else if (strcmp(sevents->substring[i], "moved_to") == 0) {
+                        event_mask |= IN_MOVED_TO;
+                    } else if (strcmp(sevents->substring[i], "move") == 0) {
+                        event_mask |= IN_MOVE_SELF;
+                    } else if (strcmp(sevents->substring[i], "create") == 0) {
+                        event_mask |= IN_CREATE;
+                    } else if (strcmp(sevents->substring[i], "delete") == 0) {
+                        event_mask |= IN_DELETE;
+                    } else if (strcmp(sevents->substring[i], "delete_self") == 0) {
+                        event_mask |= IN_DELETE_SELF;
+                    } else if (strcmp(sevents->substring[i], "unmount") == 0) {
+                        event_mask |= IN_UNMOUNT;
+                    } else if (strcmp(sevents->substring[i], "q_overflow") == 0) {
+                        event_mask |= IN_Q_OVERFLOW;
+                    } else if (strcmp(sevents->substring[i], "ignored") == 0) {
+                        event_mask |= IN_IGNORED;
+                    } else if (strcmp(sevents->substring[i], "isdir") == 0) {
+                        event_mask |= IN_ISDIR;
+                    } else if (strcmp(sevents->substring[i], "oneshot") == 0) {
+                        event_mask |= IN_ONESHOT;
+                    } else if (strcmp(sevents->substring[i], "all_events") == 0) {
+                        event_mask |= IN_ALL_EVENTS;
+                    } else if (strcmp(sevents->substring[i], "default") == 0) {
+                        event_mask |= IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |\
+                            IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
+                    }
                 }
             }
             break;
@@ -278,6 +296,13 @@ int parse_command_line(int argc, char *argv[])
         help();
         return -1;
     }
+
+    if (event_mask == 0) {
+        event_mask = IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |\
+            IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
+    }
+
+    printf("EVENT_MASK %x\n", event_mask);
     
     return 0;
 }
@@ -358,7 +383,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
     /* If the resource is not watched yet, then add it into the watch_list */
     if (node == NULL) {
         /* Append directory to watch_list */
-        int wd = inotify_add_watch(fd, real_path, mask);
+        int wd = inotify_add_watch(fd, real_path, event_mask);
         
         /* INFO Check limit in: /proc/sys/fs/inotify/max_user_watches */
         if (wd == -1) {
@@ -597,7 +622,7 @@ int monitor()
 
             /* Catch the event and execute it dependent handler */
             /* TODO this is another stub code example */
-            switch (event->mask & mask) {
+            switch (event->mask & event_mask) {
             case IN_CREATE:
                 /* IN_CREATE Event */
                 printf("CREATE\n");
@@ -620,11 +645,11 @@ int monitor()
                 if (execute_command("IN_CREATE", path) == -1)
                     return -1;
                 
-                /* Check if it is a folder. If yes watch it */
+                /* Check for a directory */
                 if (event->mask & IN_ISDIR) {
                     watch(path, NULL);
                 } else {
-                    /* check if it is a link. if yes watch it. */
+                    /* Check for a symbolic link */
                     bool_t is_dir = FALSE;
                     DIR *dir_stream = opendir(path);
                     if (dir_stream != NULL)
