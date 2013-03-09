@@ -131,7 +131,7 @@ char *resolve_real_path(const char *path)
     return resolved;
 }
 
-LIST_NODE *get_from_path(char *path)
+LIST_NODE *get_from_path(const char *path)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -144,7 +144,7 @@ LIST_NODE *get_from_path(char *path)
     return NULL;
 }
 
-LIST_NODE *get_from_wd(int wd)
+LIST_NODE *get_from_wd(const int wd)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -195,16 +195,16 @@ int parse_command_line(int argc, char *argv[])
             
             /* Check if the path has the ending slash */
             if (optarg[strlen(optarg)-1] != '/') {
-                path = (char *) malloc(strlen(optarg) + 2);
-                strcpy(path, optarg);
-                strcat(path, "/");
+                root_path = (char *) malloc(strlen(optarg) + 2);
+                strcpy(root_path, optarg);
+                strcat(root_path, "/");
             } else {
-                path = (char *) malloc(strlen(optarg));
-                strcpy(path, optarg);
+                root_path = (char *) malloc(strlen(optarg));
+                strcpy(root_path, optarg);
             }
             
             /* Check if it is a valid directory */
-            DIR *dir = opendir(path);
+            DIR *dir = opendir(root_path);
             if (dir == NULL) {
                 help();
                 return -1;
@@ -212,10 +212,10 @@ int parse_command_line(int argc, char *argv[])
             closedir(dir);
             
             /* Check if the path is absolute or not */
-            if( path[0] != '/' ) {
-                char *real_path = resolve_real_path(path);
-                free(path);
-                path = real_path;
+            if( root_path[0] != '/' ) {
+                char *real_path = resolve_real_path(root_path);
+                free(root_path);
+                root_path = real_path;
             }
             
             break;
@@ -292,7 +292,7 @@ int parse_command_line(int argc, char *argv[])
         }
     }
     
-    if (path == NULL || command == NULL) {
+    if (root_path == NULL || command == NULL) {
         help();
         return -1;
     }
@@ -399,7 +399,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         wd_data->wd = wd;
         wd_data->path = real_path;
         wd_data->links = list_init();
-        wd_data->symbolic_link = (strncmp(path, real_path, strlen(path)) == 0) ? FALSE : TRUE;
+        wd_data->symbolic_link = (strncmp(root_path, real_path, strlen(root_path)) == 0) ? FALSE : TRUE;
         
         node = list_push(list_wd, (void*) wd_data);
         
@@ -438,25 +438,6 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
     }
     
     return node;
-}
-
-int exists(char* child_path, LIST *parents)
-{
-    if (parents == NULL || parents->first == NULL)
-        return 0;
-    
-    LIST_NODE *node = parents->first;
-    while(node) {
-        char* parent_path = (char*) node->data;
-        // printf("Checking for: %s \t Possible parent: %s\n", child_path, parent_path);
-        if (strlen(parent_path) <= strlen(child_path)
-            && strncmp(parent_path, child_path, strlen(parent_path)) == 0)
-        {
-            return 1; /* match! */
-        }
-        node = node->next;
-    }
-    return 0;
 }
 
 void unwatch(char *path, bool_t is_link)
@@ -501,7 +482,8 @@ void unwatch(char *path, bool_t is_link)
                     
                     /*
                      * if there is no other symbolic links that point to the
-                     * watched resource then unwatch it
+                     * watched resource and the watched resource is not the root,
+                     * then unwatch it
                      */
                     if (wd_data->links->first == NULL && wd_data->symbolic_link == TRUE) {
                         WD_DATA *sub_wd_data;
@@ -541,13 +523,14 @@ void unwatch(char *path, bool_t is_link)
                         sub_node = list_wd->first;
                         while (sub_node) {
                             sub_wd_data = (WD_DATA*) sub_node->data;
-                            
+                                                        
                             /*
                              * If it is a CHILD and is NOT referenced by some symbolic link
                              * and it is not listed into tmp_linked_path, then
                              * remove the watch descriptor from the resource.
                              */
-                            if (strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
+                            if (strcmp(root_path, sub_wd_data->path) != 0
+                                && strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
                                 && sub_wd_data->links->first == NULL
                                 && exists(sub_wd_data->path, tmp_linked_path) == 0)
                             {
@@ -576,13 +559,33 @@ void unwatch(char *path, bool_t is_link)
     }
 }
 
+int exists(char* child_path, LIST *parents)
+{
+    if (parents == NULL || parents->first == NULL)
+        return 0;
+    
+    LIST_NODE *node = parents->first;
+    while(node) {
+        char* parent_path = (char*) node->data;
+        // printf("Checking for: %s \t Possible parent: %s\n", child_path, parent_path);
+        if (strlen(parent_path) <= strlen(child_path)
+            && strncmp(parent_path, child_path, strlen(parent_path)) == 0)
+        {
+            return 1; /* match! */
+        }
+        node = node->next;
+    }
+    return 0;
+}
+
 int monitor()
 {
     /* Buffer for File Descriptor */
     char buffer[EVENT_BUF_LEN];
 
-    /* inotify_event of the event */
+    /* inotify_event */
     struct inotify_event *event = NULL;
+    struct event_t *triggered_event = NULL;
 
     /* The real path of touched directory or file */
     char *path = NULL;
@@ -620,83 +623,16 @@ int monitor()
                 continue;
             }
 
-            /* Catch the event and execute it dependent handler */
-            /* TODO this is another stub code example */
-            switch (event->mask & event_mask) {
-            case IN_CREATE:
-                /* IN_CREATE Event */
-                printf("CREATE\n");
-                break;
-                
-            case IN_DELETE:
-                /* IN_DELETE Event */
-                printf("DELETE\n");
-                break;
-
-            case IN_ACCESS:
-                /* IN_ACCESS Event */
-                printf("ACCESS\n");
-                break;
-            }
-            
-            /* IN_CREATE Event */
-            if (event->mask & IN_CREATE) {
-                /* execute the command */
-                if (execute_command("IN_CREATE", path) == -1)
-                    return -1;
-                
-                /* Check for a directory */
-                if (event->mask & IN_ISDIR) {
-                    watch(path, NULL);
-                } else {
-                    /* Check for a symbolic link */
-                    bool_t is_dir = FALSE;
-                    DIR *dir_stream = opendir(path);
-                    if (dir_stream != NULL)
-                        is_dir = TRUE;
-                    closedir(dir_stream);
-                    
-                    if (is_dir == TRUE) {
-                        /* resolve symbolic link */
-                        char *real_path = resolve_real_path(path);
-                        
-                        /* check if the real path is already monitored */
-                        LIST_NODE *node = get_from_path(real_path);
-                        if (node == NULL) {
-                            watch(real_path, path);
-                        } else {
-                            /* 
-                             * Append the new symbolic link
-                             * to the watched resource
-                             */
-                            WD_DATA *wd_data = (WD_DATA *) node->data;
-                            list_push(wd_data->links, (void*) path);
-                            
-                            /* Log Message */
-                            char *message = (char *) malloc(MAXPATHLEN);
-                            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
-                            log_message(message);
-                        }
+            /* Call the specific event handler */
+            if (event->mask & event_mask
+                && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
+                && triggered_event->name != NULL)
+            {
+                if (triggered_event->handler(event, path, NULL) == 0) {
+                    if (execute_command(triggered_event->name, path) == -1) {
+                        printf("ERROR OCCURED: Unable to execute the specified command!\n");
+                        return -1;
                     }
-                }
-            } else if (event->mask & IN_DELETE) {
-                /* IN_DELETE event */
-                
-                /* execute the command */
-                if (execute_command("IN_DELETE", path) == -1)
-                    return -1;
-                
-                /* Check if it is a folder. If yes unwatch it */
-                if (event->mask & IN_ISDIR) {
-                    unwatch(path, FALSE);
-                } else {
-                    /*
-                     * XXX Since it is not possible to know if the
-                     *     inotify event belongs to a file or a symbolic link,
-                     *     the unwatch function will be called for each file.
-                     *     This is a big computational issue to be treated.
-                     */
-                    unwatch(path, TRUE);
                 }
             }
             
@@ -738,24 +674,24 @@ STR_SPLIT_S *str_split(char *str, char *sep)
     return r;
 }
 
-int execute_command(char *event, char *event_path)
+int execute_command(char *event_name, char *event_path)
 {
     /* TODO maybe will be necessary to add a burst limit */
     
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
-
+    
     /* Replace special pattern */
     char **command_to_execute = (char **) malloc(sizeof(char *) * scommand->size);
-                                                 
+    
     int i;
     for (i = 0; i < scommand->size - 1; ++i) {
         if (strcmp(scommand->substring[i], COMMAND_PATTERN_ROOT) == 0) {
-            command_to_execute[i] = path;
+            command_to_execute[i] = root_path;
         } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_FILE) == 0) {
             command_to_execute[i] = event_path;
         } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_EVENT) == 0) {
-            command_to_execute[i] = event;
+            command_to_execute[i] = event_name;
         } else {
             command_to_execute[i] = scommand->substring[i];
         }
@@ -766,7 +702,7 @@ int execute_command(char *event, char *event_path)
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-        sprintf(message, "%s on %s, [%d] -> %s", event, event_path, pid, command);
+        sprintf(message, "%s on %s, [%d] -> %s", event_name, event_path, pid, command);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
@@ -783,5 +719,82 @@ int execute_command(char *event, char *event_path)
     
     free(command_to_execute);
     
+    return 0;
+}
+
+struct event_t *get_inotify_event(const uint32_t event_mask)
+{       
+    switch (event_mask) {
+    case IN_CLOSE:       return &events_lut[32];
+    case IN_MOVE:        return &events_lut[33];
+    case IN_ALL_EVENTS:  return &events_lut[34];
+    default:             return &events_lut[ffs(event_mask)-1];
+    }
+}
+
+/*
+ * EVENT HANDLER IMPLEMENTATION
+ */
+
+int event_handler_undefined(struct inotify_event *event, char *old_path, char *new_path)
+{
+    return -1;
+}
+
+int event_handler_create(struct inotify_event *event, char *old_path, char *new_path)
+{
+    /* Check for a directory */
+    if (event->mask & IN_ISDIR) {
+        watch(old_path, NULL);
+    } else {
+        /* Check for a symbolic link */
+        bool_t is_dir = FALSE;
+        DIR *dir_stream = opendir(old_path);
+        if (dir_stream != NULL)
+            is_dir = TRUE;
+        closedir(dir_stream);
+                    
+        if (is_dir == TRUE) {
+            /* resolve symbolic link */
+            char *real_path = resolve_real_path(old_path);
+                        
+            /* check if the real path is already monitored */
+            LIST_NODE *node = get_from_path(real_path);
+            if (node == NULL) {
+                watch(real_path, old_path);
+            } else {
+                /* 
+                 * Append the new symbolic link
+                 * to the watched resource
+                 */
+                WD_DATA *wd_data = (WD_DATA *) node->data;
+                list_push(wd_data->links, (void*) old_path);
+                            
+                /* Log Message */
+                char *message = (char *) malloc(MAXPATHLEN);
+                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", old_path, real_path);
+                log_message(message);
+            }
+        }
+    }
+
+    return 0;
+}
+
+int event_handler_delete(struct inotify_event *event, char *old_path, char *new_path)
+{
+    /* Check if it is a folder. If yes unwatch it */
+    if (event->mask & IN_ISDIR) {
+        unwatch(old_path, FALSE);
+    } else {
+        /*
+         * XXX Since it is not possible to know if the
+         *     inotify event belongs to a file or a symbolic link,
+         *     the unwatch function will be called for each file.
+         *     This is a big computational issue to be treated.
+         */
+        unwatch(old_path, TRUE);
+    }
+
     return 0;
 }

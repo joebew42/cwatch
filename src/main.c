@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
         list_wd = list_init();
 
         /* Watch the path */
-        if (watch(path, NULL) == -1) {
-            printf("An error occured while adding \"%s\" as watched resource!\n", path);
+        if (watch(root_path, NULL) == -1) {
+            printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return -1;
         }
 
