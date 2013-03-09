@@ -702,7 +702,7 @@ int execute_command(char *event_name, char *event_path)
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-        sprintf(message, "%s on %s, [%d] -> %s", event_name, event_path, pid, command);
+        sprintf(message, "[%s] on %s, [%d] -> %s", event_name, event_path, pid, command);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
