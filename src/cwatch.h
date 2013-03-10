@@ -81,7 +81,6 @@ struct event_t
     char *name;           /* the event name (delete,create,modify,etc ...) */
     int (*handler)(
         struct inotify_event *,
-        char *,
         char *
         );                /* function handler called when the event occurs */
 };
@@ -257,43 +256,21 @@ int execute_command(char *, char *);
  */
 struct event_t *get_inotify_event(const uint32_t);
 
-/*
+/**
  * EVENT HANDLER DEFINITION
- */
-
-/**
- * Handler function called when the event
- * do not alter the list of watched resource
- * or there is not handler defined, yet!
+ *
+ * Handler functions called when an event occurs
  *
  * @param struct inotify_event * : inotify event
  * @param char *                 : the path where event occurs
- * @param char *                 : the new path name (in most of the cases will be a NULL)
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
-int event_handler_undefined(struct inotify_event *, char *, char *);
 
-/**
- * Handler function called when CREATE event
- * is triggered
- *
- * @param struct inotify_event * : inotify event
- * @param char *                 : the path where event occurs
- * @param char *                 : the new path name (in most of the cases will be a NULL)
- * @return int                   : -1 if errors occurs, 0 otherwise
- */
-int event_handler_create(struct inotify_event *, char *, char *);
-
-/**
- * Handler function called when CREATE event
- * is triggered
- *
- * @param struct inotify_event * : inotify event
- * @param char *                 : the path where event occurs
- * @param char *                 : the new path name (in most of the cases will be a NULL)
- * @return int                   : -1 if errors occurs, 0 otherwise
- */
-int event_handler_delete(struct inotify_event *, char *, char *);
+int event_handler_undefined(struct inotify_event *, char *);   /* NO ACTION, it always return -1 */
+int event_handler_create(struct inotify_event *, char *);      /* IN_CREATE */
+int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
+int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
+int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
 
 /*
  * The inotify events LUT
@@ -308,8 +285,8 @@ static struct event_t events_lut[] =
     {"close_write",   event_handler_undefined},  /* IN_CLOSE_WRITE */
     {"close_nowrite", event_handler_undefined},  /* IN_CLOSE_NOWRITE */
     {"open",          event_handler_undefined},  /* IN_OPEN */
-    {"moved_from",    event_handler_undefined},  /* IN_MOVED_FROM */
-    {"moved_to",      event_handler_undefined},  /* IN_MOVED_TO */
+    {"moved_from",    event_handler_moved_from}, /* IN_MOVED_FROM */
+    {"moved_to",      event_handler_moved_to},   /* IN_MOVED_TO */
     {"create",        event_handler_create},     /* IN_CREATE */
     {"delete",        event_handler_delete},     /* IN_DELETE */
     {"delete_self",   event_handler_undefined},  /* IN_DELETE_SELF */

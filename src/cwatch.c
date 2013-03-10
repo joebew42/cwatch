@@ -245,7 +245,7 @@ int parse_command_line(int argc, char *argv[])
                     } else if (strcmp(sevents->substring[i], "moved_to") == 0) {
                         event_mask |= IN_MOVED_TO;
                     } else if (strcmp(sevents->substring[i], "move") == 0) {
-                        event_mask |= IN_MOVE_SELF;
+                        event_mask |= IN_MOVED_FROM | IN_MOVED_TO;
                     } else if (strcmp(sevents->substring[i], "create") == 0) {
                         event_mask |= IN_CREATE;
                     } else if (strcmp(sevents->substring[i], "delete") == 0) {
@@ -622,13 +622,13 @@ int monitor()
                 i += EVENT_SIZE + event->len;
                 continue;
             }
-
+            
             /* Call the specific event handler */
             if (event->mask & event_mask
                 && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
                 && triggered_event->name != NULL)
             {
-                if (triggered_event->handler(event, path, NULL) == 0) {
+                if (triggered_event->handler(event, path) == 0) {
                     if (execute_command(triggered_event->name, path) == -1) {
                         printf("ERROR OCCURED: Unable to execute the specified command!\n");
                         return -1;
@@ -723,7 +723,7 @@ int execute_command(char *event_name, char *event_path)
 }
 
 struct event_t *get_inotify_event(const uint32_t event_mask)
-{       
+{
     switch (event_mask) {
     case IN_CLOSE:       return &events_lut[32];
     case IN_MOVE:        return &events_lut[33];
@@ -736,43 +736,43 @@ struct event_t *get_inotify_event(const uint32_t event_mask)
  * EVENT HANDLER IMPLEMENTATION
  */
 
-int event_handler_undefined(struct inotify_event *event, char *old_path, char *new_path)
+int event_handler_undefined(struct inotify_event *event, char *path)
 {
     return -1;
 }
 
-int event_handler_create(struct inotify_event *event, char *old_path, char *new_path)
+int event_handler_create(struct inotify_event *event, char *path)
 {
     /* Check for a directory */
     if (event->mask & IN_ISDIR) {
-        watch(old_path, NULL);
+        watch(path, NULL);
     } else {
         /* Check for a symbolic link */
         bool_t is_dir = FALSE;
-        DIR *dir_stream = opendir(old_path);
+        DIR *dir_stream = opendir(path);
         if (dir_stream != NULL)
             is_dir = TRUE;
         closedir(dir_stream);
                     
         if (is_dir == TRUE) {
             /* resolve symbolic link */
-            char *real_path = resolve_real_path(old_path);
+            char *real_path = resolve_real_path(path);
                         
             /* check if the real path is already monitored */
             LIST_NODE *node = get_from_path(real_path);
             if (node == NULL) {
-                watch(real_path, old_path);
+                watch(real_path, path);
             } else {
                 /* 
                  * Append the new symbolic link
                  * to the watched resource
                  */
                 WD_DATA *wd_data = (WD_DATA *) node->data;
-                list_push(wd_data->links, (void*) old_path);
+                list_push(wd_data->links, (void*) path);
                             
                 /* Log Message */
                 char *message = (char *) malloc(MAXPATHLEN);
-                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", old_path, real_path);
+                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
                 log_message(message);
             }
         }
@@ -781,11 +781,11 @@ int event_handler_create(struct inotify_event *event, char *old_path, char *new_
     return 0;
 }
 
-int event_handler_delete(struct inotify_event *event, char *old_path, char *new_path)
+int event_handler_delete(struct inotify_event *event, char *path)
 {
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
-        unwatch(old_path, FALSE);
+        unwatch(path, FALSE);
     } else {
         /*
          * XXX Since it is not possible to know if the
@@ -793,8 +793,20 @@ int event_handler_delete(struct inotify_event *event, char *old_path, char *new_
          *     the unwatch function will be called for each file.
          *     This is a big computational issue to be treated.
          */
-        unwatch(old_path, TRUE);
+        unwatch(path, TRUE);
     }
 
     return 0;
+}
+
+int event_handler_moved_from(struct inotify_event *event, char *path)
+{
+    printf("PATH MOVED FROM: %s\n", path);
+    return -1;
+}
+
+int event_handler_moved_to(struct inotify_event *event, char *path)
+{
+    printf("PATH MOVED TO: %s\n", path);
+    return -1;
 }
