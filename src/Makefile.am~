@@ -1,0 +1,6 @@
+AM_CFLAGS = -Werror -O2
+AM_LDFLAGS =
+
+
+bin_PROGRAMS = cwatch
+cwatch_SOURCES = main.c list.c cwatch.c

@@ -1,0 +1,13 @@
+/.gitignore~
+/aclocal.m4
+/autom4te.cache/
+/configure
+/configure.ac~
+/depcomp
+/install-sh
+/missing
+/Makefile.in
+/Makefile.in~
+/src/Makefile.in
+/src/Makefile.in~
+
