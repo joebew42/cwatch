@@ -42,7 +42,7 @@ LIST_NODE *list_push(LIST *list, void *data)
     /* Allocate memory for the new node list */
     LIST_NODE *node = malloc(sizeof(LIST_NODE));
     if (node == NULL)
-        return;
+        return NULL;
 
     node->data = data;
     node->next = node->prev = NULL;

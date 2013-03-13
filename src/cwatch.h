@@ -106,8 +106,11 @@ bool_t syslog_flag;
 static struct option long_options[] =
 {
     /* Options that set flags */
-    //{"verbose",       no_argument, &verbose_flag, TRUE},
-    //{"log",           no_argument, &syslog_flag,  TRUE},
+    
+    /*
+     {"verbose",       no_argument, &verbose_flag, TRUE},
+     {"log",           no_argument, &syslog_flag,  TRUE},
+    */
     
     /* Options that set index */
     {"command",       required_argument, 0, 'c'},
