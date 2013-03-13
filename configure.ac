@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([cwatch], [1.0 experimental], [https://github.com/joebew42/cwatch/issues])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE(foreign)
 
 AC_CONFIG_SRCDIR([src/list.c])
 

@@ -26,13 +26,14 @@
 #define __CWATCH_H
 
 #include <stdio.h>
-#include <dirent.h>
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <errno.h>
+#include <unistd.h>
 #include <getopt.h>
+#include <dirent.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
 
@@ -101,29 +102,6 @@ bool_t recursive_flag;
 bool_t all_flag;
 bool_t verbose_flag;
 bool_t syslog_flag;
-
-/* Command line long options */
-static struct option long_options[] =
-{
-    /* Options that set flags */
-    
-    /*
-     {"verbose",       no_argument, &verbose_flag, TRUE},
-     {"log",           no_argument, &syslog_flag,  TRUE},
-    */
-    
-    /* Options that set index */
-    {"command",       required_argument, 0, 'c'},
-    {"directory",     required_argument, 0, 'd'},
-    {"events",        required_argument, 0, 'e'},
-    {"all",           no_argument,       0, 'a'},
-    {"recursive",     no_argument,       0, 'r'}, /* Not yet implemented! */
-    {"verbose",       no_argument,       0, 'v'},
-    {"syslog",        no_argument,       0, 'l'},
-    {"version",       no_argument,       0, 'V'},
-    {"help",          no_argument,       0, 'h'},
-    {0, 0, 0, 0}
-};
 
 /**
  * Print the version of the program and exit
@@ -279,52 +257,5 @@ int event_handler_create(struct inotify_event *, char *);      /* IN_CREATE */
 int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
 int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
 int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
-
-/*
- * The inotify events LUT
- * for a complete reference of all events, look here:
- * http://tomoyo.sourceforge.jp/cgi-bin/lxr/source/include/uapi/linux/inotify.h
- */
-static struct event_t events_lut[] =
-{
-    {"access",        event_handler_undefined},  /* IN_ACCESS */
-    {"modify",        event_handler_undefined},  /* IN_MODIFY */
-    {"attrib",        event_handler_undefined},  /* IN_ATTRIB */
-    {"close_write",   event_handler_undefined},  /* IN_CLOSE_WRITE */
-    {"close_nowrite", event_handler_undefined},  /* IN_CLOSE_NOWRITE */
-    {"open",          event_handler_undefined},  /* IN_OPEN */
-    {"moved_from",    event_handler_moved_from}, /* IN_MOVED_FROM */
-    {"moved_to",      event_handler_moved_to},   /* IN_MOVED_TO */
-    {"create",        event_handler_create},     /* IN_CREATE */
-    {"delete",        event_handler_delete},     /* IN_DELETE */
-    {"delete_self",   event_handler_undefined},  /* IN_DELETE_SELF */
-    {"move_self",     event_handler_undefined},  /* IN_MOVE_SELF */
-    {NULL,            event_handler_undefined},
-    {"umount",        event_handler_undefined},  /* IN_UMOUNT */
-    {"q_overflow",    event_handler_undefined},  /* IN_Q_OVERFLOW */
-    {"ignored",       event_handler_undefined},  /* IN_IGNORED */
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {"onlydir",       event_handler_undefined},  /* IN_ONLYDIR */
-    {"dont_follow",   event_handler_undefined},  /* IN_DONT_FOLLOW */
-    {"excl_unlink",   event_handler_undefined},  /* IN_EXCL_UNLINK */
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {"mask_add",      event_handler_undefined},  /* IN_MASK_ADD */
-    {"isdir",         event_handler_undefined},  /* IN_ISDIR */
-    {"oneshot",       event_handler_undefined},  /* IN_ONESHOT */
-    
-    /* threated as edge cases (see get_inotify_event implementation) */
-    {"close",         event_handler_undefined},  /* 32. IN_CLOSE */
-    {"move",          event_handler_undefined},  /* 33. IN_MOVE */
-    {"all_events",    event_handler_undefined},  /* 34. IN_ALL_EVENTS */
-    
-};
 
 #endif /* !__CWATCH_H */

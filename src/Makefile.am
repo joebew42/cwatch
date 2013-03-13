@@ -1,4 +1,4 @@
-AM_CFLAGS = --pedantic -Wall error foreign -O2
+AM_CFLAGS = -pedantic -Wall -std=gnu99 -O2
 AM_LDFLAGS =
 
 bin_PROGRAMS = cwatch
