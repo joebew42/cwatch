@@ -14,8 +14,11 @@ $git clone https://github.com/joebew42/cwatch.git
 2) Compile it
 
 $cd cwatch/
+
 $aclocal && automake --add-missing --copy && autoconf
+
 $./configure
+
 $make
 
 3.1) Use the software: Read the manual
