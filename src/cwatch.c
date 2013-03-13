@@ -4,12 +4,14 @@
  * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This file is part of cwatch
+ *
+ * cwatch is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * cwatch is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -616,7 +618,8 @@ int monitor()
                 path = malloc(strlen(wd_data->path) + strlen(event->name) + 2);
                 strcpy(path, wd_data->path);
                 strcat(path, event->name);
-                strcat(path, "/");
+                if (event->mask & IN_ISDIR)
+                    strcat(path, "/");
             } else {
                 /* Next event */
                 i += EVENT_SIZE + event->len;
@@ -702,7 +705,8 @@ int execute_command(char *event_name, char *event_path)
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-        sprintf(message, "[%s] on %s, [%d] -> %s", event_name, event_path, pid, command);
+        sprintf(message, "EVENT TRIGGERED [%s] %s\nPROCESS EXECUTED [pid: %d command: %s]",
+                event_name, event_path, pid, command);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
@@ -792,6 +796,8 @@ int event_handler_delete(struct inotify_event *event, char *path)
          *     inotify event belongs to a file or a symbolic link,
          *     the unwatch function will be called for each file.
          *     This is a big computational issue to be treated.
+         * TAI Try to opendir(path), if it will not NULL, then
+         *     it is a link that point to a directory.
          */
         unwatch(path, TRUE);
     }
@@ -801,12 +807,13 @@ int event_handler_delete(struct inotify_event *event, char *path)
 
 int event_handler_moved_from(struct inotify_event *event, char *path)
 {
-    printf("PATH MOVED FROM: %s\n", path);
-    return -1;
+    return event_handler_delete(event, path);
 }
 
 int event_handler_moved_to(struct inotify_event *event, char *path)
 {
-    printf("PATH MOVED TO: %s\n", path);
-    return -1;
+    if (strncmp(path, root_path, strlen(root_path)) == 0)
+        return event_handler_create(event, path);
+    
+    return 0; /* do nothing */
 }
