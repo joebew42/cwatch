@@ -88,7 +88,7 @@ struct event_t
         );                /* function handler called when the event occurs */
 };
 
-char *root_path;               /* root path that cwatch is monitoring */
+char *root_path;          /* root path that cwatch is monitoring */
 char *command;            /* the full string of command to be execute */
 STR_SPLIT_S *scommand;    /* the splitted command, used in execute_command() */
 STR_SPLIT_S *sevents;     /* the list of event_mask to monitor */
@@ -98,6 +98,7 @@ int fd;                   /* inotify file descriptor */
 LIST *list_wd;            /* the list of all watched resource */
 
 bool_t recursive_flag;
+bool_t all_flag;
 bool_t verbose_flag;
 bool_t syslog_flag;
 
@@ -112,6 +113,7 @@ static struct option long_options[] =
     {"command",       required_argument, 0, 'c'},
     {"directory",     required_argument, 0, 'd'},
     {"events",        required_argument, 0, 'e'},
+    {"all",           no_argument,       0, 'a'},
     {"recursive",     no_argument,       0, 'r'}, /* Not yet implemented! */
     {"verbose",       no_argument,       0, 'v'},
     {"syslog",        no_argument,       0, 'l'},

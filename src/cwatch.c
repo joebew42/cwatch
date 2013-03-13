@@ -67,8 +67,11 @@ void help()
            "        isdir            : Event occurred against dir\n"
            "        oneshot          : Only send event once\n"
            "        all_events       : All events\n"
-           "        default          : close_write, create, delete, move,\n"
-           "                           delete_self and move_self.\n"
+           "        default          : modify, create, delete, move.\n"
+           "  -r  --recursive\n"
+           "      Enable the recursively monitor of the directory\n\n"
+           "  -a  --all\n"
+           "      Enable the monitoring of hidden or temporary file (.dir or file~)\n\n"
            "  -v  --verbose\n"
            "      Verbose mode\n\n"
            "  -l  --syslog\n"
@@ -169,7 +172,7 @@ int parse_command_line(int argc, char *argv[])
     /* Handle command line options */
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "lvVhe:c:d:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "lvraVhe:c:d:", long_options, &option_index)) != -1) {
         switch (c) {
         case 'c': /* --command */
             if (optarg == NULL || strcmp(optarg, "") == 0) {
@@ -247,7 +250,7 @@ int parse_command_line(int argc, char *argv[])
                     } else if (strcmp(sevents->substring[i], "moved_to") == 0) {
                         event_mask |= IN_MOVED_TO;
                     } else if (strcmp(sevents->substring[i], "move") == 0) {
-                        event_mask |= IN_MOVED_FROM | IN_MOVED_TO;
+                        event_mask |= IN_MOVE;
                     } else if (strcmp(sevents->substring[i], "create") == 0) {
                         event_mask |= IN_CREATE;
                     } else if (strcmp(sevents->substring[i], "delete") == 0) {
@@ -267,8 +270,7 @@ int parse_command_line(int argc, char *argv[])
                     } else if (strcmp(sevents->substring[i], "all_events") == 0) {
                         event_mask |= IN_ALL_EVENTS;
                     } else if (strcmp(sevents->substring[i], "default") == 0) {
-                        event_mask |= IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |\
-                            IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
+                        event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
                     }
                 }
             }
@@ -276,6 +278,14 @@ int parse_command_line(int argc, char *argv[])
             
         case 'v': /* --verbose */
             verbose_flag = TRUE;
+            break;
+
+        case 'r': /* --recursive */
+            recursive_flag = TRUE;
+            break;
+
+        case 'a': /* --all */
+            all_flag = TRUE;
             break;
             
         case 'l': /* --syslog */
@@ -300,11 +310,8 @@ int parse_command_line(int argc, char *argv[])
     }
 
     if (event_mask == 0) {
-        event_mask = IN_CLOSE_WRITE | IN_CREATE | IN_DELETE |\
-            IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
+        event_mask = IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
     }
-
-    printf("EVENT_MASK %x\n", event_mask);
     
     return 0;
 }
@@ -350,7 +357,9 @@ int watch(char *real_path, char *symlink)
                 add_to_watch_list(path_to_watch, NULL);
 				                
                 /* Continue directory traversing */
-                list_push(list, (void*) path_to_watch);
+                if (recursive_flag == TRUE) {
+                    list_push(list, (void*) path_to_watch);
+                }
             } else if (dir->d_type == DT_LNK) {
                 /* Resolve symbolic link */
                 char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 2);
@@ -365,7 +374,9 @@ int watch(char *real_path, char *symlink)
                     add_to_watch_list(real_path, symlink);
                     
                     /* Continue directory traversing */
-                    list_push(list, (void*) real_path);
+                    if (recursive_flag == TRUE) {
+                        list_push(list, (void*) real_path);
+                    }
                 }
             }
         }
@@ -609,6 +620,14 @@ int monitor()
         while (i < len) {
             /* inotify_event */
             event = (struct inotify_event*) &buffer[i];
+
+            /* Discard hidden or temporary file is all_flag is FALSE */
+            if (all_flag == FALSE
+                && (event->name[0] == '.' || event->name[strlen(event->name)-1] == '~')) {
+                /* Next event */
+                i += EVENT_SIZE + event->len;
+                continue;
+            }
             
             /* Build the full path of the directory or symbolic link */
             node = get_from_wd(event->wd);
@@ -742,11 +761,15 @@ struct event_t *get_inotify_event(const uint32_t event_mask)
 
 int event_handler_undefined(struct inotify_event *event, char *path)
 {
-    return -1;
+    return 0;
 }
 
 int event_handler_create(struct inotify_event *event, char *path)
 {
+    /* Return 0 if recurively monitoring is disabled */
+    if (recursive_flag == FALSE)
+        return 0;
+    
     /* Check for a directory */
     if (event->mask & IN_ISDIR) {
         watch(path, NULL);
