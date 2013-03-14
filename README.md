@@ -3,7 +3,7 @@ cwatch(1)
 
 A lightweight program that monitors the file system activity using inotify Linux kernel library and executes a user defined command.
 
-This is a working experimental release (ver.1.0). In this stage we are testing the software as best as we can. If you would like to help us to test and improve this software, feel free to do everything you want.
+This is a working experimental release (ver.1.0). At this stage we are testing the software as best as we can. If you would like to help us to test and improve this software, feel free to do everything you want.
 
 A Quick-start:
 
