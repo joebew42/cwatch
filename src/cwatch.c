@@ -743,7 +743,7 @@ STR_SPLIT_S *str_split(char *str, char *sep)
         return NULL;
     
     if (sep == NULL || strlen(sep) > 1) {
-        sep = (char *) malloc(1);
+        sep = (char *) malloc(2);
         strcpy(sep, " ");
     }
     
