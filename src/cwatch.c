@@ -693,7 +693,8 @@ int monitor()
 
             /* Discard hidden or temporary file is all_flag is FALSE */
             if (all_flag == FALSE
-                && (event->name[0] == '.' || event->name[strlen(event->name)-1] == '~')) {
+                && (event->name[0] == '.' || event->name[strlen(event->name)-1] == '~'))
+            {
                 /* Next event */
                 i += EVENT_SIZE + event->len;
                 continue;
