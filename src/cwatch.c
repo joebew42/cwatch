@@ -39,7 +39,7 @@ static struct option long_options[] =
     {"directory",     required_argument, 0, 'd'},
     {"events",        required_argument, 0, 'e'},
     {"all",           no_argument,       0, 'a'},
-    {"recursive",     no_argument,       0, 'r'}, /* Not yet implemented! */
+    {"recursive",     no_argument,       0, 'r'},
     {"verbose",       no_argument,       0, 'v'},
     {"syslog",        no_argument,       0, 'l'},
     {"version",       no_argument,       0, 'V'},
@@ -888,6 +888,8 @@ int event_handler_delete(struct inotify_event *event, char *path)
          * XXX Since it is not possible to know if the
          *     inotify event belongs to a file or a symbolic link,
          *     the unwatch function will be called for each file.
+         *     That is because the file is deleted from filesystem,
+         *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          * TAI Try to opendir(path), if it will not NULL, then
          *     it is a link that point to a directory.
