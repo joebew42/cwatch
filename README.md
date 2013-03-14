@@ -10,6 +10,7 @@ A Quick-start:
 1) Clone the project
 
 $git clone https://github.com/joebew42/cwatch.git
+$git checkout 1.0experimental
 
 2) Compile it
 
