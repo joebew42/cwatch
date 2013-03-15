@@ -49,12 +49,17 @@
 /*
  * _ROOT when cwatch execute the command will be replaced with the
  *       root monitored directory
+ * _PATH when cwatch execute the command will be replaced with the
+ *       absolute full path of the file or directory where the
+ *       event occurs
  * _FILE when cwatch execute the command will be replaced with the
- *       absolute full path of the file where the event occured.
+ *       absolute full path of the file or directory that triggered
+ *       the event.
  * _TYPE when cwatch execute the command will be replaced with the
  *       event type occured
  */
 #define COMMAND_PATTERN_ROOT   "%r"
+#define COMMAND_PATTERN_PATH   "%p"
 #define COMMAND_PATTERN_FILE   "%f"
 #define COMMAND_PATTERN_EVENT  "%e"
 
@@ -229,10 +234,11 @@ STR_SPLIT_S *str_split(char *, char *);
  *
  * This function handle the execution of a command 
  * @param char *  : the inotify event name
+ * @param char *  : the path of file/directory that triggered the event
  * @param char *  : the path where event occured
  * @return int    : -1 in case of error, 0 otherwise
  */
-int execute_command(char *, char *);
+int execute_command(char *, char *, char *);
 
 /**
  * Get the inotify event handler from the event mask
@@ -248,7 +254,7 @@ struct event_t *get_inotify_event(const uint32_t);
  * Handler functions called when an event occurs
  *
  * @param struct inotify_event * : inotify event
- * @param char *                 : the path where event occurs
+ * @param char *                 : the path of file or directory that triggered the event
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
 
