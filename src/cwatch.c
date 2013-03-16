@@ -237,7 +237,7 @@ int parse_command_line(int argc, char *argv[])
 {
     if (argc == 1) {
         help();
-        return -1;
+        exit(1);
     }
     
     /* Handle command line options */
@@ -248,7 +248,7 @@ int parse_command_line(int argc, char *argv[])
         case 'c': /* --command */
             if (optarg == NULL || strcmp(optarg, "") == 0) {
                 help();
-                return -1;
+                exit(1);
             }
                 
             /* Store the command */
@@ -258,7 +258,7 @@ int parse_command_line(int argc, char *argv[])
             scommand = str_split(optarg, NULL);
             if (scommand == NULL) {
                 printf("Unable to process the specified command!\n");
-                return -1;
+                exit(1);
             }
             
             break;
@@ -266,7 +266,7 @@ int parse_command_line(int argc, char *argv[])
         case 'd': /* --directory */
             if (optarg == NULL || strcmp(optarg, "") == 0) {
                 help();
-                return -1;
+                exit(1);
             }
             
             /* Check if the path has the ending slash */
@@ -283,7 +283,7 @@ int parse_command_line(int argc, char *argv[])
             DIR *dir = opendir(root_path);
             if (dir == NULL) {
                 help();
-                return -1;
+                exit(1);
             }
             closedir(dir);
             
@@ -346,7 +346,7 @@ int parse_command_line(int argc, char *argv[])
                         help();
                         printf("\nSpecified event \"%s\" not exists! Please see the help.\n",
                                sevents->substring[i]);
-                        return -1;
+                        exit(1);
                     }
                 }
             }
@@ -370,19 +370,19 @@ int parse_command_line(int argc, char *argv[])
             
         case 'V': /* --version */
             print_version();
-            return -1;
+            exit(1);
             
         case 'h': /* --help */
                 
         default:
             help();
-            return -1;
+            exit(1);
         }
     }
     
     if (root_path == NULL || command == NULL) {
         help();
-        return -1;
+        exit(1);
     }
 
     if (event_mask == 0) {
@@ -414,7 +414,7 @@ int watch(char *real_path, char *symlink)
         
         if (dir_stream == NULL) {
             printf("UNABLE TO OPEN DIRECTORY:\t\"%s\" -> %d\n", p, errno);
-            return -1;
+            exit(1);
         }
         
         /* Traverse directory */
@@ -689,7 +689,7 @@ int monitor()
     while ((len = read(fd, buffer, EVENT_BUF_LEN))) {
         if (len < 0) {
             printf("ERROR: UNABLE TO READ INOTIFY QUEUE EVENTS!!!\n");
-            return -1;
+            exit(1);
         }
         
         /* index of the event into file descriptor */
@@ -730,7 +730,7 @@ int monitor()
                 if (triggered_event->handler(event, path) == 0) {
                     if (execute_command(triggered_event->name, path, wd_data->path) == -1) {
                         printf("ERROR OCCURED: Unable to execute the specified command!\n");
-                        return -1;
+                        exit(1);
                     }
                 }
             }
@@ -816,7 +816,7 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
         /* error occured */
         sprintf(message, "ERROR during the fork() !!!");
         log_message(message);
-        return -1;
+        exit(1);
     }
     
     free(command_to_execute);
