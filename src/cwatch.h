@@ -37,34 +37,35 @@
 #include <sys/inotify.h>
 #include <sys/param.h>
 
+#include "bstrlib.h"
 #include "list.h"
-/* TAI trim and str_replace
-  #include "bstring.h"
-*/
 
 #define PROGRAM_NAME    "cwatch"
 #define PROGRAM_VERSION "1.0"
 #define PROGRAM_STAGE   "experimental"
 
-#define EVENT_SIZE      sizeof (struct inotify_event)
-#define EVENT_BUF_LEN   1024 * ( EVENT_SIZE + 16 )
+#define EVENT_SIZE      (sizeof (struct inotify_event))
+#define EVENT_BUF_LEN   (1024 * ( EVENT_SIZE + 16 ))
 
 /*
- * _ROOT when cwatch execute the command will be replaced with the
- *       root monitored directory
- * _PATH when cwatch execute the command will be replaced with the
- *       absolute full path of the file or directory where the
- *       event occurs
- * _FILE when cwatch execute the command will be replaced with the
- *       absolute full path of the file or directory that triggered
- *       the event.
- * _TYPE when cwatch execute the command will be replaced with the
- *       event type occured
+ * List of pattern that will be replaced during the command execution
+ * Note: See their initialization in the monitor() function
+ *
+ * _ROOT (%r) when cwatch execute the command will be replaced with the
+ *            root monitored directory
+ * _PATH (%p) when cwatch execute the command will be replaced with the
+ *            absolute full path of the file or directory where the
+ *            event occurs
+ * _FILE (%f) when cwatch execute the command will be replaced with the
+ *            absolute full path of the file or directory that triggered
+ *            the event.
+ * _TYPE (%e)  when cwatch execute the command will be replaced with the
+ *             event type occured
  */
-#define COMMAND_PATTERN_ROOT   "%r"
-#define COMMAND_PATTERN_PATH   "%p"
-#define COMMAND_PATTERN_FILE   "%f"
-#define COMMAND_PATTERN_EVENT  "%e"
+const_bstring COMMAND_PATTERN_ROOT;
+const_bstring COMMAND_PATTERN_PATH;
+const_bstring COMMAND_PATTERN_FILE;
+const_bstring COMMAND_PATTERN_EVENT;
 
 typedef enum {FALSE,TRUE} bool_t;
 
@@ -76,13 +77,6 @@ typedef struct wd_data_s
     bool_t symbolic_link; /* used to know if is reached by symbolic link */
     LIST   *links;        /* list of sym links that point to this resource */
 } WD_DATA;
-
-/* Used by str_split() (see function definition below) */
-typedef struct str_split_s
-{
-    unsigned short size;
-    char           **substring;
-} STR_SPLIT_S;
 
 /*
  * Used to describe an event in the events LUT.
@@ -97,11 +91,11 @@ struct event_t
         );                /* function handler called when the event occurs */
 };
 
-char *root_path;          /* root path that cwatch is monitoring */
-char *command;            /* the full string of command to be execute */
-STR_SPLIT_S *scommand;    /* the splitted command, used in execute_command() */
-STR_SPLIT_S *sevents;     /* the list of event_mask to monitor */
-uint32_t event_mask;      /* the resulting event_mask */
+char *root_path;                /* root path that cwatch is monitoring */
+const_bstring command;          /* the full string of command to be execute */
+struct bstrList *split_command; /* the splitted command, used in execute_command() */
+struct bstrList *split_event;   /* list of events parsed from command line */
+uint32_t event_mask;            /* the resulting event_mask */
 
 int fd;                   /* inotify file descriptor */
 LIST *list_wd;            /* the list of all watched resource */
@@ -118,10 +112,11 @@ void print_version();
 
 /**
  * Help
- * 
+ *
+ * @param int : if 1, help return with exit(int), 0 otherwise
  * Print out the help
  */
-void help();
+int help(int);
 
 /**
  * Log
@@ -220,17 +215,6 @@ bool_t exists(char *, LIST *);
  * Used to monitor inotify event on watched resources
  */
 int monitor();
-
-/**
- * str_split
- *
- * subdivide a string into n-substring, that are separate
- * by a specified separator symbol.
- * @param char *      : the string to subdivide
- * @param char *      : separator symbol
- * @param STR_SPLIT_R : a data structure contains the splitted string
- */
-STR_SPLIT_S *str_split(char *, char *);
 
 /**
  * Execute a command

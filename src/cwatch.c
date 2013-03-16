@@ -103,7 +103,7 @@ void print_version()
            PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_STAGE);
 }
 
-void help()
+int help(int error)
 {
     printf("Usage: %1$s -c COMMAND -d DIRECTORY [-e event,[event,[,..]]] [-r] [-a] [-v] [-l]\n"
            "Usage: %1$s [-V|--version]\n"
@@ -155,6 +155,11 @@ void help()
            "Reports bugs to: <https://github.com/joebew42/cwatch/issues/>\n"
            "%1$s home page: <https://github.com/joebew42/cwatch/>\n",
            PROGRAM_NAME, "%");
+    
+    if (error)
+        exit(error);
+    
+    return 0;
 }
 
 void log_message(char *message)
@@ -236,8 +241,7 @@ LIST_NODE *get_from_wd(const int wd)
 int parse_command_line(int argc, char *argv[])
 {
     if (argc == 1) {
-        help();
-        exit(1);
+        help(1);
     }
     
     /* Handle command line options */
@@ -246,17 +250,17 @@ int parse_command_line(int argc, char *argv[])
     while ((c = getopt_long(argc, argv, "lvraVhe:c:d:", long_options, &option_index)) != -1) {
         switch (c) {
         case 'c': /* --command */
-            if (optarg == NULL || strcmp(optarg, "") == 0) {
-                help();
-                exit(1);
+            if (optarg == NULL
+                || strcmp(optarg, "") == 0
+                || (command = bfromcstr(optarg)) == NULL)
+            {
+                help(1);
             }
-                
-            /* Store the command */
-            command = malloc(strlen(optarg) + 1);
-            strcpy(command, optarg);
-                
-            scommand = str_split(optarg, NULL);
-            if (scommand == NULL) {
+            
+            /* splitting command */
+            split_command = bsplit(command, ' ');
+            
+            if (command == NULL) {
                 printf("Unable to process the specified command!\n");
                 exit(1);
             }
@@ -265,8 +269,7 @@ int parse_command_line(int argc, char *argv[])
 
         case 'd': /* --directory */
             if (optarg == NULL || strcmp(optarg, "") == 0) {
-                help();
-                exit(1);
+                help(1);
             }
             
             /* Check if the path has the ending slash */
@@ -282,8 +285,7 @@ int parse_command_line(int argc, char *argv[])
             /* Check if it is a valid directory */
             DIR *dir = opendir(root_path);
             if (dir == NULL) {
-                help();
-                exit(1);
+                help(1);
             }
             closedir(dir);
             
@@ -298,57 +300,59 @@ int parse_command_line(int argc, char *argv[])
         
         case 'e': /* --events */
             /* Set inotify events mask */
-            sevents = str_split(optarg, ",");
-            if (sevents != NULL) {
+            split_event = bsplit(bfromcstr(optarg), ',');
+            
+            if (split_event != NULL) {
                 int i;
-                for (i = 0; i < sevents->size - 1; ++i) {
-                    if (strcmp(sevents->substring[i], "access") == 0) {
+                for (i = 0; i < split_event->qty; ++i) {
+                    if (bstrcmp(split_event->entry[i], bfromcstr("access")) == 0) {
                         event_mask |= IN_ACCESS;
-                    } else if (strcmp(sevents->substring[i], "modify") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("modify")) == 0) {
                         event_mask |= IN_MODIFY;
-                    } else if (strcmp(sevents->substring[i], "attrib") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("attrib")) == 0) {
                         event_mask |= IN_ATTRIB;
-                    } else if (strcmp(sevents->substring[i], "close_write") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close_write")) == 0) {
                         event_mask |= IN_CLOSE_WRITE;
-                    } else if (strcmp(sevents->substring[i], "close_nowrite") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close_nowrite")) == 0) {
                         event_mask |= IN_CLOSE_NOWRITE;
-                    } else if (strcmp(sevents->substring[i], "close") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close")) == 0) {
                         event_mask |= IN_CLOSE;
-                    } else if (strcmp(sevents->substring[i], "open") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("open")) == 0) {
                         event_mask |= IN_OPEN;
-                    } else if (strcmp(sevents->substring[i], "moved_from") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("moved_from")) == 0) {
                         event_mask |= IN_MOVED_FROM;
-                    } else if (strcmp(sevents->substring[i], "moved_to") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("moved_to")) == 0) {
                         event_mask |= IN_MOVED_TO;
-                    } else if (strcmp(sevents->substring[i], "move") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("move")) == 0) {
                         event_mask |= IN_MOVE;
-                    } else if (strcmp(sevents->substring[i], "create") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("create")) == 0) {
                         event_mask |= IN_CREATE;
-                    } else if (strcmp(sevents->substring[i], "delete") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("delete")) == 0) {
                         event_mask |= IN_DELETE;
-                    } else if (strcmp(sevents->substring[i], "delete_self") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("delete_self")) == 0) {
                         event_mask |= IN_DELETE_SELF;
-                    } else if (strcmp(sevents->substring[i], "unmount") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("unmount")) == 0) {
                         event_mask |= IN_UNMOUNT;
-                    } else if (strcmp(sevents->substring[i], "q_overflow") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("q_overflow")) == 0) {
                         event_mask |= IN_Q_OVERFLOW;
-                    } else if (strcmp(sevents->substring[i], "ignored") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("ignored")) == 0) {
                         event_mask |= IN_IGNORED;
-                    } else if (strcmp(sevents->substring[i], "isdir") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("isdir")) == 0) {
                         event_mask |= IN_ISDIR;
-                    } else if (strcmp(sevents->substring[i], "oneshot") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("oneshot")) == 0) {
                         event_mask |= IN_ONESHOT;
-                    } else if (strcmp(sevents->substring[i], "all_events") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("all_events")) == 0) {
                         event_mask |= IN_ALL_EVENTS;
-                    } else if (strcmp(sevents->substring[i], "default") == 0) {
+                    } else if (bstrcmp(split_event->entry[i], bfromcstr("default")) == 0) {
                         event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
                     } else {
-                        help();
-                        printf("\nSpecified event \"%s\" not exists! Please see the help.\n",
-                               sevents->substring[i]);
+                        help(0);
+                        printf("\nUnrecognized event or malformed list of events! Please see the help.\n");
                         exit(1);
-                    }
+                    }    
                 }
+
+                bstrListDestroy(split_event);
             }
             break;
             
@@ -375,14 +379,12 @@ int parse_command_line(int argc, char *argv[])
         case 'h': /* --help */
                 
         default:
-            help();
-            exit(1);
+            help(1);
         }
     }
     
     if (root_path == NULL || command == NULL) {
-        help();
-        exit(1);
+        help(1);
     }
 
     if (event_mask == 0) {
@@ -669,6 +671,12 @@ bool_t exists(char* child_path, LIST *parents)
 
 int monitor()
 {
+    /* Initialize patterns that will be replaced */
+    COMMAND_PATTERN_ROOT = bfromcstr("%r");
+    COMMAND_PATTERN_PATH = bfromcstr("%p");
+    COMMAND_PATTERN_FILE = bfromcstr("%f");
+    COMMAND_PATTERN_EVENT = bfromcstr("%e");
+    
     /* Buffer for File Descriptor */
     char buffer[EVENT_BUF_LEN];
 
@@ -743,36 +751,6 @@ int monitor()
     return 0;
 }
 
-STR_SPLIT_S *str_split(char *str, char *sep)
-{
-    if (str == NULL || strlen(str) == 0)
-        return NULL;
-    
-    if (sep == NULL || strlen(sep) > 1) {
-        sep = (char *) malloc(2);
-        strcpy(sep, " ");
-    }
-    
-    STR_SPLIT_S *r = (STR_SPLIT_S *) malloc(sizeof(STR_SPLIT_S));
-    r->size = 2;
-
-    /* count number of occurrences */
-    int i = 0;
-    while (str[i])
-        if (str[i++] == *sep)
-            ++r->size;
-
-    r->substring = (char **) malloc(sizeof(char *) * r->size);
-    
-    /* find all occurrences */
-    i = 0;
-    r->substring[i] = strtok(str, sep);
-    while (r->substring[i] != NULL)
-        r->substring[++i] = strtok(NULL, sep);
-    
-    return r;
-}
-
 int execute_command(char *event_name, char *event_path, char *event_p_path)
 {
     /* FEATURE REQUEST: Maybe will be necessary to add a burst limit */
@@ -780,22 +758,18 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
     
-    /* Replace special pattern */
-    char **command_to_execute = (char **) malloc(sizeof(char *) * scommand->size);
-    
+    /* Special pattern replacement */
+    char **command_to_execute = (char **) malloc(sizeof(char *) * (split_command->qty + 1));
     int i;
-    for (i = 0; i < scommand->size - 1; ++i) {
-        if (strcmp(scommand->substring[i], COMMAND_PATTERN_ROOT) == 0) {
-            command_to_execute[i] = root_path;
-        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_PATH) == 0) {
-            command_to_execute[i] = event_p_path;
-        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_FILE) == 0) {
-            command_to_execute[i] = event_path;
-        } else if (strcmp(scommand->substring[i], COMMAND_PATTERN_EVENT) == 0) {
-            command_to_execute[i] = event_name;
-        } else {
-            command_to_execute[i] = scommand->substring[i];
-        }
+    for (i = 0; i < split_command->qty; ++i) {
+        bstring arg = bfromcstr((char *) split_command->entry[i]->data);
+        
+        bfindreplace(arg, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
+        bfindreplace(arg, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
+        bfindreplace(arg, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
+        bfindreplace(arg, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
+
+        command_to_execute[i] = (char *) arg->data;
     }
     command_to_execute[i] = NULL;
     
@@ -804,7 +778,7 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
     if (pid > 0) {
         /* parent process */
         sprintf(message, "EVENT TRIGGERED [%s] %s\nPROCESS EXECUTED [pid: %d command: %s]",
-                event_name, event_path, pid, command);
+                event_name, event_path, pid, command->data);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
