@@ -9,26 +9,26 @@ A Quick-start:
 
 1. Clone the project:
 
-           $git clone https://github.com/joebew42/cwatch.git
+   $git clone https://github.com/joebew42/cwatch.git
 
 2. Compile it:
 
-           $cd cwatch/
+   $cd cwatch/
 
-           $git checkout 1.0experimental
+   $git checkout 1.0experimental
 
-           $aclocal && automake --add-missing --copy && autoconf
+   $aclocal && automake --add-missing --copy && autoconf
 
-           $./configure
+   $./configure
 
-           $make
+$make
 
-3. Use the software:  
-	
-	3.1. Read the manual
-	
-                ./src/cwatch --help
- 
-	3.2. *Do some testing*
+3. Use the software:
+
+   3.1. Read the manual
+
+        ./src/cwatch --help
+
+   3.2. *Do some testing*
 
 *Note*: This README is just a draft. In the next days we will provide a new one well organized.
