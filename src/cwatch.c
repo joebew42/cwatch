@@ -288,7 +288,7 @@ int parse_command_line(int argc, char *argv[])
             closedir(dir);
             
             /* Check if the path is absolute or not */
-            if( root_path[0] != '/' ) {
+            if (root_path[0] != '/') {
                 char *real_path = resolve_real_path(root_path);
                 free(root_path);
                 root_path = real_path;
@@ -594,7 +594,7 @@ void unwatch(char *path, bool_t is_link)
                             if ((strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
                                 || strncmp(wd_data->path, sub_wd_data->path, strlen(sub_wd_data->path)) == 0)
                                 && sub_wd_data->links->first != NULL
-                                && exists(sub_wd_data->path, tmp_linked_path) == 0)
+                                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
                             {
                                 /* Save current path into linked_path */
                                 list_push(tmp_linked_path, (void*) sub_wd_data->path);
@@ -621,7 +621,7 @@ void unwatch(char *path, bool_t is_link)
                             if (strcmp(root_path, sub_wd_data->path) != 0
                                 && strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
                                 && sub_wd_data->links->first == NULL
-                                && exists(sub_wd_data->path, tmp_linked_path) == 0)
+                                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
                             {
                                 /* Log Message */
                                 char *message = (char *) malloc(MAXPATHLEN);
@@ -648,10 +648,10 @@ void unwatch(char *path, bool_t is_link)
     }
 }
 
-int exists(char* child_path, LIST *parents)
+bool_t exists(char* child_path, LIST *parents)
 {
     if (parents == NULL || parents->first == NULL)
-        return 0;
+        return FALSE;
     
     LIST_NODE *node = parents->first;
     while(node) {
@@ -660,11 +660,11 @@ int exists(char* child_path, LIST *parents)
         if (strlen(parent_path) <= strlen(child_path)
             && strncmp(parent_path, child_path, strlen(parent_path)) == 0)
         {
-            return 1; /* match! */
+            return TRUE; /* match! */
         }
         node = node->next;
     }
-    return 0;
+    return FALSE;
 }
 
 int monitor()
@@ -698,7 +698,7 @@ int monitor()
             /* inotify_event */
             event = (struct inotify_event*) &buffer[i];
 
-            /* Discard hidden or temporary file is all_flag is FALSE */
+            /* Discard hidden or temporary file if all_flag is FALSE */
             if (all_flag == FALSE
                 && (event->name[0] == '.' || event->name[strlen(event->name)-1] == '~'))
             {
@@ -775,7 +775,7 @@ STR_SPLIT_S *str_split(char *str, char *sep)
 
 int execute_command(char *event_name, char *event_path, char *event_p_path)
 {
-    /* TODO maybe will be necessary to add a burst limit */
+    /* FEATURE REQUEST: Maybe will be necessary to add a burst limit */
     
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
@@ -900,8 +900,6 @@ int event_handler_delete(struct inotify_event *event, char *path)
          *     That is because the file is deleted from filesystem,
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
-         * TAI Try to opendir(path), if it will not NULL, then
-         *     it is a link that point to a directory.
          */
         unwatch(path, TRUE);
     }

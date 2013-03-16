@@ -212,7 +212,7 @@ void unwatch(char *, bool_t);
  * @param char * : string to check
  * @param LIST * : list containing string
  */
-int exists(char *, LIST *);
+bool_t exists(char *, LIST *);
 
 /**
  * Start monitoring
