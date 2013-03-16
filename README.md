@@ -9,13 +9,11 @@ A Quick-start:
 
 1. Clone the project:
 
-         $git clone https://github.com/joebew42/cwatch.git
+         $git clone -b 1.0experimental https://github.com/joebew42/cwatch.git
 
 2. Compile it:
 
          $cd cwatch/
-
-         $git checkout 1.0experimental
 
          $aclocal && automake --add-missing --copy && autoconf
 
