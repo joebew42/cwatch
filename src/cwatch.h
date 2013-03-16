@@ -38,6 +38,9 @@
 #include <sys/param.h>
 
 #include "list.h"
+/* TAI trim and str_replace
+  #include "bstring.h"
+*/
 
 #define PROGRAM_NAME    "cwatch"
 #define PROGRAM_VERSION "1.0"

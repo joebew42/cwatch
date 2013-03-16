@@ -275,7 +275,7 @@ int parse_command_line(int argc, char *argv[])
                 strcpy(root_path, optarg);
                 strcat(root_path, "/");
             } else {
-                root_path = (char *) malloc(strlen(optarg));
+                root_path = (char *) malloc(strlen(optarg) + 1);
                 strcpy(root_path, optarg);
             }
             
@@ -342,6 +342,11 @@ int parse_command_line(int argc, char *argv[])
                         event_mask |= IN_ALL_EVENTS;
                     } else if (strcmp(sevents->substring[i], "default") == 0) {
                         event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
+                    } else {
+                        help();
+                        printf("\nSpecified event \"%s\" not exists! Please see the help.\n",
+                               sevents->substring[i]);
+                        return -1;
                     }
                 }
             }

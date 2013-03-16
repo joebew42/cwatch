@@ -11,6 +11,8 @@ A Quick-start:
 
 $git clone https://github.com/joebew42/cwatch.git
 
+$cd cwatch/
+
 $git checkout 1.0experimental
 
 2) Compile it
