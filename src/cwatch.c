@@ -105,7 +105,7 @@ void print_version()
 
 void help()
 {
-    printf("Usage: %1$s -c COMMAND -d DIRECTORY [-e event,[event,[,..]]] [-v] [-l]\n"
+    printf("Usage: %1$s -c COMMAND -d DIRECTORY [-e event,[event,[,..]]] [-r] [-a] [-v] [-l]\n"
            "Usage: %1$s [-V|--version]\n"
            "Usage: %1$s [-h|--help]\n\n"
            "  -c --command COMMAND\n"
