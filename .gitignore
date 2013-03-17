@@ -12,4 +12,14 @@
 /src/Makefile.in~
 /src/Makefile.am~
 
-
+/Makefile
+/autoscan.log
+/config.log
+/config.status
+/src/.deps/
+/src/Makefile
+/src/bstrlib.o
+/src/cwatch
+/src/cwatch.o
+/src/list.o
+/src/main.o
