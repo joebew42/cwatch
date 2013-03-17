@@ -227,7 +227,7 @@ int parse_command_line(int argc, char *argv[])
     
     /* Handle command line options */
     int c;
-    while ((c = getopt_long(argc, argv, "lvnraVhe:c:d:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "svnraVhe:c:d:", long_options, NULL)) != -1) {
         switch (c) {
         case 'c': /* --command */
             if (optarg == NULL

@@ -80,7 +80,7 @@ typedef struct wd_data_s
 
 /*
  * Used to describe an event in the events LUT.
- * See the complete LUT definition ad the end of this file.
+ * See the complete LUT definition int cwatch.c
  */
 struct event_t
 {
@@ -114,7 +114,7 @@ void print_version();
 /**
  * Help
  *
- * @param int : if 1, help return with exit(int), 0 otherwise
+ * @param int : if > 0 help return with exit(int), 0 otherwise
  * Print out the help
  */
 int help(int);
