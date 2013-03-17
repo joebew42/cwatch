@@ -39,6 +39,7 @@ static struct option long_options[] =
     {"directory",     required_argument, 0, 'd'},
     {"events",        required_argument, 0, 'e'},
     {"all",           no_argument,       0, 'a'},
+    {"no-symlink",    no_argument,       0, 'n'},
     {"recursive",     no_argument,       0, 'r'},
     {"verbose",       no_argument,       0, 'v'},
     {"syslog",        no_argument,       0, 'l'},
@@ -105,7 +106,7 @@ void print_version()
 
 int help(int error)
 {
-    printf("Usage: %1$s -c COMMAND -d DIRECTORY [-e event,[event,[,..]]] [-r] [-a] [-v] [-l]\n"
+    printf("Usage: %1$s -c COMMAND -d DIRECTORY [-e event,[event,[,..]]] [-n] [-r] [-a] [-v] [-s]\n"
            "Usage: %1$s [-V|--version]\n"
            "Usage: %1$s [-h|--help]\n\n"
            "  -c --command COMMAND\n"
@@ -138,14 +139,16 @@ int help(int error)
            "        isdir            : Event occurred against dir\n"
            "        oneshot          : Only send event once\n"
            "        all_events       : All events\n"
-           "        default          : modify, create, delete, move.\n"
+           "        default          : modify, create, delete, move.\n\n"
+           "  -n  --no-symlink\n"
+           "      Do not traverse symbolic link\n\n"
            "  -r  --recursive\n"
            "      Enable the recursively monitor of the directory\n\n"
            "  -a  --all\n"
            "      Enable the monitoring of hidden or temporary file (.dir or file~)\n\n"
            "  -v  --verbose\n"
            "      Verbose mode\n\n"
-           "  -l  --syslog\n"
+           "  -s  --syslog\n"
            "      Verbose mode through syslog\n\n"
            "  -h  --help\n"
            "      Output this help and exit\n\n"
@@ -158,7 +161,7 @@ int help(int error)
     
     if (error)
         exit(error);
-    
+
     return 0;
 }
 
@@ -174,28 +177,6 @@ void log_message(char *message)
     }
     
     free(message);
-}
-
-void print_list(LIST *list_wd)
-{
-    LIST_NODE *node = list_wd->first;
-    while (node) {
-        WD_DATA *wd_data = (WD_DATA *) node->data;
-        printf("%s, WD:%d, LNK:%d\n", wd_data->path, wd_data->wd, wd_data->symbolic_link);
-        
-        /* print the content of links list */
-        if (wd_data->symbolic_link == TRUE) {
-            LIST_NODE *n_node = wd_data->links->first;
-            printf ("\tList of links that point to this path:\n");
-            
-            while (n_node) {
-                char *p = (char*) n_node->data;
-                printf("\t\t%s\n", p);
-                n_node = n_node->next;
-            }
-        }
-        node = node->next;
-    }
 }
 
 char *resolve_real_path(const char *path)
@@ -246,8 +227,7 @@ int parse_command_line(int argc, char *argv[])
     
     /* Handle command line options */
     int c;
-    int option_index = 0;
-    while ((c = getopt_long(argc, argv, "lvraVhe:c:d:", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "lvnraVhe:c:d:", long_options, NULL)) != -1) {
         switch (c) {
         case 'c': /* --command */
             if (optarg == NULL
@@ -359,7 +339,11 @@ int parse_command_line(int argc, char *argv[])
         case 'v': /* --verbose */
             verbose_flag = TRUE;
             break;
-
+            
+        case 'n': /* --no-symlink */
+            nosymlink_flag = TRUE;
+            break;
+            
         case 'r': /* --recursive */
             recursive_flag = TRUE;
             break;
@@ -368,18 +352,19 @@ int parse_command_line(int argc, char *argv[])
             all_flag = TRUE;
             break;
             
-        case 'l': /* --syslog */
+        case 's': /* --syslog */
             syslog_flag = TRUE;
             break;
             
         case 'V': /* --version */
             print_version();
-            exit(1);
+            exit(0);
             
         case 'h': /* --help */
                 
         default:
-            help(1);
+            help(0);
+            exit(0);
         }
     }
     
@@ -438,7 +423,7 @@ int watch(char *real_path, char *symlink)
                 if (recursive_flag == TRUE) {
                     list_push(list, (void*) path_to_watch);
                 }
-            } else if (dir->d_type == DT_LNK) {
+            } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
                 char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 2);
                 strcpy(symlink, p);
@@ -826,7 +811,7 @@ int event_handler_create(struct inotify_event *event, char *path)
     /* Check for a directory */
     if (event->mask & IN_ISDIR) {
         watch(path, NULL);
-    } else {
+    } else if (nosymlink_flag == FALSE) {
         /* Check for a symbolic link */
         bool_t is_dir = FALSE;
         DIR *dir_stream = opendir(path);
@@ -866,7 +851,7 @@ int event_handler_delete(struct inotify_event *event, char *path)
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
         unwatch(path, FALSE);
-    } else {
+    } else if (nosymlink_flag == FALSE) {
         /*
          * XXX Since it is not possible to know if the
          *     inotify event belongs to a file or a symbolic link,

@@ -59,8 +59,8 @@
  * _FILE (%f) when cwatch execute the command will be replaced with the
  *            absolute full path of the file or directory that triggered
  *            the event.
- * _TYPE (%e)  when cwatch execute the command will be replaced with the
- *             event type occured
+ * _TYPE (%e) when cwatch execute the command will be replaced with the
+ *            event type occured
  */
 const_bstring COMMAND_PATTERN_ROOT;
 const_bstring COMMAND_PATTERN_PATH;
@@ -100,6 +100,7 @@ uint32_t event_mask;            /* the resulting event_mask */
 int fd;                   /* inotify file descriptor */
 LIST *list_wd;            /* the list of all watched resource */
 
+bool_t nosymlink_flag;
 bool_t recursive_flag;
 bool_t all_flag;
 bool_t verbose_flag;
@@ -125,14 +126,6 @@ int help(int);
  * @param char * : Message to log
  */
 void log_message(char *);
-
-/**
- * Print List
- * 
- * Only an help fuction that print list_wd
- * @param LIST * : the list_wd you want print
- */
-void print_list(LIST *);
 
 /**
  * Resolve the real path
