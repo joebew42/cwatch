@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <dirent.h>
+#include <regex.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
 
@@ -93,16 +94,17 @@ struct event_t
 
 char *root_path;                /* root path that cwatch is monitoring */
 const_bstring command;          /* the full string of command to be execute */
+bstring tmp_command;            /* temporary command used by execute_command */
 struct bstrList *split_command; /* the splitted command, used in execute_command() */
 struct bstrList *split_event;   /* list of events parsed from command line */
 uint32_t event_mask;            /* the resulting event_mask */
+regex_t *user_regex;            /* the posix regular expression defined by -x option */
 
-int fd;                   /* inotify file descriptor */
-LIST *list_wd;            /* the list of all watched resource */
+int fd;                         /* inotify file descriptor */
+LIST *list_wd;                  /* the list of all watched resource */
 
 bool_t nosymlink_flag;
 bool_t recursive_flag;
-bool_t all_flag;
 bool_t verbose_flag;
 bool_t syslog_flag;
 
@@ -201,6 +203,14 @@ void unwatch(char *, bool_t);
  * @param LIST * : list containing string
  */
 bool_t exists(char *, LIST *);
+
+/**
+ * Checks whetever a string match the regular
+ * expression pattern defined with -x option
+ *
+ * @param char * : string to check
+ */
+bool_t excluded(char *);
 
 /**
  * Start monitoring
