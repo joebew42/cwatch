@@ -262,6 +262,7 @@ int parse_command_line(int argc, char *argv[])
             closedir(dir);
             
             /* Check if the path is absolute or not */
+            /* Dealloc with CTRL-C */
             if (root_path[0] != '/') {
                 char *real_path = resolve_real_path(root_path);
                 free(root_path);
@@ -749,6 +750,7 @@ int monitor()
             }
             
             /* Next event */
+            free(path);
             i += EVENT_SIZE + event->len;
         }
     }
@@ -760,30 +762,6 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
 {   
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
-
-    /* Command token replacement */
-    tmp_command = bfromcstr((char *) command->data);
-    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-
-    /* Splitting command */
-    split_command = bsplit(tmp_command, ' ');
-            
-    if (command == NULL) {
-        printf("Unable to process the specified command!\n");
-        exit(1);
-    }
-    
-    /* Prepare the array to pass to execvp */
-    char **command_to_execute = (char **) malloc(sizeof(char *) * (split_command->qty + 1));
-    int i;
-    for (i = 0; i < split_command->qty; ++i) {
-        /* TODO: handling whitespaces here */
-        command_to_execute[i] = (char *) split_command->entry[i]->data;
-    }
-    command_to_execute[i] = NULL;
     
     /* Execute the command */
     pid_t pid = fork();
@@ -794,21 +772,49 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
-        if (execvp(command_to_execute[0], command_to_execute) == -1) {
-            sprintf(message, "Unable to execute the specified command!");
-            log_message(message);
-        }
+        
+		/* Command token replacement */
+		tmp_command = bfromcstr((char *) command->data);
+		bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
+		bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
+		bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
+		bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
+		
+		/* find and remove whitespaces */
+		int left = 0, len = --tmp_command->slen;
+		while (tmp_command->data[left] == ' ') left++;
+		while (tmp_command->data[len] == ' ') len--;
+		tmp_command = bmidstr (tmp_command, left, len - left + 1);
+		
+		/* Splitting command */
+		split_command = bsplit(tmp_command, ' ');
+    
+		/* Prepare the array to pass to execvp */
+		char **command_to_execute = (char **) malloc(sizeof(char *) * (split_command->qty + 1));
+		int i;
+		
+		for (i = 0; i < split_command->qty; ++i) {
+		    command_to_execute[i] = (char *) split_command->entry[i]->data;
+		}
+		command_to_execute[i] = NULL;
+		
+		/* exec the command */
+	    if (execvp(command_to_execute[0], command_to_execute) == -1) {
+	        sprintf(message, "Unable to execute the specified command!");
+	        log_message(message);
+	    }
+	    
+	    /* Free memory */
+	    free(command_to_execute);
+    	bstrListDestroy(split_command);
+    	bdestroy(tmp_command);
     } else {
         /* error occured */
         sprintf(message, "ERROR during the fork() !!!");
         log_message(message);
         exit(1);
     }
-    
-    free(command_to_execute);
-    bstrListDestroy(split_command);
-    bdestroy(tmp_command);
-    
+
     return 0;
 }
 
