@@ -782,7 +782,10 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
         bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-		
+	
+        /* Fix folder name with space  */
+        bfindreplace(tmp_command, bfromcstr("\\ "), bfromcstr("%T"), 0);
+        
         /* Splitting command */
         split_command = bsplit(tmp_command, ' ');
     
@@ -791,7 +794,11 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
         int i;
 		
         for (i = 0; i < split_command->qty; ++i) {
-            command_to_execute[i] = (char *) split_command->entry[i]->data;
+            bstring arg = bfromcstr((char *) split_command->entry[i]->data);
+
+            bfindreplace(arg, bfromcstr("%T"), bfromcstr("\ "), 0);
+
+            command_to_execute[i] = arg->data;
         }
         command_to_execute[i] = NULL;
 		
