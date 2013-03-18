@@ -236,6 +236,9 @@ int parse_command_line(int argc, char *argv[])
             {
                 help(1);
             }
+
+            /* Remove both left/right whitespaces */
+            btrimws(command);
             
             break;
 
@@ -779,12 +782,6 @@ int execute_command(char *event_name, char *event_path, char *event_p_path)
         bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-		
-        /* Find and remove whitespaces */
-        int left = 0, len = --tmp_command->slen;
-        while (tmp_command->data[left] == ' ') left++;
-        while (tmp_command->data[len] == ' ') len--;
-        tmp_command = bmidstr(tmp_command, left, len - left + 1);
 		
         /* Splitting command */
         split_command = bsplit(tmp_command, ' ');
