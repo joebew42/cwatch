@@ -65,12 +65,15 @@
  * _REGEX (%x) when cwatch execute the command, will be replaced with the
  *             first regex occurence that match with the regular expression
  *             suited by -X --regex-catch option
+ * _COUNT (%n) when cwatch execute the command, will be replaced with the
+ *             count of the events
  */
 const_bstring COMMAND_PATTERN_ROOT;
 const_bstring COMMAND_PATTERN_PATH;
 const_bstring COMMAND_PATTERN_FILE;
 const_bstring COMMAND_PATTERN_EVENT;
 const_bstring COMMAND_PATTERN_REGEX;
+const_bstring COMMAND_PATTERN_COUNT;
 
 typedef enum {FALSE,TRUE} bool_t;
 
@@ -113,6 +116,9 @@ regmatch_t p_match[2];          /* store the matched regular expression by -X op
 
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
+
+unsigned int exec_c;             /* the number of processes launched */
+char exec_cstr[10];               /* for the conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
 bool_t recursive_flag;
