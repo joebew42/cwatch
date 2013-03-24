@@ -756,7 +756,11 @@ int monitor()
     COMMAND_PATTERN_FILE = bfromcstr("%f");
     COMMAND_PATTERN_EVENT = bfromcstr("%e");
     COMMAND_PATTERN_REGEX = bfromcstr("%x");
-    
+    COMMAND_PATTERN_COUNT = bfromcstr("%n");
+
+    /* Initialize the exec count */
+    exec_c = 0;
+
     /* Buffer for File Descriptor */
     char buffer[EVENT_BUF_LEN];
 
@@ -837,16 +841,23 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
     
+    /* Increase the exec counter */
+    ++exec_c;
+
     /* Execute the command */
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-        sprintf(message, "EVENT TRIGGERED [%s] IN %s\nPROCESS EXECUTED [pid: %d command: %s]",
-                event_name, event_path, pid, command->data);
+    
+        sprintf(message, "EVENT TRIGGERED [%s] IN %s\n%u) PROCESS EXECUTED [pid: %d command: %s]",
+                event_name, event_path, exec_c, pid, command->data);
         log_message(message); 
     } else if (pid == 0) {
         /* child process */
-        
+       
+        /* cast exec_c to cstring */
+        sprintf (exec_cstr, "%u", exec_c);
+
         /* Command token replacement */
         tmp_command = bfromcstr((char *) command->data);
         bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
@@ -854,6 +865,7 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
         bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
+        bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
 	
         /* Fix folder name with spaces */
         bfindreplace(tmp_command, bfromcstr("\\ "), bfromcstr("%T"), 0);
@@ -900,6 +912,10 @@ int execute_command_embedded(char *event_name, char *event_path, char *event_p_p
     sprintf(message, "EVENT TRIGGERED [%s] IN %s", event_name, event_path);
     log_message(message);
 
+    /* Incrementate and convert exec_c to cstring */
+    ++exec_c;
+    sprintf (exec_cstr, "%u", exec_c);
+
     /* Output the formatted string */
     tmp_command = bfromcstr((char *) format->data);
     bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
@@ -907,7 +923,8 @@ int execute_command_embedded(char *event_name, char *event_path, char *event_p_p
     bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
-    
+    bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
+
     fprintf(stdout, "%s\n", (char *) tmp_command->data);
     fflush(stdout);
     
