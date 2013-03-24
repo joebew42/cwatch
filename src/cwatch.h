@@ -42,7 +42,7 @@
 #include "list.h"
 
 #define PROGRAM_NAME    "cwatch"
-#define PROGRAM_VERSION "1.0"
+#define PROGRAM_VERSION "1.1"
 #define PROGRAM_STAGE   "experimental"
 
 #define EVENT_SIZE      (sizeof (struct inotify_event))
@@ -93,12 +93,17 @@ struct event_t
 };
 
 char *root_path;                /* root path that cwatch is monitoring */
-const_bstring command;          /* the full string of command to be execute */
+bstring command;                /* the command to be execute, defined by -c option*/
+bstring format;                 /* a string containing the output format defined by -F option */
 bstring tmp_command;            /* temporary command used by execute_command */
+int (*execute_command)(
+    char *,
+    char *,
+    char *);                    /* the command to be executed when an event is triggered */
 struct bstrList *split_command; /* the splitted command, used in execute_command() */
 struct bstrList *split_event;   /* list of events parsed from command line */
 uint32_t event_mask;            /* the resulting event_mask */
-regex_t *user_regex;            /* the posix regular expression defined by -x option */
+regex_t *exclude_regex;         /* the posix regular expression defined by -x option */
 
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
@@ -221,6 +226,8 @@ int monitor();
 
 /**
  * Execute a command
+ * *_inline   : called when the -c --command option is given
+ * *_embedded : called when the -F --format  option is given
  *
  * This function handle the execution of a command 
  * @param char *  : the inotify event name
@@ -228,7 +235,9 @@ int monitor();
  * @param char *  : the path where event occured
  * @return int    : -1 in case of error, 0 otherwise
  */
-int execute_command(char *, char *, char *);
+
+int execute_command_inline(char *, char *, char *);
+int execute_command_embedded(char *, char *, char *);
 
 /**
  * Get the inotify event handler from the event mask
