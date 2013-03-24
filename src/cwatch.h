@@ -42,7 +42,7 @@
 #include "list.h"
 
 #define PROGRAM_NAME    "cwatch"
-#define PROGRAM_VERSION "1.1"
+#define PROGRAM_VERSION "1.2.0"
 #define PROGRAM_STAGE   "experimental"
 
 #define EVENT_SIZE      (sizeof (struct inotify_event))
@@ -52,21 +52,25 @@
  * List of pattern that will be replaced during the command execution
  * Note: See their initialization in the monitor() function
  *
- * _ROOT (%r) when cwatch execute the command will be replaced with the
- *            root monitored directory
- * _PATH (%p) when cwatch execute the command will be replaced with the
- *            absolute full path of the file or directory where the
- *            event occurs
- * _FILE (%f) when cwatch execute the command will be replaced with the
- *            absolute full path of the file or directory that triggered
- *            the event.
- * _TYPE (%e) when cwatch execute the command will be replaced with the
- *            event type occured
+ * _ROOT  (%r) when cwatch execute the command, will be replaced with the
+ *             root monitored directory
+ * _PATH  (%p) when cwatch execute the command, will be replaced with the
+ *             absolute full path of the file or directory where the
+ *             event occurs
+ * _FILE  (%f) when cwatch execute the command, will be replaced with the
+ *             absolute full path of the file or directory that triggered
+ *             the event.
+ * _EVENT (%e) when cwatch execute the command, will be replaced with the
+ *             event type occured
+ * _REGEX (%x) when cwatch execute the command, will be replaced with the
+ *             first regex occurence that match with the regular expression
+ *             suited by -X --regex-catch option
  */
 const_bstring COMMAND_PATTERN_ROOT;
 const_bstring COMMAND_PATTERN_PATH;
 const_bstring COMMAND_PATTERN_FILE;
 const_bstring COMMAND_PATTERN_EVENT;
+const_bstring COMMAND_PATTERN_REGEX;
 
 typedef enum {FALSE,TRUE} bool_t;
 
@@ -104,6 +108,8 @@ struct bstrList *split_command; /* the splitted command, used in execute_command
 struct bstrList *split_event;   /* list of events parsed from command line */
 uint32_t event_mask;            /* the resulting event_mask */
 regex_t *exclude_regex;         /* the posix regular expression defined by -x option */
+regex_t *user_catch_regex;      /* the posix regular expression defined by -X option */
+regmatch_t p_match[2];          /* store the matched regular expression by -X option */
 
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
@@ -212,10 +218,28 @@ bool_t exists(char *, LIST *);
 /**
  * Checks whetever a string match the regular
  * expression pattern defined with -x option
+ * See: exclude_regex
  *
  * @param char * : string to check
  */
 bool_t excluded(char *);
+
+/**
+ * Checks whetever a pattern match the regular
+ * expression pattern defined with -X option
+ * See: user_catch_regex 
+ *
+ * @param char * : string to check
+ */
+bool_t pattern_match(char *);
+
+/**
+ * Return the subexpression matched by pattern_match
+ *
+ * @param  char * : string to check
+ * @return char * : matched subexpression
+ */
+char *get_pattern_match(char *);
 
 /**
  * Start monitoring

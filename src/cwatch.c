@@ -26,20 +26,14 @@
 
 /* Command line long options */
 static struct option long_options[] =
-{
-    /* Options that set flags */
-    
-    /*
-     {"verbose",       no_argument, &verbose_flag, TRUE},
-     {"log",           no_argument, &syslog_flag,  TRUE},
-    */
-    
+{   
     /* Options that set index */
     {"command",       required_argument, 0, 'c'}, /* exclude format */
     {"format",        required_argument, 0, 'F'}, /* exclude command */
     {"directory",     required_argument, 0, 'd'},
     {"events",        required_argument, 0, 'e'},
     {"exclude",       required_argument, 0, 'x'},
+    {"regex-catch",   required_argument, 0, 'X'}, /* catch a regex */
     {"no-symlink",    no_argument,       0, 'n'},
     {"recursive",     no_argument,       0, 'r'},
     {"verbose",       no_argument,       0, 'v'},
@@ -126,7 +120,8 @@ int help(int error)
     printf("       %sr : full path of the root DIRECTORY\n", "%");
     printf("       %sp : full path of the file/directory where the event occurs\n", "%");
     printf("       %sf : full path of the file/directory that triggered the event\n", "%");
-    printf("       %se : the type of the occured event (the the list below)\n\n", "%");
+    printf("       %se : the type of the occured event (the the list below)\n", "%");
+    printf("       %sx : the first occurence that match the regex given by -X option\n\n", "%");
     printf("  -d  --directory DIRECTORY\n");
     printf("      The directory to monitor\n\n");
     printf("  *LIST OF OTHER OPTIONS*\n\n");
@@ -158,7 +153,12 @@ int help(int error)
     printf("      Enable the recursively monitor of the directory\n\n");
     printf("  -x  --exclude <regex>\n");
     printf("      Do not process any events whose filename matches the specified POSIX\n");
-    printf("      POSIX extended regular expression, case sensitive \n\n");
+    printf("      POSIX extended regular expression, case sensitive\n\n");
+    printf("  -X  --regex-catch <regex>\n");
+    printf("      Match the parenthetical <regex> against the filename whose triggered the event,\n");
+    printf("      The first matched occurrence will be available as %sx special character\n", "%");
+    printf("      Usage note: %s will be triggered only if a match occurs!\n", PROGRAM_NAME);
+    printf("      POSIX extended regular expression, case sensitive\n\n");
     printf("  -v  --verbose\n");
     printf("      Verbose mode\n\n");
     printf("  -s  --syslog\n");
@@ -239,7 +239,7 @@ int parse_command_line(int argc, char *argv[])
     
     /* Handle command line options */
     int c;
-    while ((c = getopt_long(argc, argv, "svnrVhe:c:F:d:x:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "svnrVhe:c:F:d:x:X:", long_options, NULL)) != -1) {
         switch (c) {
         case 'c': /* --command */
             if (NULL != format)
@@ -369,7 +369,22 @@ int parse_command_line(int argc, char *argv[])
             if (regcomp(exclude_regex, optarg, REG_EXTENDED | REG_NOSUB) != 0) {
                 free(exclude_regex);
                 help(0);
-                printf("\nThe specified regular expression is not valid.\n");
+                printf("\nThe specified regular expression provided for the -x --exclude option, is not valid.\n");
+                exit(1);
+            }
+            
+            break;
+            
+        case 'X': /* --regex-catch */
+            if (optarg == NULL)
+                help(1);
+            
+            user_catch_regex = (regex_t *) malloc(sizeof(regex_t));
+            
+            if (regcomp(user_catch_regex, optarg, REG_EXTENDED) != 0) {
+                free(user_catch_regex);
+                help(0);
+                printf("\nThe specified regular expression provided for the -X --regex-catch is not valid.\n");
                 exit(1);
             }
             
@@ -708,6 +723,31 @@ bool_t excluded(char *str)
     return FALSE;
 }
 
+bool_t pattern_match(char *str)
+{
+    if (NULL == user_catch_regex)
+        return TRUE;
+    
+    if (regexec(user_catch_regex, str, 2, p_match, 0) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+char *get_pattern_match(char *str)
+{
+    if (p_match[1].rm_so == -1)
+        return NULL;
+
+    int length = p_match[1].rm_eo - p_match[1].rm_so;
+    char *substr = (char *) malloc(length + 1);
+    
+    strncpy(substr, str + p_match[1].rm_so, length);
+    substr[length] = '\0';
+    
+    return substr;
+}
+
 int monitor()
 {
     /* Initialize patterns that will be replaced */
@@ -715,6 +755,7 @@ int monitor()
     COMMAND_PATTERN_PATH = bfromcstr("%p");
     COMMAND_PATTERN_FILE = bfromcstr("%f");
     COMMAND_PATTERN_EVENT = bfromcstr("%e");
+    COMMAND_PATTERN_REGEX = bfromcstr("%x");
     
     /* Buffer for File Descriptor */
     char buffer[EVENT_BUF_LEN];
@@ -771,7 +812,8 @@ int monitor()
             /* Call the specific event handler */
             if (event->mask & event_mask
                 && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
-                && triggered_event->name != NULL)
+                && triggered_event->name != NULL
+                && pattern_match(path))
             {
                 if (triggered_event->handler(event, path) == 0) {
                     if (execute_command(triggered_event->name, path, wd_data->path) == -1) {
@@ -811,6 +853,7 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
         bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
+        bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
 	
         /* Fix folder name with spaces */
         bfindreplace(tmp_command, bfromcstr("\\ "), bfromcstr("%T"), 0);
@@ -863,6 +906,8 @@ int execute_command_embedded(char *event_name, char *event_path, char *event_p_p
     bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
+    
     fprintf(stdout, "%s\n", (char *) tmp_command->data);
     fflush(stdout);
     
