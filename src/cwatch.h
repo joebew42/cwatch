@@ -42,7 +42,7 @@
 #include "list.h"
 
 #define PROGRAM_NAME    "cwatch"
-#define PROGRAM_VERSION "1.2.0"
+#define PROGRAM_VERSION "1.2.2"
 #define PROGRAM_STAGE   "experimental"
 
 #define EVENT_SIZE      (sizeof (struct inotify_event))
@@ -113,7 +113,6 @@ int (*execute_command)(
     char *,
     char *,
     char *);                    /* the command to be executed when an event is triggered */
-struct bstrList *split_command; /* the splitted command, used in execute_command() */
 struct bstrList *split_event;   /* list of events parsed from command line */
 uint32_t event_mask;            /* the resulting event_mask */
 regex_t *exclude_regex;         /* the posix regular expression defined by -x option */

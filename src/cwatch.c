@@ -205,7 +205,7 @@ char *resolve_real_path(const char *path)
     return resolved;
 }
 
-// get_wd_data_from_path
+// TODO get_wd_data_from_path
 LIST_NODE *get_from_path(const char *path)
 {
     LIST_NODE *node = list_wd->first;
@@ -219,7 +219,7 @@ LIST_NODE *get_from_path(const char *path)
     return NULL;
 }
 
-// get_wd_data_from_wd
+// TODO get_wd_data_from_wd
 LIST_NODE *get_from_wd(const int wd)
 {
     LIST_NODE *node = list_wd->first;
@@ -233,6 +233,7 @@ LIST_NODE *get_from_wd(const int wd)
     return NULL;
 }
 
+// TODO get_link_node_from_path
 LIST_NODE *get_link_list_node(const char *symlink)
 {
     LIST_NODE *node = list_wd->first;
@@ -273,7 +274,6 @@ LINK_DATA *get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_dat
         if (strcmp(link_data->path, symlink) == 0) {
             return link_data;
         }
-        
         link_node = link_node->next;
     }
     
@@ -291,9 +291,9 @@ LINK_DATA *get_link_data(const char *symlink)
         
         link_data = get_link_data_from_wd_data(symlink, wd_data);
 
-        if (link_data != NULL)
+        if (link_data != NULL) {
             return link_data;
-            
+        }
         node = node->next;
     }
     
@@ -581,8 +581,10 @@ int watch(char *real_path, char *symlink)
                 strcat(symlink, dir->d_name);
                 
                 char *real_path = resolve_real_path(symlink);
-                
-                if (real_path != NULL && opendir(real_path) != NULL) {
+
+                DIR *is_a_dir;
+                is_a_dir = opendir(real_path);
+                if (real_path != NULL && is_a_dir != NULL) {
                     /* Append to watched resources */
                     add_to_watch_list(real_path, symlink);
                     
@@ -590,6 +592,7 @@ int watch(char *real_path, char *symlink)
                     if (recursive_flag == TRUE) {
                         list_push(list, (void*) real_path);
                     }
+                    closedir(is_a_dir);
                 }
             }
         }
@@ -684,8 +687,7 @@ void unwatch(char *path, bool_t is_link)
             list_remove(list_wd, node);
         }
     } else {
-        printf("PROCESSING: %s\n", path);
-        
+        /* BFS to discover other symbolic links */
         LIST *list = list_init();
         list_push(list, (void *) path);
     
@@ -983,33 +985,16 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
         bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
         bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
-	
-        /* Fix folder name with spaces */
-        bfindreplace(tmp_command, bfromcstr("\\ "), bfromcstr("%T"), 0);
-        
-        /* Splitting command */
-        split_command = bsplit(tmp_command, ' ');
-        
-        /* Prepare the array to pass to execvp */
-        char **command_to_execute = (char **) malloc(sizeof(char *) * (split_command->qty + 1));
-        int i;
-		
-        for (i = 0; i < split_command->qty; ++i) {
-            bstring arg = bfromcstr((char *) split_command->entry[i]->data);
-            bfindreplace(arg, bfromcstr("%T"), bfromcstr("\ "), 0);
-            command_to_execute[i] = arg->data;
-        }
-        command_to_execute[i] = NULL;
-		
-        /* exec the command */
-        if (execvp(command_to_execute[0], command_to_execute) == -1) {
+
+        int exit = 0;
+        exit = system((const char*) tmp_command->data);
+
+        if (exit == -1 || exit == 127) {
             sprintf(message, "Unable to execute the specified command!");
             log_message(message);
         }
-	    
+        
         /* Free memory */
-        free(command_to_execute);
-    	bstrListDestroy(split_command);
     	bdestroy(tmp_command);
     } else {
         /* error occured */
