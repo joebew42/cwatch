@@ -566,12 +566,10 @@ int watch(char *real_path, char *symlink)
                 strcpy(path_to_watch, p);
                 strcat(path_to_watch, dir->d_name);
                 strcat(path_to_watch, "/");
-                
-                /* Append to watched resources */
-                add_to_watch_list(path_to_watch, NULL);
-				                
+                		                
                 /* Continue directory traversing */
                 if (recursive_flag == TRUE) {
+                    add_to_watch_list(path_to_watch, NULL);
                     list_push(list, (void*) path_to_watch);
                 }
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
