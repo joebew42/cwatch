@@ -205,6 +205,7 @@ char *resolve_real_path(const char *path)
     return resolved;
 }
 
+// get_wd_data_from_path
 LIST_NODE *get_from_path(const char *path)
 {
     LIST_NODE *node = list_wd->first;
@@ -218,6 +219,7 @@ LIST_NODE *get_from_path(const char *path)
     return NULL;
 }
 
+// get_wd_data_from_wd
 LIST_NODE *get_from_wd(const int wd)
 {
     LIST_NODE *node = list_wd->first;
@@ -231,6 +233,98 @@ LIST_NODE *get_from_wd(const int wd)
     return NULL;
 }
 
+LIST_NODE *get_link_list_node(const char *symlink)
+{
+    LIST_NODE *node = list_wd->first;
+    WD_DATA *wd_data;
+    LIST_NODE *link_node;
+    LINK_DATA *link_data;
+    
+    while (node) {
+        wd_data = (WD_DATA*) node->data;
+        
+        link_node = wd_data->links->first;
+        while (link_node) {
+            link_data = (LINK_DATA*) link_node->data;
+                
+            if (strcmp(link_data->path, symlink) == 0) {
+                return link_node;
+            }
+            link_node = link_node->next;
+        }
+        node = node->next;
+    }
+    
+    return NULL;
+}
+
+LINK_DATA *get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
+{
+    if (NULL == wd_data)
+        return NULL;
+    
+    LIST_NODE *link_node;
+    LINK_DATA *link_data;
+ 
+    link_node = wd_data->links->first;
+    while (link_node) {
+        link_data = (LINK_DATA*) link_node->data;
+
+        if (strcmp(link_data->path, symlink) == 0) {
+            return link_data;
+        }
+        
+        link_node = link_node->next;
+    }
+    
+    return NULL;
+}
+
+LINK_DATA *get_link_data(const char *symlink)
+{
+    LIST_NODE *node = list_wd->first;
+    WD_DATA *wd_data;
+    LINK_DATA *link_data;
+    
+    while (node) {
+        wd_data = (WD_DATA*) node->data;
+        
+        link_data = get_link_data_from_wd_data(symlink, wd_data);
+
+        if (link_data != NULL)
+            return link_data;
+            
+        node = node->next;
+    }
+    
+    return NULL;
+}
+
+LINK_DATA *create_link_data(char *symlink, WD_DATA *wd_data)
+{
+    LINK_DATA *link_data = malloc(sizeof(LINK_DATA));
+    
+    if (link_data == NULL)
+        return NULL;
+    
+    link_data->path = symlink;
+    link_data->wd_data = wd_data;
+
+    return link_data;
+}
+
+bool_t is_child_of(char *child, char *parent)
+{   
+    if (child == NULL
+        || parent == NULL
+        || strlen(parent) > strlen(child))
+    {
+        return FALSE;
+    }
+    
+    return (strncmp(child, parent, strlen(parent)) == 0) ? TRUE : FALSE;
+}
+
 int parse_command_line(int argc, char *argv[])
 {
     if (argc == 1) {
@@ -238,6 +332,7 @@ int parse_command_line(int argc, char *argv[])
     }
     
     /* Handle command line options */
+    /* TODO: Refactor the parse command line */
     int c;
     while ((c = getopt_long(argc, argv, "svnrVhe:c:F:d:x:X:", long_options, NULL)) != -1) {
         switch (c) {
@@ -353,7 +448,7 @@ int parse_command_line(int argc, char *argv[])
                         help(0);
                         printf("\nUnrecognized event or malformed list of events! Please see the help.\n");
                         exit(1);
-                    }    
+                    }
                 }
 
                 bstrListDestroy(split_event);
@@ -418,9 +513,7 @@ int parse_command_line(int argc, char *argv[])
         }
     }
     
-    if (root_path == NULL
-        || command == format)
-    {
+    if (root_path == NULL || command == format) {
         help(1);
     }
 
@@ -483,10 +576,9 @@ int watch(char *real_path, char *symlink)
                 }
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
-                char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 2);
+                char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 1);
                 strcpy(symlink, p);
                 strcat(symlink, dir->d_name);
-                strcat(symlink, "/");
                 
                 char *real_path = resolve_real_path(symlink);
                 
@@ -510,12 +602,12 @@ int watch(char *real_path, char *symlink)
 }
 
 LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
-{
+{   
     /* Check if the resource is already in the watch_list */
     LIST_NODE *node = get_from_path(real_path);
     
     /* If the resource is not watched yet, then add it into the watch_list */
-    if (node == NULL) {
+    if (NULL == node) {
         /* Append directory to watch_list */
         int wd = inotify_add_watch(fd, real_path, event_mask);
         
@@ -529,11 +621,12 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
         }
         
         /* Create the entry */
+        /* TODO: Refactor -> ExtractMethod */
+        /* WD_DATA *wd_data = create_wd_data(real_path); */
         WD_DATA *wd_data = malloc(sizeof(WD_DATA));
         wd_data->wd = wd;
         wd_data->path = real_path;
         wd_data->links = list_init();
-        wd_data->symbolic_link = (strncmp(root_path, real_path, strlen(root_path)) == 0) ? FALSE : TRUE;
         
         node = list_push(list_wd, (void*) wd_data);
         
@@ -549,25 +642,18 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
      */
     if (node != NULL && symlink != NULL) {
         WD_DATA *wd_data = (WD_DATA*) node->data;
-
-        bool_t found = FALSE;
-        LIST_NODE *node_link = wd_data->links->first;
-        while (node_link) {
-            char *link = (char *) node_link->data;
-            if (strcmp(link, symlink) == 0) {
-                found = TRUE;
-                break;
-            }
-            
-            node_link = node_link->next;
-        }
         
-        if (found == FALSE) {
-            list_push(wd_data->links, (void *) symlink);
-            /* Log Message */
-            char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
-            log_message(message);
+        if (get_link_data_from_wd_data(symlink, wd_data) == NULL) {
+            LINK_DATA *link_data = create_link_data(symlink, wd_data);
+            
+            if (link_data != NULL) {
+                list_push(wd_data->links, (void *) link_data);
+            
+                /* Log Message */
+                char *message = (char *) malloc(MAXPATHLEN);
+                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
+                log_message(message);   
+            }
         }
     }
     
@@ -576,6 +662,8 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
 
 void unwatch(char *path, bool_t is_link)
 {
+    /* REFACTOR HERE */
+    
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
         /* Retrieve the watch descriptor from path */
@@ -589,110 +677,143 @@ void unwatch(char *path, bool_t is_link)
             log_message(message);
             
             inotify_rm_watch(fd, wd_data->wd);
-            
+
             if (wd_data->links->first != NULL)
                 list_free(wd_data->links);
             
             list_remove(list_wd, node);
         }
     } else {
-        /* Remove a symbolic link from watched resources */
-        LIST_NODE *node = list_wd->first;
-        while (node) {
-            WD_DATA *wd_data = (WD_DATA*) node->data;
+        printf("PROCESSING: %s\n", path);
+        
+        LIST *list = list_init();
+        list_push(list, (void *) path);
+    
+        DIR *dir_stream;
+        struct dirent *dir;
+
+        while (list->first != NULL) {
+            char *symlink = (char*) list_pop(list);
             
-            LIST_NODE *link_node = wd_data->links->first;
-            while (link_node) {
-                char *p = (char*) link_node->data;
+            LIST_NODE *link_node = get_link_list_node(symlink);
+            if (link_node == NULL)
+                continue;
+            
+            LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+            char *resolved_path = (char*) link_data->wd_data->path;
+            
+            dir_stream = opendir(resolved_path);
+        
+            if (dir_stream == NULL)
+                continue;
+            
+            /* Traverse directory */
+            while ((dir = readdir(dir_stream))) {
+                if (dir->d_type == DT_LNK) {
+                    /* Retrieve absolute symlink path */
+                    char *link_path = (char *) malloc(strlen(resolved_path) + strlen(dir->d_name) + 1);
+                    strcpy(link_path, resolved_path);
+                    strcat(link_path, dir->d_name);
                 
-                /* Symbolic link match. Remove it! */
-                if (strcmp(path, p) == 0) {
-                    /* Log Message */
-                    char *message = (char *) malloc(MAXPATHLEN);
-                    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\t%s -> %s", path, wd_data->path);
-                    log_message(message);
-                    
-                    list_remove(wd_data->links, link_node);
-                    
-                    /*
-                     * if there is no other symbolic links that point to the
-                     * watched resource and the watched resource is not the root,
-                     * then unwatch it
-                     */
-                    if (wd_data->links->first == NULL && wd_data->symbolic_link == TRUE) {
-                        WD_DATA *sub_wd_data;
-                        
-                        /*
-                         * Build temporary look-up list of resources
-                         * that are pointed by some symbolic links.
-                         */
-                        LIST *tmp_linked_path = list_init();
-                        LIST_NODE *sub_node = list_wd->first;
-                        while (sub_node) {
-                            sub_wd_data = (WD_DATA*) sub_node->data;
-                            
-                            /*
-                             * If it is a PARENT or CHILD and it is referenced by some symbolic link
-                             * and it is not listed into tmp_linked_path, then
-                             * add it into the list and move to the next resource.
-                             */
-                            if ((strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
-                                || strncmp(wd_data->path, sub_wd_data->path, strlen(sub_wd_data->path)) == 0)
-                                && sub_wd_data->links->first != NULL
-                                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
-                            {
-                                /* Save current path into linked_path */
-                                list_push(tmp_linked_path, (void*) sub_wd_data->path);
-                            }
-                            
-                            /* Move to next resource */
-                            sub_node = sub_node->next;
-                        }
-                        
-                        /*
-                         * Descend to all subdirectories of wd_data->path and unwatch them all
-                         * only if they or it's parents are not pointed by some symbolic link, anymore
-                         * (check if parent is not pointed by symlinks too).
-                         */
-                        sub_node = list_wd->first;
-                        while (sub_node) {
-                            sub_wd_data = (WD_DATA*) sub_node->data;
-                                                        
-                            /*
-                             * If it is a CHILD and is NOT referenced by some symbolic link
-                             * and it is not listed into tmp_linked_path, then
-                             * remove the watch descriptor from the resource.
-                             */
-                            if (strcmp(root_path, sub_wd_data->path) != 0
-                                && strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
-                                && sub_wd_data->links->first == NULL
-                                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
-                            {
-                                /* Log Message */
-                                char *message = (char *) malloc(MAXPATHLEN);
-                                sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, sub_wd_data->wd, sub_wd_data->path);
-                                log_message(message);
-                                
-                                inotify_rm_watch(fd, sub_wd_data->wd);
-                                list_remove(list_wd, sub_node);
-                            }
-                            
-                            /* Move to next resource */
-                            sub_node = sub_node->next;
-                        }
-                        
-                        /* Free temporay lookup list */
-                        list_free(tmp_linked_path);
-                    }
-                    return;
+                    list_push(list, (void*) link_path);
                 }
-                link_node = link_node->next;
             }
-            node = node->next;
+            closedir(dir_stream);
+            
+            if (link_node != NULL)
+                unwatch_symbolic_link(link_node);
         }
+    
+        list_free(list);
     }
 }
 
+void unwatch_symbolic_link(LIST_NODE *link_node)
+{   
+    LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+    char *link_path = (char*) link_data->path;
+    WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
+    
+    /* Log Message */
+    char *message = (char *) malloc(MAXPATHLEN);
+    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\t%s -> %s", link_path, wd_data->path);
+    log_message(message);
+    
+    list_remove(wd_data->links, link_node);
+    
+    /*
+     * if there is no other symbolic links that point to the
+     * watched resource and the watched resource is not a child
+     * of the the root path then unwatch it.
+     */
+    if (wd_data->links->first == NULL
+        && is_child_of(wd_data->path, root_path) == FALSE)
+    {
+        WD_DATA *sub_wd_data;
+        
+        /*
+         * Build temporary look-up list of resources
+         * that are pointed by some symbolic links.
+         */
+        LIST *tmp_linked_path = list_init();
+        LIST_NODE *sub_node = list_wd->first;
+        while (sub_node) {
+            sub_wd_data = (WD_DATA*) sub_node->data;
+            
+            /*
+             * If it is a PARENT or CHILD and it is referenced by some symbolic link
+             * and it is not listed into tmp_linked_path, then
+             * add it into the list and move to the next resource.
+             */
+            if ((strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
+                 || strncmp(wd_data->path, sub_wd_data->path, strlen(sub_wd_data->path)) == 0)
+                && sub_wd_data->links->first != NULL
+                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
+            {
+                /* Save current path into linked_path */
+                list_push(tmp_linked_path, (void*) sub_wd_data->path);
+            }
+            
+            /* Move to next resource */
+            sub_node = sub_node->next;
+        }
+        
+        /*
+         * Descend to all subdirectories of wd_data->path and unwatch them all
+         * only if they or it's parents are not pointed by some symbolic link, anymore
+         * (check if parent is not pointed by symlinks too).
+         */
+        sub_node = list_wd->first;
+        while (sub_node) {
+            sub_wd_data = (WD_DATA*) sub_node->data;
+                
+            /*
+             * If it is a CHILD and is NOT referenced by some symbolic link
+             * and it is not listed into tmp_linked_path, then
+             * remove the watch descriptor from the resource.
+             */
+            if (strcmp(root_path, sub_wd_data->path) != 0
+                && strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
+                && sub_wd_data->links->first == NULL
+                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
+            {
+                /* Log Message */
+                char *message = (char *) malloc(MAXPATHLEN);
+                sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, sub_wd_data->wd, sub_wd_data->path);
+                log_message(message);
+                                
+                inotify_rm_watch(fd, sub_wd_data->wd);
+                list_remove(list_wd, sub_node);
+            }
+                            
+            /* Move to next resource */
+            sub_node = sub_node->next;
+        }
+                    
+        /* Free temporay lookup list */
+        list_free(tmp_linked_path);
+    }
+}
 bool_t exists(char* child_path, LIST *parents)
 {
     if (parents == NULL || parents->first == NULL)
@@ -701,10 +822,7 @@ bool_t exists(char* child_path, LIST *parents)
     LIST_NODE *node = parents->first;
     while(node) {
         char* parent_path = (char*) node->data;
-        /* printf("Checking for: %s \t Possible parent: %s\n", child_path, parent_path); */
-        if (strlen(parent_path) <= strlen(child_path)
-            && strncmp(parent_path, child_path, strlen(parent_path)) == 0)
-        {
+        if (is_child_of(child_path, parent_path) == TRUE) {
             return TRUE; /* match! */
         }
         node = node->next;
@@ -791,8 +909,7 @@ int monitor()
             event = (struct inotify_event*) &buffer[i];
 
             /* Discard all filename that matches regular expression (-x option) */
-            if (excluded(event->name))
-            {
+            if (excluded(event->name)) {
                 /* Next event */
                 i += EVENT_SIZE + event->len;
                 continue;
@@ -817,18 +934,18 @@ int monitor()
             if (event->mask & event_mask
                 && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
                 && triggered_event->name != NULL
-                && pattern_match(path))
+                && pattern_match(path)
+                && triggered_event->handler(event, path) == 0)
             {
-                if (triggered_event->handler(event, path) == 0) {
-                    if (execute_command(triggered_event->name, path, wd_data->path) == -1) {
-                        printf("ERROR OCCURED: Unable to execute the specified command!\n");
-                        exit(1);
-                    }
+                if (execute_command(triggered_event->name, path, wd_data->path) == -1) {
+                    printf("ERROR OCCURED: Unable to execute the specified command!\n");
+                    exit(1);
                 }
+            } else {
+                free(path);
             }
             
             /* Next event */
-            free(path);
             i += EVENT_SIZE + event->len;
         }
     }
@@ -856,7 +973,7 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
         /* child process */
        
         /* cast exec_c to cstring */
-        sprintf (exec_cstr, "%u", exec_c);
+        sprintf(exec_cstr, "%u", exec_c);
 
         /* Command token replacement */
         tmp_command = bfromcstr((char *) command->data);
@@ -951,7 +1068,7 @@ int event_handler_undefined(struct inotify_event *event, char *path)
 }
 
 int event_handler_create(struct inotify_event *event, char *path)
-{
+{   
     /* Return 0 if recurively monitoring is disabled */
     if (recursive_flag == FALSE)
         return 0;

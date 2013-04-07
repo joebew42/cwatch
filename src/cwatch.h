@@ -81,10 +81,16 @@ typedef enum {FALSE,TRUE} bool_t;
 typedef struct wd_data_s
 {
     int    wd;            /* watch descriptor */
-    char   *path;         /* absoulete real path of the directory */
-    bool_t symbolic_link; /* used to know if is reached by symbolic link */
-    LIST   *links;        /* list of sym links that point to this resource */
+    char   *path;         /* absolute real path of the directory */
+    LIST   *links;        /* list of symlinks that point to this resource */
 } WD_DATA;
+
+/* Used to store information about symbolic link */
+typedef struct link_data_s
+{
+    char    *path;         /* absolute real path of the symbolic link */
+    WD_DATA *wd_data;      /* a pointer to it wd_data */
+} LINK_DATA;
 
 /*
  * Used to describe an event in the events LUT.
@@ -118,7 +124,7 @@ int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
 
 unsigned int exec_c;             /* the number of processes launched */
-char exec_cstr[10];               /* for the conversion of exec_c to cstring */
+char exec_cstr[10];              /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
 bool_t recursive_flag;
@@ -173,6 +179,50 @@ LIST_NODE *get_from_path(const char *);
 LIST_NODE *get_from_wd(const int);
 
 /**
+ * Searchs and returns the list_node from symlink path
+ * 
+ * @param char *       : The path to find
+ * @return LIST_NODE * : a pointer to list_node, NULL otherwise.
+ */
+LIST_NODE *get_link_list_node(const char *);
+
+/**
+ * Searchs and returns the link_data from symlink path
+ * of a specified WD_DATA
+ * 
+ * @param char *       : The path to find
+ * @param WD_DATA *    : a pointer to WD_DATA in which search
+ * @return LINK_DATA * : a pointer to link data, NULL otherwise.
+ */
+LINK_DATA *get_link_data_from_wd_data(const char *, const WD_DATA *);
+
+/**
+ * Searchs and returns the link_data from symlink path
+ * 
+ * @param char *       : The path to find
+ * @return LINK_DATA * : a pointer to link data, NULL otherwise.
+ */
+LINK_DATA *get_link_data(const char *);
+
+/**
+ * Create a LINK_DATA
+ * 
+ * @param char *       : The path of symlink
+ * @param WD_DATA *    : The wd_data in which symlink will be attached
+ * @return LINK_DATA * : a pointer to link data, NULL otherwise.
+ */
+LINK_DATA *create_link_data(char *, WD_DATA *);
+
+/**
+ * Returns TRUE if the first path is a child
+ * of the second one.
+ * @param char * : first path  (the child)
+ * @param char * : second path (the parent)
+ * @return bool_t
+ */
+bool_t is_child_of(char *, char *);
+
+/**
  * Parse command line
  *
  * This function is used to parse command line and initialize some environment variables
@@ -212,6 +262,13 @@ LIST_NODE *add_to_watch_list(char *, char *);
  * @param bool_t : TRUE if the path to unwatch is a symlink, FALSE otherwise.
  */
 void unwatch(char *, bool_t);
+
+/**
+ * Unwatch a symbolic link from the watched resources
+ *
+ * @param LIST_NODE * : the list_node of the symbolic link to unwatch
+ */
+void unwatch_symbolic_link(LIST_NODE *);
 
 /**
  * Checks whetever a string exists in a list
