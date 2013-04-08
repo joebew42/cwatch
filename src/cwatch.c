@@ -119,9 +119,10 @@ int help(int error)
     printf("  *TABLE OF SPECIAL CHARACTERS*\n\n");
     printf("       %sr : full path of the root DIRECTORY\n", "%");
     printf("       %sp : full path of the file/directory where the event occurs\n", "%");
-    printf("       %sf : full path of the file/directory that triggered the event\n", "%");
+    printf("       %sf : the name of the file/directory that triggered the event\n", "%");
     printf("       %se : the type of the occured event (the the list below)\n", "%");
-    printf("       %sx : the first occurence that match the regex given by -X option\n\n", "%");
+    printf("       %sx : the first occurence that match the regex given by -X option\n", "%");
+    printf("       %sn : the number of times the command is executed\n\n", "%");
     printf("  -d  --directory DIRECTORY\n");
     printf("      The directory to monitor\n\n");
     printf("  *LIST OF OTHER OPTIONS*\n\n");
@@ -152,7 +153,7 @@ int help(int error)
     printf("  -r  --recursive\n");
     printf("      Enable the recursively monitor of the directory\n\n");
     printf("  -x  --exclude <regex>\n");
-    printf("      Do not process any events whose filename matches the specified POSIX\n");
+    printf("      Do not process any events whose filename matches the specified POSIX REGEX\n");
     printf("      POSIX extended regular expression, case sensitive\n\n");
     printf("  -X  --regex-catch <regex>\n");
     printf("      Match the parenthetical <regex> against the filename whose triggered the event,\n");
@@ -179,8 +180,9 @@ int help(int error)
 
 void log_message(char *message)
 {
-    if (verbose_flag && (NULL == format))
+    if (verbose_flag && (NULL == format)) {
         printf("%s\n", message);
+    }
     
     if (syslog_flag) {
         openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
@@ -205,8 +207,7 @@ char *resolve_real_path(const char *path)
     return resolved;
 }
 
-// TODO get_wd_data_from_path
-LIST_NODE *get_from_path(const char *path)
+LIST_NODE *get_node_from_path(const char *path)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -219,8 +220,7 @@ LIST_NODE *get_from_path(const char *path)
     return NULL;
 }
 
-// TODO get_wd_data_from_wd
-LIST_NODE *get_from_wd(const int wd)
+LIST_NODE *get_node_from_wd(const int wd)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -233,8 +233,20 @@ LIST_NODE *get_from_wd(const int wd)
     return NULL;
 }
 
-// TODO get_link_node_from_path
-LIST_NODE *get_link_list_node(const char *symlink)
+WD_DATA *create_wd_data(char *real_path, int wd)
+{
+    WD_DATA *wd_data = malloc(sizeof(WD_DATA));
+    if (wd_data == NULL)
+        return NULL;
+    
+    wd_data->wd = wd;
+    wd_data->path = real_path;
+    wd_data->links = list_init();
+
+    return wd_data;
+}
+
+LIST_NODE *get_link_node_from_path(const char *symlink)
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -280,7 +292,7 @@ LINK_DATA *get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_dat
     return NULL;
 }
 
-LINK_DATA *get_link_data(const char *symlink)
+LINK_DATA *get_link_data_from_path(const char *symlink)
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -323,6 +335,71 @@ bool_t is_child_of(char *child, char *parent)
     }
     
     return (strncmp(child, parent, strlen(parent)) == 0) ? TRUE : FALSE;
+}
+
+bool_t exists(char* child_path, LIST *parents)
+{
+    if (parents == NULL || parents->first == NULL)
+        return FALSE;
+    
+    LIST_NODE *node = parents->first;
+    while(node) {
+        char* parent_path = (char*) node->data;
+        if (is_child_of(child_path, parent_path) == TRUE) {
+            return TRUE; /* match! */
+        }
+        node = node->next;
+    }
+    return FALSE;
+}
+
+bool_t excluded(char *str)
+{
+    if (NULL == exclude_regex)
+        return FALSE;
+    
+    if (regexec(exclude_regex, str, 0, NULL, 0) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+bool_t regex_catch(char *str)
+{
+    if (NULL == user_catch_regex)
+        return TRUE;
+    
+    if (regexec(user_catch_regex, str, 2, p_match, 0) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+char *get_regex_catch(char *str)
+{
+    if (p_match[1].rm_so == -1)
+        return NULL;
+
+    int length = p_match[1].rm_eo - p_match[1].rm_so;
+    char *substr = (char *) malloc(length + 1);
+    
+    strncpy(substr, str + p_match[1].rm_so, length);
+    substr[length] = '\0';
+    
+    return substr;
+}
+
+bstring format_command(char *command_format, char *event_p_path, char *file_name, char *event_name)
+{
+    tmp_command = bfromcstr(command_format);
+    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(file_name), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_regex_catch(file_name)), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
+
+    return tmp_command;
 }
 
 int parse_command_line(int argc, char *argv[])
@@ -525,7 +602,7 @@ int parse_command_line(int argc, char *argv[])
 }
 
 int watch(char *real_path, char *symlink)
-{
+{   
     /* Add initial path to the watch list */
     LIST_NODE *node = add_to_watch_list(real_path, symlink);
     if (node == NULL)
@@ -577,20 +654,25 @@ int watch(char *real_path, char *symlink)
                 char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 1);
                 strcpy(symlink, p);
                 strcat(symlink, dir->d_name);
+
+                /* Check if the symbolic link is already watched */
+                if (get_link_data_from_path(symlink) != NULL) {
+                    printf("Already watched symlink %s, skipping\n", symlink);
+                    continue;
+                }
                 
                 char *real_path = resolve_real_path(symlink);
 
                 DIR *is_a_dir;
                 is_a_dir = opendir(real_path);
                 if (real_path != NULL && is_a_dir != NULL) {
-                    /* Append to watched resources */
-                    add_to_watch_list(real_path, symlink);
+                    closedir(is_a_dir);
                     
                     /* Continue directory traversing */
                     if (recursive_flag == TRUE) {
+                        add_to_watch_list(real_path, symlink);
                         list_push(list, (void*) real_path);
                     }
-                    closedir(is_a_dir);
                 }
             }
         }
@@ -605,7 +687,7 @@ int watch(char *real_path, char *symlink)
 LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
 {   
     /* Check if the resource is already in the watch_list */
-    LIST_NODE *node = get_from_path(real_path);
+    LIST_NODE *node = get_node_from_path(real_path);
     
     /* If the resource is not watched yet, then add it into the watch_list */
     if (NULL == node) {
@@ -621,40 +703,30 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             return NULL;
         }
         
-        /* Create the entry */
-        /* TODO: Refactor -> ExtractMethod */
-        /* WD_DATA *wd_data = create_wd_data(real_path); */
-        WD_DATA *wd_data = malloc(sizeof(WD_DATA));
-        wd_data->wd = wd;
-        wd_data->path = real_path;
-        wd_data->links = list_init();
+        /* Create wd_data entry */
+        WD_DATA *wd_data = create_wd_data(real_path, wd);
+        if (wd_data != NULL) {
+            node = list_push(list_wd, (void*) wd_data);
         
-        node = list_push(list_wd, (void*) wd_data);
-        
-        /* Log Message */
-        char *message = (char *) malloc(MAXPATHLEN);
-        sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
-        log_message(message);
+            /* Log Message */
+            char *message = (char *) malloc(MAXPATHLEN);
+            sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
+            log_message(message);
+        }
     }
 
-    /*
-     * Check if the symbolic link (if any) is not been added before.
-     * This control is necessary to avoid that cyclic links counts twice.
-     */
+    /* Append symbolic link to watched resource */
     if (node != NULL && symlink != NULL) {
         WD_DATA *wd_data = (WD_DATA*) node->data;
-        
-        if (get_link_data_from_wd_data(symlink, wd_data) == NULL) {
-            LINK_DATA *link_data = create_link_data(symlink, wd_data);
+        LINK_DATA *link_data = create_link_data(symlink, wd_data);
             
-            if (link_data != NULL) {
-                list_push(wd_data->links, (void *) link_data);
+        if (link_data != NULL) {
+            list_push(wd_data->links, (void *) link_data);
             
-                /* Log Message */
-                char *message = (char *) malloc(MAXPATHLEN);
-                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
-                log_message(message);   
-            }
+            /* Log Message */
+            char *message = (char *) malloc(MAXPATHLEN);
+            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
+            log_message(message);   
         }
     }
     
@@ -668,13 +740,13 @@ void unwatch(char *path, bool_t is_link)
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
         /* Retrieve the watch descriptor from path */
-        LIST_NODE *node = get_from_path(path);
+        LIST_NODE *node = get_node_from_path(path);
         if (node != NULL) {   
             WD_DATA *wd_data = (WD_DATA *) node->data;
             
             /* Log Message */
             char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, wd_data->wd, path);
+            sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, path);
             log_message(message);
             
             inotify_rm_watch(fd, wd_data->wd);
@@ -695,7 +767,7 @@ void unwatch(char *path, bool_t is_link)
         while (list->first != NULL) {
             char *symlink = (char*) list_pop(list);
             
-            LIST_NODE *link_node = get_link_list_node(symlink);
+            LIST_NODE *link_node = get_link_node_from_path(symlink);
             if (link_node == NULL)
                 continue;
             
@@ -736,7 +808,7 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
     
     /* Log Message */
     char *message = (char *) malloc(MAXPATHLEN);
-    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\t%s -> %s", link_path, wd_data->path);
+    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
     log_message(message);
     
     list_remove(wd_data->links, link_node);
@@ -799,7 +871,7 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
             {
                 /* Log Message */
                 char *message = (char *) malloc(MAXPATHLEN);
-                sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t%s", fd, sub_wd_data->wd, sub_wd_data->path);
+                sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, sub_wd_data->wd, sub_wd_data->path);
                 log_message(message);
                                 
                 inotify_rm_watch(fd, sub_wd_data->wd);
@@ -813,57 +885,6 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
         /* Free temporay lookup list */
         list_free(tmp_linked_path);
     }
-}
-bool_t exists(char* child_path, LIST *parents)
-{
-    if (parents == NULL || parents->first == NULL)
-        return FALSE;
-    
-    LIST_NODE *node = parents->first;
-    while(node) {
-        char* parent_path = (char*) node->data;
-        if (is_child_of(child_path, parent_path) == TRUE) {
-            return TRUE; /* match! */
-        }
-        node = node->next;
-    }
-    return FALSE;
-}
-
-bool_t excluded(char *str)
-{
-    if (NULL == exclude_regex)
-        return FALSE;
-    
-    if (regexec(exclude_regex, str, 0, NULL, 0) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-bool_t pattern_match(char *str)
-{
-    if (NULL == user_catch_regex)
-        return TRUE;
-    
-    if (regexec(user_catch_regex, str, 2, p_match, 0) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-char *get_pattern_match(char *str)
-{
-    if (p_match[1].rm_so == -1)
-        return NULL;
-
-    int length = p_match[1].rm_eo - p_match[1].rm_so;
-    char *substr = (char *) malloc(length + 1);
-    
-    strncpy(substr, str + p_match[1].rm_so, length);
-    substr[length] = '\0';
-    
-    return substr;
 }
 
 int monitor()
@@ -916,7 +937,7 @@ int monitor()
             }
             
             /* Build the full path of the directory or symbolic link */
-            node = get_from_wd(event->wd);
+            node = get_node_from_wd(event->wd);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
                 path = malloc(strlen(wd_data->path) + strlen(event->name) + 2);
@@ -934,10 +955,10 @@ int monitor()
             if (event->mask & event_mask
                 && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
                 && triggered_event->name != NULL
-                && pattern_match(path)
+                && regex_catch(event->name)
                 && triggered_event->handler(event, path) == 0)
             {
-                if (execute_command(triggered_event->name, path, wd_data->path) == -1) {
+                if (execute_command(triggered_event->name, event->name, wd_data->path) == -1) {
                     printf("ERROR OCCURED: Unable to execute the specified command!\n");
                     exit(1);
                 }
@@ -953,11 +974,11 @@ int monitor()
     return 0;
 }
 
-int execute_command_inline(char *event_name, char *event_path, char *event_p_path)
+int execute_command_inline(char *event_name, char *file_name, char *event_p_path)
 {   
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
-    
+
     /* Increase the exec counter */
     ++exec_c;
 
@@ -965,10 +986,10 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
     pid_t pid = fork();
     if (pid > 0) {
         /* parent process */
-    
-        sprintf(message, "EVENT TRIGGERED [%s] IN %s\n%u) PROCESS EXECUTED [pid: %d command: %s]",
-                event_name, event_path, exec_c, pid, command->data);
-        log_message(message); 
+
+        sprintf(message, "EVENT TRIGGERED [%s] IN %s%s\n%u) PROCESS EXECUTED [pid: %d command: %s]",
+                event_name, event_p_path, file_name, exec_c, pid, command->data);
+        log_message(message);
     } else if (pid == 0) {
         /* child process */
        
@@ -976,13 +997,7 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
         sprintf(exec_cstr, "%u", exec_c);
 
         /* Command token replacement */
-        tmp_command = bfromcstr((char *) command->data);
-        bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
-        bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
-        bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
-        bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-        bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
-        bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
+        tmp_command = format_command((char *) command->data, event_p_path, file_name, event_name);
 
         int exit = 0;
         exit = system((const char*) tmp_command->data);
@@ -992,7 +1007,6 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
             log_message(message);
         }
         
-        /* Free memory */
     	bdestroy(tmp_command);
     } else {
         /* error occured */
@@ -1004,12 +1018,12 @@ int execute_command_inline(char *event_name, char *event_path, char *event_p_pat
     return 0;
 }
 
-int execute_command_embedded(char *event_name, char *event_path, char *event_p_path)
+int execute_command_embedded(char *event_name, char *file_name, char *event_p_path)
 {
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
     
-    sprintf(message, "EVENT TRIGGERED [%s] IN %s", event_name, event_path);
+    sprintf(message, "EVENT TRIGGERED [%s] IN %s%s", event_name, event_p_path, file_name);
     log_message(message);
 
     /* Incrementate and convert exec_c to cstring */
@@ -1017,17 +1031,12 @@ int execute_command_embedded(char *event_name, char *event_path, char *event_p_p
     sprintf (exec_cstr, "%u", exec_c);
 
     /* Output the formatted string */
-    tmp_command = bfromcstr((char *) format->data);
-    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(event_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_pattern_match(event_path)), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
+    tmp_command = format_command((char *) format->data, event_p_path, file_name, event_name);
 
     fprintf(stdout, "%s\n", (char *) tmp_command->data);
     fflush(stdout);
-    
+
+    bdestroy(tmp_command);
     return 0;
 }
 
@@ -1070,24 +1079,8 @@ int event_handler_create(struct inotify_event *event, char *path)
         if (is_dir == TRUE) {
             /* resolve symbolic link */
             char *real_path = resolve_real_path(path);
-                        
-            /* check if the real path is already monitored */
-            LIST_NODE *node = get_from_path(real_path);
-            if (node == NULL) {
-                watch(real_path, path);
-            } else {
-                /* 
-                 * Append the new symbolic link
-                 * to the watched resource
-                 */
-                WD_DATA *wd_data = (WD_DATA *) node->data;
-                list_push(wd_data->links, (void*) path);
-                            
-                /* Log Message */
-                char *message = (char *) malloc(MAXPATHLEN);
-                sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", path, real_path);
-                log_message(message);
-            }
+
+            add_to_watch_list(real_path, path);
         }
     }
 

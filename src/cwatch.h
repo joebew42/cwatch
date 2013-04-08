@@ -42,7 +42,7 @@
 #include "list.h"
 
 #define PROGRAM_NAME    "cwatch"
-#define PROGRAM_VERSION "1.2.2"
+#define PROGRAM_VERSION "1.2.3"
 #define PROGRAM_STAGE   "experimental"
 
 #define EVENT_SIZE      (sizeof (struct inotify_event))
@@ -58,7 +58,7 @@
  *             absolute full path of the file or directory where the
  *             event occurs
  * _FILE  (%f) when cwatch execute the command, will be replaced with the
- *             absolute full path of the file or directory that triggered
+ *             name of the file or directory that triggered
  *             the event.
  * _EVENT (%e) when cwatch execute the command, will be replaced with the
  *             event type occured
@@ -122,7 +122,7 @@ regmatch_t p_match[2];          /* store the matched regular expression by -X op
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
 
-unsigned int exec_c;             /* the number of processes launched */
+unsigned int exec_c;             /* the number of times command is executed */
 char exec_cstr[10];              /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
@@ -167,7 +167,7 @@ char *resolve_real_path(const char *);
  * @param char *       : The path to find
  * @return LIST_NODE * : A pointer to node, NULL otherwise.
  */
-LIST_NODE *get_from_path(const char *);
+LIST_NODE *get_node_from_path(const char *);
 
 /**
  * Searchs and returns the node for the wd passed
@@ -175,7 +175,16 @@ LIST_NODE *get_from_path(const char *);
  * @param int          : The wd to find
  * @return LIST_NODE * : a pointer to node, NULL otherwise.
  */
-LIST_NODE *get_from_wd(const int);
+LIST_NODE *get_node_from_wd(const int);
+
+/**
+ * Create a WD_DATA
+ * 
+ * @param char *     : The real path
+ * @param int *      : the watch descriptor
+ * @return WD_DATA * : a pointer to WD_DATA, NULL otherwise.
+ */
+WD_DATA *create_wd_data(char *, int);
 
 /**
  * Searchs and returns the list_node from symlink path
@@ -183,7 +192,7 @@ LIST_NODE *get_from_wd(const int);
  * @param char *       : The path to find
  * @return LIST_NODE * : a pointer to list_node, NULL otherwise.
  */
-LIST_NODE *get_link_list_node(const char *);
+LIST_NODE *get_link_node_from_path(const char *);
 
 /**
  * Searchs and returns the link_data from symlink path
@@ -201,7 +210,7 @@ LINK_DATA *get_link_data_from_wd_data(const char *, const WD_DATA *);
  * @param char *       : The path to find
  * @return LINK_DATA * : a pointer to link data, NULL otherwise.
  */
-LINK_DATA *get_link_data(const char *);
+LINK_DATA *get_link_data_from_path(const char *);
 
 /**
  * Create a LINK_DATA
@@ -220,6 +229,52 @@ LINK_DATA *create_link_data(char *, WD_DATA *);
  * @return bool_t
  */
 bool_t is_child_of(char *, char *);
+
+/**
+ * Checks whetever a string exists in a list
+ *
+ * @param char * : string to check
+ * @param LIST * : list containing string
+ */
+bool_t exists(char *, LIST *);
+
+/**
+ * Checks whetever a string match the regular
+ * expression pattern defined with -x option
+ * See: exclude_regex
+ *
+ * @param char * : string to check
+ */
+bool_t excluded(char *);
+
+/**
+ * Checks whetever a pattern match the regular
+ * expression pattern defined with -X option
+ * See: user_catch_regex 
+ *
+ * @param char * : string to check
+ */
+bool_t regex_catch(char *);
+
+/**
+ * Return the subexpression matched by regex_catch
+ *
+ * @param  char * : string to check
+ * @return char * : matched subexpression
+ */
+char *get_regex_catch(char *);
+
+/**
+ * Replace all occurrences in the command/format
+ * specified by the user, with the special characters
+ *
+ * @param char *   : the command (-c) or the format (-F) defined by user
+ * @param char *   : the full path in which event was triggered
+ * @param char *   : the name of the file or directory that triggered the event
+ * @param char *   : the event name
+ * @return bstring : the resulting string with all occurrences replaced
+ */
+bstring format_command(char *, char *, char *, char *);
 
 /**
  * Parse command line
@@ -270,40 +325,6 @@ void unwatch(char *, bool_t);
 void unwatch_symbolic_link(LIST_NODE *);
 
 /**
- * Checks whetever a string exists in a list
- *
- * @param char * : string to check
- * @param LIST * : list containing string
- */
-bool_t exists(char *, LIST *);
-
-/**
- * Checks whetever a string match the regular
- * expression pattern defined with -x option
- * See: exclude_regex
- *
- * @param char * : string to check
- */
-bool_t excluded(char *);
-
-/**
- * Checks whetever a pattern match the regular
- * expression pattern defined with -X option
- * See: user_catch_regex 
- *
- * @param char * : string to check
- */
-bool_t pattern_match(char *);
-
-/**
- * Return the subexpression matched by pattern_match
- *
- * @param  char * : string to check
- * @return char * : matched subexpression
- */
-char *get_pattern_match(char *);
-
-/**
  * Start monitoring
  * 
  * Used to monitor inotify event on watched resources
@@ -317,7 +338,7 @@ int monitor();
  *
  * This function handle the execution of a command 
  * @param char *  : the inotify event name
- * @param char *  : the path of file/directory that triggered the event
+ * @param char *  : the name of file/directory that triggered the event
  * @param char *  : the path where event occured
  * @return int    : -1 in case of error, 0 otherwise
  */
@@ -343,7 +364,7 @@ struct event_t *get_inotify_event(const uint32_t);
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
 
-int event_handler_undefined(struct inotify_event *, char *);   /* NO ACTION, it always return -1 */
+int event_handler_undefined(struct inotify_event *, char *);   /* NO ACTION, it always return 0 */
 int event_handler_create(struct inotify_event *, char *);      /* IN_CREATE */
 int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
 int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
