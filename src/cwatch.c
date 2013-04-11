@@ -800,7 +800,7 @@ void unwatch(char *path, bool_t is_link)
 }
 
 // TODO push into cwatch.h
-LIST *list_of_referecend_path(const char *path)
+LIST *list_of_referenced_path(const char *path)
 {
     LIST *tmp_references_list = list_init();
     LIST_NODE *node;
@@ -873,7 +873,7 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
     if (wd_data->links->first == NULL
         && is_child_of(wd_data->path, root_path) == FALSE)
     {
-        LIST *references_list = list_of_referecend_path(wd_data->path);
+        LIST *references_list = list_of_referenced_path(wd_data->path);
         if (NULL != references_list) {
             remove_orphan_watched_resources(wd_data->path, references_list);
         }
