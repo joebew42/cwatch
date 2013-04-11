@@ -325,7 +325,7 @@ LINK_DATA *create_link_data(char *symlink, WD_DATA *wd_data)
     return link_data;
 }
 
-bool_t is_child_of(char *child, char *parent)
+bool_t is_child_of(const char *child, const char *parent)
 {   
     if (child == NULL
         || parent == NULL
@@ -800,6 +800,58 @@ void unwatch(char *path, bool_t is_link)
     }
 }
 
+// TODO push into cwatch.h
+LIST *list_of_referecend_path(const char *path)
+{
+    LIST *tmp_references_list = list_init();
+    LIST_NODE *node;
+    WD_DATA *wd_data;
+
+    node = list_wd->first;
+    while (node) {
+        wd_data = (WD_DATA*) node->data;
+        
+        if (wd_data->links->first != NULL
+            && (strncmp(path, wd_data->path, strlen(path)) == 0
+                || strncmp(path, wd_data->path, strlen(wd_data->path)) == 0)
+            && exists(wd_data->path, tmp_references_list) == FALSE)
+        {
+            list_push(tmp_references_list, (void*) wd_data->path);
+        }
+        node = node->next;
+    }
+    
+    return tmp_references_list;
+}
+
+// TODO push into cwatch.h
+void remove_orphan_watched_resources(const char *path, LIST *references_list)
+{
+    LIST_NODE *node;
+    WD_DATA *wd_data;
+    
+    node = list_wd->first;
+    while (node) {
+        wd_data = (WD_DATA*) node->data;
+        
+        if (strcmp(root_path, wd_data->path) != 0
+            && wd_data->links->first == NULL
+            && is_child_of(wd_data->path, path) == TRUE
+            // && listed_as_orphan(wd_data->path, references_list) == TRUE) // REFACTOR OF exists(str, [])
+            && exists(wd_data->path, references_list) == FALSE)
+        {
+            /* Log Message */
+            char *message = (char *) malloc(MAXPATHLEN);
+            sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
+            log_message(message);
+                                
+            inotify_rm_watch(fd, wd_data->wd);
+            list_remove(list_wd, node);
+        }
+        node = node->next;
+    }
+}
+
 void unwatch_symbolic_link(LIST_NODE *link_node)
 {   
     LINK_DATA *link_data = (LINK_DATA*) link_node->data;
@@ -816,74 +868,17 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
     /*
      * if there is no other symbolic links that point to the
      * watched resource and the watched resource is not a child
-     * of the the root path then unwatch it.
+     * of the the root path then unwatch it and relative orphan
+     * directories (no longer reached by any symbolic links within root_path)
      */
     if (wd_data->links->first == NULL
         && is_child_of(wd_data->path, root_path) == FALSE)
     {
-        WD_DATA *sub_wd_data;
-        
-        /*
-         * Build temporary look-up list of resources
-         * that are pointed by some symbolic links.
-         */
-        LIST *tmp_linked_path = list_init();
-        LIST_NODE *sub_node = list_wd->first;
-        while (sub_node) {
-            sub_wd_data = (WD_DATA*) sub_node->data;
-            
-            /*
-             * If it is a PARENT or CHILD and it is referenced by some symbolic link
-             * and it is not listed into tmp_linked_path, then
-             * add it into the list and move to the next resource.
-             */
-            if ((strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
-                 || strncmp(wd_data->path, sub_wd_data->path, strlen(sub_wd_data->path)) == 0)
-                && sub_wd_data->links->first != NULL
-                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
-            {
-                /* Save current path into linked_path */
-                list_push(tmp_linked_path, (void*) sub_wd_data->path);
-            }
-            
-            /* Move to next resource */
-            sub_node = sub_node->next;
+        LIST *references_list = list_of_referecend_path(wd_data->path);
+        if (NULL != references_list) {
+            remove_orphan_watched_resources(wd_data->path, references_list);
         }
-        
-        /*
-         * Descend to all subdirectories of wd_data->path and unwatch them all
-         * only if they or it's parents are not pointed by some symbolic link, anymore
-         * (check if parent is not pointed by symlinks too).
-         */
-        sub_node = list_wd->first;
-        while (sub_node) {
-            sub_wd_data = (WD_DATA*) sub_node->data;
-                
-            /*
-             * If it is a CHILD and is NOT referenced by some symbolic link
-             * and it is not listed into tmp_linked_path, then
-             * remove the watch descriptor from the resource.
-             */
-            if (strcmp(root_path, sub_wd_data->path) != 0
-                && strncmp(wd_data->path, sub_wd_data->path, strlen(wd_data->path)) == 0
-                && sub_wd_data->links->first == NULL
-                && exists(sub_wd_data->path, tmp_linked_path) == FALSE)
-            {
-                /* Log Message */
-                char *message = (char *) malloc(MAXPATHLEN);
-                sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, sub_wd_data->wd, sub_wd_data->path);
-                log_message(message);
-                                
-                inotify_rm_watch(fd, sub_wd_data->wd);
-                list_remove(list_wd, sub_node);
-            }
-                            
-            /* Move to next resource */
-            sub_node = sub_node->next;
-        }
-                    
-        /* Free temporay lookup list */
-        list_free(tmp_linked_path);
+        list_free(references_list);
     }
 }
 
@@ -1079,8 +1074,7 @@ int event_handler_create(struct inotify_event *event, char *path)
         if (is_dir == TRUE) {
             /* resolve symbolic link */
             char *real_path = resolve_real_path(path);
-
-            add_to_watch_list(real_path, path);
+            watch(real_path, path);
         }
     }
 

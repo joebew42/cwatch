@@ -228,7 +228,7 @@ LINK_DATA *create_link_data(char *, WD_DATA *);
  * @param char * : second path (the parent)
  * @return bool_t
  */
-bool_t is_child_of(char *, char *);
+bool_t is_child_of(const char *, const char *);
 
 /**
  * Checks whetever a string exists in a list
