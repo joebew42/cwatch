@@ -657,7 +657,6 @@ int watch(char *real_path, char *symlink)
 
                 /* Check if the symbolic link is already watched */
                 if (get_link_data_from_path(symlink) != NULL) {
-                    printf("Already watched symlink %s, skipping\n", symlink);
                     continue;
                 }
                 
@@ -837,7 +836,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list)
         if (strcmp(root_path, wd_data->path) != 0
             && wd_data->links->first == NULL
             && is_child_of(wd_data->path, path) == TRUE
-            // && listed_as_orphan(wd_data->path, references_list) == TRUE) // REFACTOR OF exists(str, [])
+            // && is_listed_as_orphan(wd_data->path, references_list) == TRUE) // REFACTOR OF exists(str, [])
             && exists(wd_data->path, references_list) == FALSE)
         {
             /* Log Message */
