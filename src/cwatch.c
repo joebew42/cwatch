@@ -106,16 +106,17 @@ int help(int error)
     printf("   or: %s [-V|--version]\n", PROGRAM_NAME);
     printf("   or: %s [-h|--help]\n\n", PROGRAM_NAME);
     printf("  -c --command COMMAND\n");
-    printf("     Execute a user-specified command.\n");
-    printf("     Injection of specal special characters is possible\n");
-    printf("     (See the TABLE OF SPECIAL CHARACTERS)\n");
-    printf("     warn: This option exclude the use of -F option\n\n");
+    printf("     Specify the command to execute each time an event occurs\n");
+    printf("     Append & at the end of the command for a non-blocking execution\n");
+    printf("     Use of specal special characters is allowed\n");
+    printf("     (See the TABLE OF SPECIAL CHARACTERS for a complete reference)\n");
+    printf("     NOTE: This option exclude the use of -F option\n\n");
     printf("  -F --format  FORMAT\n");
     printf("     Output in a user-specified format, using printf-like syntax.\n");
     printf("     This usage is useful if you want to emebed %s inside a bash script.\n", PROGRAM_NAME);
-    printf("     Injection of specal special characters is possible\n");
-    printf("     (See the TABLE OF SPECIAL CHARACTERS)\n");
-    printf("     warn: This option exclude the use of -c and -v option\n\n");
+    printf("     Use of specal special characters is allowed\n");
+    printf("     (See the TABLE OF SPECIAL CHARACTERS for a complete reference)\n");
+    printf("     NOTE: This option exclude the use of -c and -v option\n\n");
     printf("  *TABLE OF SPECIAL CHARACTERS*\n\n");
     printf("       %sr : full path of the root DIRECTORY\n", "%");
     printf("       %sp : full path of the file/directory where the event occurs\n", "%");
@@ -337,7 +338,7 @@ bool_t is_child_of(const char *child, const char *parent)
     return (strncmp(child, parent, strlen(parent)) == 0) ? TRUE : FALSE;
 }
 
-bool_t exists(char* child_path, LIST *parents)
+bool_t is_listed_in(char* child_path, LIST *parents)
 {
     if (parents == NULL || parents->first == NULL)
         return FALSE;
@@ -397,6 +398,8 @@ bstring format_command(char *command_format, char *event_p_path, char *file_name
     bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(file_name), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_regex_catch(file_name)), 0);
+    
+    sprintf(exec_cstr, "%u", exec_c);
     bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
 
     return tmp_command;
@@ -734,7 +737,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
 
 void unwatch(char *path, bool_t is_link)
 {
-    /* REFACTOR HERE */
+    /* TODO REFACTOR HERE */
     
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
@@ -756,12 +759,9 @@ void unwatch(char *path, bool_t is_link)
             list_remove(list_wd, node);
         }
     } else {
-        /* BFS to discover other symbolic links */
+        /* Search for all other symbolic links to unwatch */
         LIST *list = list_init();
         list_push(list, (void *) path);
-    
-        DIR *dir_stream;
-        struct dirent *dir;
 
         while (list->first != NULL) {
             char *symlink = (char*) list_pop(list);
@@ -772,24 +772,26 @@ void unwatch(char *path, bool_t is_link)
             
             LINK_DATA *link_data = (LINK_DATA*) link_node->data;
             char *resolved_path = (char*) link_data->wd_data->path;
+
+            /* TODO: Refactor this section */
+            LIST_NODE *node = list_wd->first;
+            LIST_NODE *sub_node = NULL;
             
-            dir_stream = opendir(resolved_path);
-        
-            if (dir_stream == NULL)
-                continue;
-            
-            /* Traverse directory */
-            while ((dir = readdir(dir_stream))) {
-                if (dir->d_type == DT_LNK) {
-                    /* Retrieve absolute symlink path */
-                    char *link_path = (char *) malloc(strlen(resolved_path) + strlen(dir->d_name) + 1);
-                    strcpy(link_path, resolved_path);
-                    strcat(link_path, dir->d_name);
-                
-                    list_push(list, (void*) link_path);
+            WD_DATA *wd_data = NULL;
+            LINK_DATA *link_data2 = NULL;
+            while (node) {
+                wd_data = (WD_DATA*) node->data;
+                sub_node = (LIST_NODE*) wd_data->links->first;
+                while (sub_node) {
+                    link_data2 = (LINK_DATA*) sub_node->data;
+                    if (is_child_of(link_data2->path, resolved_path) == TRUE) {
+                        /* printf("-> SYMLINK TO REMOVE: %s\n", link_data2->path); */
+                        list_push(list, (void*) link_data2->path);
+                    }                    
+                    sub_node = sub_node->next;
                 }
+                node = node->next;
             }
-            closedir(dir_stream);
             
             if (link_node != NULL)
                 unwatch_symbolic_link(link_node);
@@ -799,7 +801,6 @@ void unwatch(char *path, bool_t is_link)
     }
 }
 
-// TODO push into cwatch.h
 LIST *list_of_referenced_path(const char *path)
 {
     LIST *tmp_references_list = list_init();
@@ -813,7 +814,7 @@ LIST *list_of_referenced_path(const char *path)
         if (wd_data->links->first != NULL
             && (strncmp(path, wd_data->path, strlen(path)) == 0
                 || strncmp(path, wd_data->path, strlen(wd_data->path)) == 0)
-            && exists(wd_data->path, tmp_references_list) == FALSE)
+            && is_listed_in(wd_data->path, tmp_references_list) == FALSE)
         {
             list_push(tmp_references_list, (void*) wd_data->path);
         }
@@ -823,7 +824,6 @@ LIST *list_of_referenced_path(const char *path)
     return tmp_references_list;
 }
 
-// TODO push into cwatch.h
 void remove_orphan_watched_resources(const char *path, LIST *references_list)
 {
     LIST_NODE *node;
@@ -836,8 +836,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list)
         if (strcmp(root_path, wd_data->path) != 0
             && wd_data->links->first == NULL
             && is_child_of(wd_data->path, path) == TRUE
-            // && is_listed_as_orphan(wd_data->path, references_list) == TRUE) // REFACTOR OF exists(str, [])
-            && exists(wd_data->path, references_list) == FALSE)
+            && is_listed_in(wd_data->path, references_list) == FALSE)
         {
             /* Log Message */
             char *message = (char *) malloc(MAXPATHLEN);
@@ -852,7 +851,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list)
 }
 
 void unwatch_symbolic_link(LIST_NODE *link_node)
-{   
+{    
     LINK_DATA *link_data = (LINK_DATA*) link_node->data;
     char *link_path = (char*) link_data->path;
     WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
@@ -952,6 +951,8 @@ int monitor()
                 && regex_catch(event->name)
                 && triggered_event->handler(event, path) == 0)
             {
+                ++exec_c;
+                
                 if (execute_command(triggered_event->name, event->name, wd_data->path) == -1) {
                     printf("ERROR OCCURED: Unable to execute the specified command!\n");
                     exit(1);
@@ -972,42 +973,24 @@ int execute_command_inline(char *event_name, char *file_name, char *event_p_path
 {   
     /* For log purpose */
     char *message = (char *) malloc(MAXPATHLEN);
-
-    /* Increase the exec counter */
-    ++exec_c;
-
-    /* Execute the command */
-    pid_t pid = fork();
-    if (pid > 0) {
-        /* parent process */
-
-        sprintf(message, "EVENT TRIGGERED [%s] IN %s%s\n%u) PROCESS EXECUTED [pid: %d command: %s]",
-                event_name, event_p_path, file_name, exec_c, pid, command->data);
+    
+    sprintf(message,
+            "EVENT TRIGGERED [%s] IN %s%s\nNUMBER OF EXECUTION [%u]\nPROCESS EXECUTED [command: %s]",
+            event_name, event_p_path, file_name, exec_c, command->data);
+    log_message(message);
+    
+    /* Command token replacement */
+    tmp_command = format_command((char *) command->data, event_p_path, file_name, event_name);
+    
+    int exit = 0;
+    exit = system((const char*) tmp_command->data);
+    
+    if (exit == -1 || exit == 127) {
+        sprintf(message, "Unable to execute the specified command!");
         log_message(message);
-    } else if (pid == 0) {
-        /* child process */
-       
-        /* cast exec_c to cstring */
-        sprintf(exec_cstr, "%u", exec_c);
-
-        /* Command token replacement */
-        tmp_command = format_command((char *) command->data, event_p_path, file_name, event_name);
-
-        int exit = 0;
-        exit = system((const char*) tmp_command->data);
-
-        if (exit == -1 || exit == 127) {
-            sprintf(message, "Unable to execute the specified command!");
-            log_message(message);
-        }
-        
-    	bdestroy(tmp_command);
-    } else {
-        /* error occured */
-        sprintf(message, "ERROR during the fork() !!!");
-        log_message(message);
-        exit(1);
     }
+    
+    bdestroy(tmp_command);
 
     return 0;
 }
@@ -1019,10 +1002,6 @@ int execute_command_embedded(char *event_name, char *file_name, char *event_p_pa
     
     sprintf(message, "EVENT TRIGGERED [%s] IN %s%s", event_name, event_p_path, file_name);
     log_message(message);
-
-    /* Incrementate and convert exec_c to cstring */
-    ++exec_c;
-    sprintf (exec_cstr, "%u", exec_c);
 
     /* Output the formatted string */
     tmp_command = format_command((char *) format->data, event_p_path, file_name, event_name);
@@ -1064,24 +1043,20 @@ int event_handler_create(struct inotify_event *event, char *path)
         watch(path, NULL);
     } else if (nosymlink_flag == FALSE) {
         /* Check for a symbolic link */
-        bool_t is_dir = FALSE;
         DIR *dir_stream = opendir(path);
-        if (dir_stream != NULL)
-            is_dir = TRUE;
-        closedir(dir_stream);
-                    
-        if (is_dir == TRUE) {
-            /* resolve symbolic link */
+        if (dir_stream != NULL) {
+            closedir(dir_stream);
+            
             char *real_path = resolve_real_path(path);
             watch(real_path, path);
         }
     }
-
+    
     return 0;
 }
 
 int event_handler_delete(struct inotify_event *event, char *path)
-{
+{   
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
         unwatch(path, FALSE);
@@ -1096,7 +1071,7 @@ int event_handler_delete(struct inotify_event *event, char *path)
          */
         unwatch(path, TRUE);
     }
-
+    
     return 0;
 }
 

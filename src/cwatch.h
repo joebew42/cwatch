@@ -231,12 +231,13 @@ LINK_DATA *create_link_data(char *, WD_DATA *);
 bool_t is_child_of(const char *, const char *);
 
 /**
- * Checks whetever a string exists in a list
+ * Checks whetever a string is contained in a list
  *
- * @param char * : string to check
- * @param LIST * : list containing string
+ * @param char *  : string to check
+ * @param LIST *  : list containing string
+ * @return bool_t : TRUE if string is contained, FALSE otherwise
  */
-bool_t exists(char *, LIST *);
+bool_t is_listed_in(char *, LIST *);
 
 /**
  * Checks whetever a string match the regular
@@ -316,6 +317,23 @@ LIST_NODE *add_to_watch_list(char *, char *);
  * @param bool_t : TRUE if the path to unwatch is a symlink, FALSE otherwise.
  */
 void unwatch(char *, bool_t);
+
+/**
+ * Return a list of path that is referenced by a symbolic link
+ * and is child or a parent of the pathe given as argument
+ * @param char * : the path to inspect
+ * @return LIST  : the list of all paths
+ */
+LIST *list_of_referenced_path(const char *);
+
+/**
+ * Remove from the watch list all resources that are no
+ * longer referenced by symbolic links and are extern
+ * from the root_path
+ * @param char * : the path to remove
+ * @return LIST  : the list of all path that are referenced by symlink
+ */
+void remove_orphan_watched_resources(const char *, LIST *);
 
 /**
  * Unwatch a symbolic link from the watched resources
