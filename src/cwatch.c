@@ -1,4 +1,4 @@
-/* cwatch.c
+    /* cwatch.c
  * Monitor file system activity using the inotify linux kernel library
  *
  * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
@@ -179,19 +179,52 @@ int help(int error)
     return 0;
 }
 
-void log_message(char *message)
-{
-    if (verbose_flag && (NULL == format)) {
-        printf("%s\n", message);
-    }
+void log_message (char *message, ... ){
+
+    /* Init variable arguments list */
+    va_list la;
+    va_start (la, message);
+
+    /* Cast message to bstring and set index search */ 
+    bstring b_message = bfromcstr(message);
+    int index = 0;
     
-    if (syslog_flag) {
-        openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
-        syslog(LOG_INFO, message);
-        closelog();
-    }
+    if (syslog_flag || (verbose_flag && (NULL == format))){
+        /* Find each special char and replace with the correct arg */
+        while ( (index = binstr (b_message, index, bfromcstr("%") )) != BSTR_ERR ){
+            
+            /* find the type of the special char */
+            char type = b_message->data[++index];
+      
+            if ( type == 's'){
+            
+                /* Get the next char * arg and replace it*/
+                char *arg_char = va_arg (la, char *);
+                breplace (b_message, index - 1, 2, bfromcstr (arg_char), ' ');
+            }else if (type == 'd' || type == 'u'){
+                
+                /* Get the next int arg, cast in cstr, and replace it */
+                int arg_int = va_arg (la, int);
+                    
+                char *str_int = (char *) malloc (15);
+                sprintf (str_int, "%d", arg_int);
+                breplace (b_message, index - 1, 2, bfromcstr(str_int), ' ');
+            }
+        }
+        
+        if (verbose_flag && (NULL == format)) {
+            printf("%s\n", b_message->data);
+        }
     
-    free(message);
+        if (syslog_flag) {
+            openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
+            syslog(LOG_INFO, b_message->data);
+            closelog();
+        }
+    }
+    /* End the variable arguments list and free memory */
+    va_end (la);
+    bdestroy (b_message);
 }
 
 char *resolve_real_path(const char *path)
@@ -392,16 +425,18 @@ char *get_regex_catch(char *str)
 
 bstring format_command(char *command_format, char *event_p_path, char *file_name, char *event_name)
 {
+    char *regex_char = get_regex_catch(file_name);
     tmp_command = bfromcstr(command_format);
     bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(file_name), 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_regex_catch(file_name)), 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(regex_char), 0);
     
-    sprintf(exec_cstr, "%u", exec_c);
+    sprintf(exec_cstr, "%d", exec_c);
     bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
-
+    
+    free(regex_char);
     return tmp_command;
 }
 
@@ -542,7 +577,7 @@ int parse_command_line(int argc, char *argv[])
             exclude_regex = (regex_t *) malloc(sizeof(regex_t));
             
             if (regcomp(exclude_regex, optarg, REG_EXTENDED | REG_NOSUB) != 0) {
-                free(exclude_regex);
+                regfree(exclude_regex);
                 help(0);
                 printf("\nThe specified regular expression provided for the -x --exclude option, is not valid.\n");
                 exit(1);
@@ -557,7 +592,7 @@ int parse_command_line(int argc, char *argv[])
             user_catch_regex = (regex_t *) malloc(sizeof(regex_t));
             
             if (regcomp(user_catch_regex, optarg, REG_EXTENDED) != 0) {
-                free(user_catch_regex);
+                regfree(user_catch_regex);
                 help(0);
                 printf("\nThe specified regular expression provided for the -X --regex-catch is not valid.\n");
                 exit(1);
@@ -652,6 +687,7 @@ int watch(char *real_path, char *symlink)
                     add_to_watch_list(path_to_watch, NULL);
                     list_push(list, (void*) path_to_watch);
                 }
+                free(path_to_watch);
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
                 char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 1);
@@ -665,8 +701,7 @@ int watch(char *real_path, char *symlink)
                 
                 char *real_path = resolve_real_path(symlink);
 
-                DIR *is_a_dir;
-                is_a_dir = opendir(real_path);
+                DIR *is_a_dir = opendir(real_path);
                 if (real_path != NULL && is_a_dir != NULL) {
                     closedir(is_a_dir);
                     
@@ -676,6 +711,7 @@ int watch(char *real_path, char *symlink)
                         list_push(list, (void*) real_path);
                     }
                 }
+                free(symlink);
             }
         }
         closedir(dir_stream);
@@ -711,9 +747,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             node = list_push(list_wd, (void*) wd_data);
         
             /* Log Message */
-            char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
-            log_message(message);
+            log_message("WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
         }
     }
 
@@ -726,9 +760,7 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
             list_push(wd_data->links, (void *) link_data);
             
             /* Log Message */
-            char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
-            log_message(message);   
+            log_message("ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);   
         }
     }
     
@@ -747,9 +779,7 @@ void unwatch(char *path, bool_t is_link)
             WD_DATA *wd_data = (WD_DATA *) node->data;
             
             /* Log Message */
-            char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, path);
-            log_message(message);
+            log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, path);
             
             inotify_rm_watch(fd, wd_data->wd);
 
@@ -839,9 +869,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list)
             && is_listed_in(wd_data->path, references_list) == FALSE)
         {
             /* Log Message */
-            char *message = (char *) malloc(MAXPATHLEN);
-            sprintf(message, "UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
-            log_message(message);
+            log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
                                 
             inotify_rm_watch(fd, wd_data->wd);
             list_remove(list_wd, node);
@@ -857,9 +885,7 @@ void unwatch_symbolic_link(LIST_NODE *link_node)
     WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
     
     /* Log Message */
-    char *message = (char *) malloc(MAXPATHLEN);
-    sprintf(message, "UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
-    log_message(message);
+    log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
     
     list_remove(wd_data->links, link_node);
     
@@ -921,7 +947,7 @@ int monitor()
         while (i < len) {
             /* inotify_event */
             event = (struct inotify_event*) &buffer[i];
-
+             
             /* Discard all filename that matches regular expression (-x option) */
             if (excluded(event->name)) {
                 /* Next event */
@@ -972,12 +998,8 @@ int monitor()
 int execute_command_inline(char *event_name, char *file_name, char *event_p_path)
 {   
     /* For log purpose */
-    char *message = (char *) malloc(MAXPATHLEN);
-    
-    sprintf(message,
-            "EVENT TRIGGERED [%s] IN %s%s\nNUMBER OF EXECUTION [%u]\nPROCESS EXECUTED [command: %s]",
+    log_message("EVENT TRIGGERED [%s] IN %s%s\nNUMBER OF EXECUTION [%d]\nPROCESS EXECUTED [command: %s]",
             event_name, event_p_path, file_name, exec_c, command->data);
-    log_message(message);
     
     /* Command token replacement */
     tmp_command = format_command((char *) command->data, event_p_path, file_name, event_name);
@@ -986,8 +1008,7 @@ int execute_command_inline(char *event_name, char *file_name, char *event_p_path
     exit = system((const char*) tmp_command->data);
     
     if (exit == -1 || exit == 127) {
-        sprintf(message, "Unable to execute the specified command!");
-        log_message(message);
+        log_message("Unable to execute the specified command!");
     }
     
     bdestroy(tmp_command);
@@ -998,10 +1019,7 @@ int execute_command_inline(char *event_name, char *file_name, char *event_p_path
 int execute_command_embedded(char *event_name, char *file_name, char *event_p_path)
 {
     /* For log purpose */
-    char *message = (char *) malloc(MAXPATHLEN);
-    
-    sprintf(message, "EVENT TRIGGERED [%s] IN %s%s", event_name, event_p_path, file_name);
-    log_message(message);
+    log_message("EVENT TRIGGERED [%s] IN %s%s", event_name, event_p_path, file_name);
 
     /* Output the formatted string */
     tmp_command = format_command((char *) format->data, event_p_path, file_name, event_name);
@@ -1086,4 +1104,21 @@ int event_handler_moved_to(struct inotify_event *event, char *path)
         return event_handler_create(event, path);
     
     return 0; /* do nothing */
+}
+
+void signal_callback_handler(int signum)
+{
+    printf("Cleaning...\n");
+    
+    //free(root_path);
+    //free(execute_command);
+
+
+    //free(exclude_regex);
+    //free(user_catch_regex);
+   
+    //list_free(list_wd);
+    
+    /* Exit with signum */
+    exit(signum);
 }

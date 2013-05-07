@@ -26,6 +26,8 @@
 #define __CWATCH_H
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <signal.h>
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
@@ -122,7 +124,7 @@ regmatch_t p_match[2];          /* store the matched regular expression by -X op
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
 
-unsigned int exec_c;             /* the number of times command is executed */
+int exec_c;                      /* the number of times command is executed */
 char exec_cstr[10];              /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
@@ -146,10 +148,11 @@ int help(int);
 /**
  * Log
  * 
- * Log message via syslog or via standard output
+ * Log message via syslog or via standard output in printf-like syntax
  * @param char * : Message to log
+ * @param ... : variable argument list
  */
-void log_message(char *);
+void log_message(char *, ...);
 
 /**
  * Resolve the real path
@@ -388,4 +391,13 @@ int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
 int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
 int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
 
+/**
+ * SIGNAL HANDLER DEFINITION
+ *
+ * Handler function called when a signal occurs for manage memory
+ *
+ * @param int   : ID of signal
+ */
+ 
+void signal_callback_handler(int signum);
 #endif /* !__CWATCH_H */
