@@ -28,7 +28,10 @@
  * MAIN
  */
 int main(int argc, char *argv[])
-{ 
+{
+    /* bind the signal handler */
+    signal(SIGINT, (void*)signal_callback_handler);
+
     if (parse_command_line(argc, argv) == 0) {
         /* File descriptor inotify */
         fd = inotify_init();
@@ -45,6 +48,6 @@ int main(int argc, char *argv[])
         /* Start monitoring */
         return monitor();
     }
-    
+
     return -1;
 }
