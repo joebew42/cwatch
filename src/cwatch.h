@@ -397,5 +397,5 @@ int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
  * @param int : ID of signal
  */
 
-void signal_callback_handler(int signum);
+void signal_callback_handler(int);
 #endif /* !__CWATCH_H */
