@@ -189,9 +189,11 @@ void log_message(char *message, ...)
     bstring b_message = bfromcstr(message);
     int index = 0;
 
+    bstring b_percent = bfromcstr("%");
+
     if (syslog_flag || (verbose_flag && (NULL == format))){
         /* Find each special char and replace with the correct arg */
-        while ( (index = binstr(b_message, index, bfromcstr("%"))) != BSTR_ERR){
+        while ( (index = binstr(b_message, index, b_percent)) != BSTR_ERR){
 
             /* Find the type of value */
             char type = b_message->data[++index];
@@ -200,16 +202,23 @@ void log_message(char *message, ...)
 
                 /* Get the next char* arg and replace it */
                 char *arg_char = va_arg (la, char *);
-                breplace(b_message, index - 1, 2, bfromcstr(arg_char), ' ');
+                bstring b_arg_char = bfromcstr(arg_char);
+
+                breplace(b_message, index - 1, 2, b_arg_char, ' ');
+                bdestroy(b_arg_char);
             }else if (type == 'd'){
 
                 /* Get the next int arg, cast in cstr, and replace it*/
                 int arg_int = va_arg (la, int);
 
-                /* XXX: find the correct length of maxint */
+                /* TODO: find the correct length of maxint */
                 char *str_int = (char *) malloc (15);
+
                 sprintf(str_int, "%d", arg_int);
-                breplace(b_message, index - 1, 2, bfromcstr(str_int), ' ');
+                bstring b_str_int = bfromcstr(str_int);
+
+                breplace(b_message, index - 1, 2, b_str_int, ' ');
+                bdestroy(b_str_int);
             }
         }
 
@@ -226,12 +235,13 @@ void log_message(char *message, ...)
 
     /* End the variable arguments list and free memory */
     va_end(la);
+    bdestroy(b_percent);
     bdestroy(b_message);
 }
 
 char *resolve_real_path(const char *path)
 {
-    char *resolved = malloc(MAXPATHLEN + 1);
+    char *resolved = (char*) malloc(MAXPATHLEN + 1);
 
     realpath(path, resolved);
 
@@ -271,7 +281,8 @@ LIST_NODE *get_node_from_wd(const int wd)
 
 WD_DATA *create_wd_data(char *real_path, int wd)
 {
-    WD_DATA *wd_data = malloc(sizeof(WD_DATA));
+    WD_DATA *wd_data = (WD_DATA*) malloc(sizeof(WD_DATA));
+
     if (wd_data == NULL)
         return NULL;
 
@@ -318,7 +329,6 @@ LINK_DATA *get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_dat
     link_node = wd_data->links->first;
     while (link_node) {
         link_data = (LINK_DATA*) link_node->data;
-
         if (strcmp(link_data->path, symlink) == 0) {
             return link_data;
         }
@@ -350,7 +360,7 @@ LINK_DATA *get_link_data_from_path(const char *symlink)
 
 LINK_DATA *create_link_data(char *symlink, WD_DATA *wd_data)
 {
-    LINK_DATA *link_data = malloc(sizeof(LINK_DATA));
+    LINK_DATA *link_data = (LINK_DATA*) malloc(sizeof(LINK_DATA));
 
     if (link_data == NULL)
         return NULL;
@@ -428,14 +438,31 @@ char *get_regex_catch(char *str)
 bstring format_command(char *command_format, char *event_p_path, char *file_name, char *event_name)
 {
     tmp_command = bfromcstr(command_format);
-    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, bfromcstr(root_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, bfromcstr(event_p_path), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, bfromcstr(file_name), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, bfromcstr(event_name), 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, bfromcstr(get_regex_catch(file_name)), 0);
+
+    bstring b_root_path = bfromcstr(root_path);
+    bstring b_event_p_path = bfromcstr (event_p_path);
+    bstring b_file_name = bfromcstr (file_name);
+    bstring b_event_name = bfromcstr (event_name);
+
+    char *reg_catch = get_regex_catch(file_name);
+    bstring b_regcat = bfromcstr(reg_catch);
+    free(reg_catch);
+    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, b_root_path, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, b_event_p_path, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, b_file_name, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT,b_event_name, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX,b_regcat , 0);
 
     sprintf(exec_cstr, "%d", exec_c);
-    bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, bfromcstr(exec_cstr), 0);
+    bstring b_exec_cstr = bfromcstr (exec_cstr);
+    bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, b_exec_cstr, 0);
+
+    bdestroy (b_root_path);
+    bdestroy (b_event_p_path);
+    bdestroy (b_file_name);
+    bdestroy (b_event_name);
+    bdestroy (b_regcat);
+    bdestroy (b_exec_cstr);
 
     return tmp_command;
 }
@@ -448,6 +475,8 @@ int parse_command_line(int argc, char *argv[])
 
     /* Handle command line options */
     /* TODO: Refactor the parse command line */
+    bstring b_optarg;
+
     int c;
     while ((c = getopt_long(argc, argv, "svnrVhe:c:F:d:x:X:", long_options, NULL)) != -1) {
         switch (c) {
@@ -514,50 +543,73 @@ int parse_command_line(int argc, char *argv[])
 
         case 'e': /* --events */
             /* Set inotify events mask */
-            split_event = bsplit(bfromcstr(optarg), ',');
+            b_optarg = bfromcstr(optarg);
+            split_event = bsplit(b_optarg, ',');
+
+            /* init the events name */
+            B_ACCESS =  bfromcstr("access");
+            B_MODIFY = bfromcstr("modify");
+            B_ATTRIB = bfromcstr("attrib");
+            B_CLOSE_WRITE = bfromcstr("close_write");
+            B_CLOSE_NOWRITE = bfromcstr("close_nowrite");
+            B_CLOSE = bfromcstr("close");
+            B_OPEN = bfromcstr("open");
+            B_MOVED_FROM = bfromcstr("moved_from");
+            B_MOVED_TO = bfromcstr("moved_to");
+            B_MOVE = bfromcstr("move");
+            B_CREATE = bfromcstr("create");
+            B_DELETE = bfromcstr("delete");
+            B_DELETE_SELF = bfromcstr("delete_self");
+            B_UNMOUNT = bfromcstr("unmount");
+            B_Q_OVERFLOW = bfromcstr("q_overflow");
+            B_IGNORED = bfromcstr("ignored");
+            B_ISDIR = bfromcstr("isdir");
+            B_ONESHOT = bfromcstr("oneshot");
+            B_DEFAULT = bfromcstr("default");
+            B_ALL_EVENTS = bfromcstr("all_events");
 
             if (split_event != NULL) {
                 int i;
                 for (i = 0; i < split_event->qty; ++i) {
-                    if (bstrcmp(split_event->entry[i], bfromcstr("access")) == 0) {
+                    if (bstrcmp(split_event->entry[i], B_ACCESS) == 0) {
                         event_mask |= IN_ACCESS;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("modify")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_MODIFY) == 0) {
                         event_mask |= IN_MODIFY;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("attrib")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_ATTRIB) == 0) {
                         event_mask |= IN_ATTRIB;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close_write")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_CLOSE_WRITE) == 0) {
                         event_mask |= IN_CLOSE_WRITE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close_nowrite")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_CLOSE_NOWRITE) == 0) {
                         event_mask |= IN_CLOSE_NOWRITE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("close")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_CLOSE) == 0) {
                         event_mask |= IN_CLOSE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("open")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_OPEN) == 0) {
                         event_mask |= IN_OPEN;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("moved_from")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_MOVED_FROM) == 0) {
                         event_mask |= IN_MOVED_FROM;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("moved_to")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_MOVED_TO) == 0) {
                         event_mask |= IN_MOVED_TO;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("move")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_MOVE) == 0) {
                         event_mask |= IN_MOVE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("create")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_CREATE) == 0) {
                         event_mask |= IN_CREATE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("delete")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_DELETE) == 0) {
                         event_mask |= IN_DELETE;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("delete_self")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_DELETE_SELF) == 0) {
                         event_mask |= IN_DELETE_SELF;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("unmount")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_UNMOUNT) == 0) {
                         event_mask |= IN_UNMOUNT;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("q_overflow")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_Q_OVERFLOW) == 0) {
                         event_mask |= IN_Q_OVERFLOW;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("ignored")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_IGNORED) == 0) {
                         event_mask |= IN_IGNORED;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("isdir")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_ISDIR) == 0) {
                         event_mask |= IN_ISDIR;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("oneshot")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_ONESHOT) == 0) {
                         event_mask |= IN_ONESHOT;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("all_events")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_ALL_EVENTS) == 0) {
                         event_mask |= IN_ALL_EVENTS;
-                    } else if (bstrcmp(split_event->entry[i], bfromcstr("default")) == 0) {
+                    } else if (bstrcmp(split_event->entry[i], B_DEFAULT) == 0) {
                         event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
                     } else {
                         help(0);
@@ -565,7 +617,7 @@ int parse_command_line(int argc, char *argv[])
                         exit(1);
                     }
                 }
-
+                bdestroy (b_optarg);
                 bstrListDestroy(split_event);
             }
             break;
@@ -656,7 +708,6 @@ int watch(char *real_path, char *symlink)
     while (list->first != NULL) {
         /* Directory to watch */
         char *p = (char*) list_pop(list);
-
         dir_stream = opendir(p);
 
         if (dir_stream == NULL) {
@@ -717,7 +768,6 @@ int watch(char *real_path, char *symlink)
     }
 
     list_free(list);
-
     return 0;
 }
 
@@ -742,9 +792,9 @@ LIST_NODE *add_to_watch_list(char *real_path, char *symlink)
 
         /* Create wd_data entry */
         WD_DATA *wd_data = create_wd_data(real_path, wd);
+
         if (wd_data != NULL) {
             node = list_push(list_wd, (void*) wd_data);
-
             log_message("WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
         }
     }
@@ -953,7 +1003,7 @@ int monitor()
             node = get_node_from_wd(event->wd);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
-                path = malloc(strlen(wd_data->path) + strlen(event->name) + 2);
+                path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);
                 strcpy(path, wd_data->path);
                 strcat(path, event->name);
                 if (event->mask & IN_ISDIR)
@@ -1102,5 +1152,38 @@ int event_handler_moved_to(struct inotify_event *event, char *path)
 
 void signal_callback_handler(int signum){
     printf("Cleaning...\n");
+
+    bdestroy (command);
+    bdestroy (format);
+    bdestroy (tmp_command);
+    bdestroy (B_ACCESS);
+    bdestroy (B_MODIFY);
+    bdestroy (B_ATTRIB);
+    bdestroy (B_CLOSE_WRITE);
+    bdestroy (B_CLOSE_NOWRITE);
+    bdestroy (B_CLOSE);
+    bdestroy (B_OPEN);
+    bdestroy (B_MOVED_FROM);
+    bdestroy (B_MOVED_TO);
+    bdestroy (B_MOVE);
+    bdestroy (B_CREATE);
+    bdestroy (B_DELETE);
+    bdestroy (B_DELETE_SELF);
+    bdestroy (B_UNMOUNT);
+    bdestroy (B_Q_OVERFLOW);
+    bdestroy (B_IGNORED);
+    bdestroy (B_ISDIR);
+    bdestroy (B_ONESHOT);
+    bdestroy (B_DEFAULT);
+    bdestroy (B_ALL_EVENTS);
+
+    bdestroy (COMMAND_PATTERN_ROOT);
+    bdestroy (COMMAND_PATTERN_PATH );
+    bdestroy (COMMAND_PATTERN_FILE);
+    bdestroy (COMMAND_PATTERN_EVENT);
+    bdestroy (COMMAND_PATTERN_REGEX);
+    bdestroy (COMMAND_PATTERN_COUNT);
+
+    list_free(list_wd);
     exit(signum);
 }

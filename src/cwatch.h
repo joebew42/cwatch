@@ -70,12 +70,34 @@
  * _COUNT (%n) when cwatch execute the command, will be replaced with the
  *             count of the events
  */
-const_bstring COMMAND_PATTERN_ROOT;
-const_bstring COMMAND_PATTERN_PATH;
-const_bstring COMMAND_PATTERN_FILE;
-const_bstring COMMAND_PATTERN_EVENT;
-const_bstring COMMAND_PATTERN_REGEX;
-const_bstring COMMAND_PATTERN_COUNT;
+bstring COMMAND_PATTERN_ROOT;
+bstring COMMAND_PATTERN_PATH;
+bstring COMMAND_PATTERN_FILE;
+bstring COMMAND_PATTERN_EVENT;
+bstring COMMAND_PATTERN_REGEX;
+bstring COMMAND_PATTERN_COUNT;
+
+/* events name in bstring */
+bstring B_ACCESS;
+bstring B_MODIFY;
+bstring B_ATTRIB;
+bstring B_CLOSE_WRITE;
+bstring B_CLOSE_NOWRITE;
+bstring B_CLOSE;
+bstring B_OPEN;
+bstring B_MOVED_FROM;
+bstring B_MOVED_TO;
+bstring B_MOVE;
+bstring B_CREATE;
+bstring B_DELETE;
+bstring B_DELETE_SELF;
+bstring B_UNMOUNT;
+bstring B_Q_OVERFLOW;
+bstring B_IGNORED;
+bstring B_ISDIR;
+bstring B_ONESHOT;
+bstring B_DEFAULT;
+bstring B_ALL_EVENTS;
 
 typedef enum {FALSE,TRUE} bool_t;
 
