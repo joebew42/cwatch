@@ -29,6 +29,8 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <syslog.h>
 #include <errno.h>
 #include <unistd.h>
@@ -68,12 +70,34 @@
  * _COUNT (%n) when cwatch execute the command, will be replaced with the
  *             count of the events
  */
-const_bstring COMMAND_PATTERN_ROOT;
-const_bstring COMMAND_PATTERN_PATH;
-const_bstring COMMAND_PATTERN_FILE;
-const_bstring COMMAND_PATTERN_EVENT;
-const_bstring COMMAND_PATTERN_REGEX;
-const_bstring COMMAND_PATTERN_COUNT;
+bstring COMMAND_PATTERN_ROOT;
+bstring COMMAND_PATTERN_PATH;
+bstring COMMAND_PATTERN_FILE;
+bstring COMMAND_PATTERN_EVENT;
+bstring COMMAND_PATTERN_REGEX;
+bstring COMMAND_PATTERN_COUNT;
+
+/* events name in bstring */
+bstring B_ACCESS;
+bstring B_MODIFY;
+bstring B_ATTRIB;
+bstring B_CLOSE_WRITE;
+bstring B_CLOSE_NOWRITE;
+bstring B_CLOSE;
+bstring B_OPEN;
+bstring B_MOVED_FROM;
+bstring B_MOVED_TO;
+bstring B_MOVE;
+bstring B_CREATE;
+bstring B_DELETE;
+bstring B_DELETE_SELF;
+bstring B_UNMOUNT;
+bstring B_Q_OVERFLOW;
+bstring B_IGNORED;
+bstring B_ISDIR;
+bstring B_ONESHOT;
+bstring B_DEFAULT;
+bstring B_ALL_EVENTS;
 
 typedef enum {FALSE,TRUE} bool_t;
 
@@ -122,7 +146,7 @@ regmatch_t p_match[2];          /* store the matched regular expression by -X op
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
 
-unsigned int exec_c;             /* the number of times command is executed */
+int exec_c;                      /* the number of times command is executed */
 char exec_cstr[10];              /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
@@ -145,15 +169,15 @@ int help(int);
 
 /**
  * Log
- * 
+ *
  * Log message via syslog or via standard output
  * @param char * : Message to log
  */
-void log_message(char *);
+void log_message(char *, ...);
 
 /**
  * Resolve the real path
- * 
+ *
  * This function is used to resolve the
  * absolute real_path of a symbolic link or a relative path.
  * @param char *  : the path of the symbolic link to resolve
@@ -179,7 +203,7 @@ LIST_NODE *get_node_from_wd(const int);
 
 /**
  * Create a WD_DATA
- * 
+ *
  * @param char *     : The real path
  * @param int *      : the watch descriptor
  * @return WD_DATA * : a pointer to WD_DATA, NULL otherwise.
@@ -188,7 +212,7 @@ WD_DATA *create_wd_data(char *, int);
 
 /**
  * Searchs and returns the list_node from symlink path
- * 
+ *
  * @param char *       : The path to find
  * @return LIST_NODE * : a pointer to list_node, NULL otherwise.
  */
@@ -197,7 +221,7 @@ LIST_NODE *get_link_node_from_path(const char *);
 /**
  * Searchs and returns the link_data from symlink path
  * of a specified WD_DATA
- * 
+ *
  * @param char *       : The path to find
  * @param WD_DATA *    : a pointer to WD_DATA in which search
  * @return LINK_DATA * : a pointer to link data, NULL otherwise.
@@ -206,7 +230,7 @@ LINK_DATA *get_link_data_from_wd_data(const char *, const WD_DATA *);
 
 /**
  * Searchs and returns the link_data from symlink path
- * 
+ *
  * @param char *       : The path to find
  * @return LINK_DATA * : a pointer to link data, NULL otherwise.
  */
@@ -214,7 +238,7 @@ LINK_DATA *get_link_data_from_path(const char *);
 
 /**
  * Create a LINK_DATA
- * 
+ *
  * @param char *       : The path of symlink
  * @param WD_DATA *    : The wd_data in which symlink will be attached
  * @return LINK_DATA * : a pointer to link data, NULL otherwise.
@@ -251,7 +275,7 @@ bool_t excluded(char *);
 /**
  * Checks whetever a pattern match the regular
  * expression pattern defined with -X option
- * See: user_catch_regex 
+ * See: user_catch_regex
  *
  * @param char * : string to check
  */
@@ -310,7 +334,7 @@ LIST_NODE *add_to_watch_list(char *, char *);
 
 /**
  * Unwatch a directory
- * 
+ *
  * Used to remove a file or directory
  * from the list of watched resources
  * @param char * : the path of the resource to remove
@@ -344,7 +368,7 @@ void unwatch_symbolic_link(LIST_NODE *);
 
 /**
  * Start monitoring
- * 
+ *
  * Used to monitor inotify event on watched resources
  */
 int monitor();
@@ -354,7 +378,7 @@ int monitor();
  * *_inline   : called when the -c --command option is given
  * *_embedded : called when the -F --format  option is given
  *
- * This function handle the execution of a command 
+ * This function handle the execution of a command
  * @param char *  : the inotify event name
  * @param char *  : the name of file/directory that triggered the event
  * @param char *  : the path where event occured
@@ -388,4 +412,12 @@ int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
 int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
 int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
 
+/* SIGNAL HANDLER DEFINITION
+ *
+ * Handler function called when a signal occurs
+ *
+ * @param int : ID of signal
+ */
+
+void signal_callback_handler(int);
 #endif /* !__CWATCH_H */
