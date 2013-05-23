@@ -99,7 +99,7 @@ void print_version()
            PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_STAGE);
 }
 
-int help(int error)
+void help(int error, char *message)
 {
     printf("Usage: %s -c COMMAND -d DIRECTORY [-v] [-s] [-options]\n", PROGRAM_NAME);
     printf("   or: %s -F FORMAT  -d DIRECTORY [-v] [-s] [-options]\n", PROGRAM_NAME);
@@ -171,12 +171,11 @@ int help(int error)
     printf("      Print the version of the program and exit\n\n");
 
     printf("Reports bugs to: <https://github.com/joebew42/cwatch/issues/>\n");
-    printf("%s home page: <https://github.com/joebew42/cwatch/>\n", PROGRAM_NAME);
+    printf("%s home page: <https://github.com/joebew42/cwatch/>\n\n", PROGRAM_NAME);
 
-    if (error)
-        exit(error);
+    printf("%s", message);
 
-    return 0;
+    exit(error);
 }
 
 void log_message(char *message, ...)
@@ -470,7 +469,7 @@ bstring format_command(char *command_format, char *event_p_path, char *file_name
 int parse_command_line(int argc, char *argv[])
 {
     if (argc == 1) {
-        help(1);
+        help(EINVAL, NULL);
     }
 
     /* Handle command line options */
@@ -482,13 +481,13 @@ int parse_command_line(int argc, char *argv[])
         switch (c) {
         case 'c': /* --command */
             if (NULL != format)
-                help(1);
+                help(EINVAL, "The option -c --command exclude the use of -F --format option.\n");
 
             if (optarg == NULL
                 || strcmp(optarg, "") == 0
                 || (command = bfromcstr(optarg)) == NULL)
             {
-                help(1);
+                help(EINVAL, "The option -c --command requires a COMMAND.\n");
             }
 
             /* Remove both left/right whitespaces */
@@ -501,7 +500,7 @@ int parse_command_line(int argc, char *argv[])
 
         case 'F': /* --format */
             if (NULL != command)
-                help(1);
+                help(EINVAL, "The option -F --format exclude the use of -c --command option.\n");
 
             format = bfromcstr(optarg);
 
@@ -512,7 +511,7 @@ int parse_command_line(int argc, char *argv[])
 
         case 'd': /* --directory */
             if (NULL == optarg || strcmp(optarg, "") == 0)
-                help(1);
+                help(EINVAL, "The option -d --directory requires a DIRECTORY.\n");
 
             /* Check if the path has the ending slash */
             if (optarg[strlen(optarg)-1] != '/') {
@@ -527,7 +526,7 @@ int parse_command_line(int argc, char *argv[])
             /* Check if it is a valid directory */
             DIR *dir = opendir(root_path);
             if (dir == NULL) {
-                help(1);
+                help(ENOENT, "The -d --directory requires a valid DIRECTORY.\n");
             }
             closedir(dir);
 
@@ -612,9 +611,7 @@ int parse_command_line(int argc, char *argv[])
                     } else if (bstrcmp(split_event->entry[i], B_DEFAULT) == 0) {
                         event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
                     } else {
-                        help(0);
-                        printf("\nUnrecognized event or malformed list of events! Please see the help.\n");
-                        exit(1);
+                        help(EINVAL, "Unrecognized event or malformed list of events! Please see the help.\n");
                     }
                 }
                 bdestroy (b_optarg);
@@ -624,30 +621,26 @@ int parse_command_line(int argc, char *argv[])
 
         case 'x': /* --exclude */
             if (optarg == NULL)
-                help(1);
+                help(EINVAL, "test X\n");
 
             exclude_regex = (regex_t *) malloc(sizeof(regex_t));
 
             if (regcomp(exclude_regex, optarg, REG_EXTENDED | REG_NOSUB) != 0) {
                 free(exclude_regex);
-                help(0);
-                printf("\nThe specified regular expression provided for the -x --exclude option, is not valid.\n");
-                exit(1);
+                help(EINVAL, "The specified regular expression provided for the -x --exclude option, is not valid.\n");
             }
 
             break;
 
         case 'X': /* --regex-catch */
             if (optarg == NULL)
-                help(1);
+                help(EINVAL, NULL);
 
             user_catch_regex = (regex_t *) malloc(sizeof(regex_t));
 
             if (regcomp(user_catch_regex, optarg, REG_EXTENDED) != 0) {
                 free(user_catch_regex);
-                help(0);
-                printf("\nThe specified regular expression provided for the -X --regex-catch is not valid.\n");
-                exit(1);
+                help(EINVAL, "The specified regular expression provided for the -x --exclude option, is not valid.\n");
             }
 
             break;
@@ -670,18 +663,17 @@ int parse_command_line(int argc, char *argv[])
 
         case 'V': /* --version */
             print_version();
-            exit(0);
+            exit(EXIT_SUCCESS);
 
         case 'h': /* --help */
 
         default:
-            help(0);
-            exit(0);
+            help(EINVAL, NULL);
         }
     }
 
     if (root_path == NULL || command == format) {
-        help(1);
+        help(EINVAL, "The options -c --command and -d --directory are required.\n");
     }
 
     if (event_mask == 0) {
@@ -712,7 +704,7 @@ int watch(char *real_path, char *symlink)
 
         if (dir_stream == NULL) {
             printf("UNABLE TO OPEN DIRECTORY:\t\"%s\" -> %d\n", p, errno);
-            exit(1);
+            exit(ENOENT);
         }
 
         /* Traverse directory */
@@ -983,7 +975,7 @@ int monitor()
     while ((len = read(fd, buffer, EVENT_BUF_LEN))) {
         if (len < 0) {
             printf("ERROR: UNABLE TO READ INOTIFY QUEUE EVENTS!!!\n");
-            exit(1);
+            exit(EIO);
         }
 
         /* index of the event into file descriptor */
@@ -1025,7 +1017,7 @@ int monitor()
 
                 if (execute_command(triggered_event->name, event->name, wd_data->path) == -1) {
                     printf("ERROR OCCURED: Unable to execute the specified command!\n");
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
             } else {
                 free(path);
