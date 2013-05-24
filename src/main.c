@@ -42,12 +42,12 @@ int main(int argc, char *argv[])
         /* Watch the path */
         if (watch(root_path, NULL) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
-            return -1;
+            return EXIT_FAILURE;
         }
 
         /* Start monitoring */
         return monitor();
     }
 
-    return -1;
+    return EXIT_SUCCESS;
 }
