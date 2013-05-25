@@ -162,10 +162,12 @@ void print_version();
 /**
  * Help
  *
- * @param int : if > 0 help return with exit(int), 0 otherwise
- * Print out the help
+ * @param int : the exit code
+ * @param char*: the message to print at exit
+ *
+ * Print out the help and exit
  */
-int help(int);
+void help(int, char*);
 
 /**
  * Log
