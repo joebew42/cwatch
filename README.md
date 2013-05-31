@@ -1,9 +1,9 @@
 cwatch(1)
 =========
 
-A lightweight program that monitors the filesystem activity through the inotify Linux kernel library and executes a user defined command.
+A program to monitor the filesystem activity through the inotify Linux kernel library and executes a user defined command when specific events occurs. Useful for automatic backup system, alert monitor for directories and files, continuous testing and more.
 
-This is a **experimental release**. In this stage we are testing the software as best as we can. If you would like to help us to test and improve this software, feel free to do everything you want.
+This is a **experimental release**. At this stage we are testing the software as best as we can. If you would like to help us to test and improve this software, feel free to do everything you want.
 
 A Quick-start:
 
@@ -15,18 +15,22 @@ A Quick-start:
 
          $cd cwatch/
 
-         $aclocal && automake --add-missing --copy && autoconf
+         $autoreconf --install
 
          $./configure
 
          $make
 
-3. Use the software:
+3. Run all tests:
 
-   3.1. Read the manual
+         $make check
+
+4. Start use it:
+
+   4.1. Read the manual
 
         ./src/cwatch --help
 
-   3.2. *Do some testing*
+   4.2. *Share with us your use case*
 
 *Note*: This README is just a draft. In the next days we will provide a new one well organized.

@@ -25,13 +25,20 @@
 #ifndef __LIST_H
 #define __LIST_H
 
+/*
+  TODO: struct and typedef naming conventions
+  http://www.montefiore.ulg.ac.be/~piater/Cours/Coding-Style/index.html#id2465262
+*/
+
 /* List node */
+/* typedef struct list_node_t */
 typedef struct list_node_s
 {
     void *data;
     struct list_node_s *prev;
     struct list_node_s *next;
 } LIST_NODE;
+/* } ListNode; */
 
 /* List data structure */
 typedef struct list
