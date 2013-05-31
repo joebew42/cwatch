@@ -77,7 +77,7 @@ bstring COMMAND_PATTERN_EVENT;
 bstring COMMAND_PATTERN_REGEX;
 bstring COMMAND_PATTERN_COUNT;
 
-/* events name in bstring */
+/* event names */
 bstring B_ACCESS;
 bstring B_MODIFY;
 bstring B_ATTRIB;
@@ -146,8 +146,8 @@ regmatch_t p_match[2];          /* store the matched regular expression by -X op
 int fd;                         /* inotify file descriptor */
 LIST *list_wd;                  /* the list of all watched resource */
 
-int exec_c;                      /* the number of times command is executed */
-char exec_cstr[10];              /* used as conversion of exec_c to cstring */
+int exec_c;                     /* the number of times command is executed */
+char exec_cstr[10];             /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
 bool_t recursive_flag;
@@ -167,7 +167,7 @@ void print_version();
  *
  * Print out the help and exit
  */
-void help(int, char*);
+void help(int, char *);
 
 /**
  * Log
