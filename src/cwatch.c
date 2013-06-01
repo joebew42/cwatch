@@ -446,22 +446,22 @@ bstring format_command(char *command_format, char *event_p_path, char *file_name
     char *reg_catch = get_regex_catch(file_name);
     bstring b_regcat = bfromcstr(reg_catch);
     free(reg_catch);
-    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT, b_root_path, 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_PATH, b_event_p_path, 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_FILE, b_file_name, 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT,b_event_name, 0);
-    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX,b_regcat , 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_ROOT,  b_root_path, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_PATH,  b_event_p_path, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_FILE,  b_file_name, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_EVENT, b_event_name, 0);
+    bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, b_regcat , 0);
 
     sprintf(exec_cstr, "%d", exec_c);
     bstring b_exec_cstr = bfromcstr (exec_cstr);
     bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, b_exec_cstr, 0);
 
-    bdestroy (b_root_path);
-    bdestroy (b_event_p_path);
-    bdestroy (b_file_name);
-    bdestroy (b_event_name);
-    bdestroy (b_regcat);
-    bdestroy (b_exec_cstr);
+    bdestroy(b_root_path);
+    bdestroy(b_event_p_path);
+    bdestroy(b_file_name);
+    bdestroy(b_event_name);
+    bdestroy(b_regcat);
+    bdestroy(b_exec_cstr);
 
     return tmp_command;
 }

@@ -15,6 +15,10 @@ Makefile
 
 /tests/check_list
 /tests/check_list.trs
+/tests/check_cwatch
+/tests/check_cwatch.trs
 /tests/.deps/
 
 build-aux
+
+scratch_pad.txt

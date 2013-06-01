@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <check.h>
+
 #include "../src/list.h"
 
 /* helper functions */
