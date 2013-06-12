@@ -23,7 +23,7 @@ A Quick-start:
 
 3. Run all tests:
 
-         $make check
+         $make -s check
 
 4. Start use it:
 

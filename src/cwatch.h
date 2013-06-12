@@ -129,6 +129,9 @@ struct event_t
         );                /* function handler called when the event occurs */
 };
 
+/* TODO: GlobalVariablesAreEvil - Get Rid of Them */
+/* Consider to push them down and passing as parameter to function */
+/* that use them. */
 char *root_path;                /* root path that cwatch is monitoring */
 bstring command;                /* the command to be execute, defined by -c option*/
 bstring format;                 /* a string containing the output format defined by -F option */

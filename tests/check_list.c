@@ -101,7 +101,7 @@ Suite *list_suite(void)
     Suite *s = suite_create("List");
 
     /* Core test case */
-    TCase *tc_core = tcase_create ("Core");
+    TCase *tc_core = tcase_create("When dealing with a List");
     tcase_add_checked_fixture(tc_core, setup, teardown);
 
     tcase_add_test(tc_core, has_a_good_factory);
@@ -123,6 +123,6 @@ int main(void)
     SRunner *sr = srunner_create(s);
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
-    srunner_free (sr);
+    srunner_free(sr);
     return(number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

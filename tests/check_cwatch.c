@@ -19,7 +19,7 @@ void teardown(void)
     list_free(list_wd);
 }
 
-START_TEST(has_a_good_factory)
+START_TEST(creates_a_wd_data)
 {
     ck_assert_ptr_eq(NULL, NULL);
 }
@@ -27,13 +27,13 @@ END_TEST
 
 Suite *cwatch_suite(void)
 {
-    Suite *s = suite_create("Cwatch");
+    Suite *s = suite_create("cWatch");
 
     /* Core test case */
-    TCase *tc_core = tcase_create ("Core");
+    TCase *tc_core = tcase_create("When dealing with cWatch");
     tcase_add_checked_fixture(tc_core, setup, teardown);
 
-    tcase_add_test(tc_core, has_a_good_factory);
+    tcase_add_test(tc_core, creates_a_wd_data);
 
     suite_add_tcase(s, tc_core);
 
