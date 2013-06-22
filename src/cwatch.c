@@ -388,7 +388,7 @@ bool_t is_listed_in(char* child_path, LIST *parents)
         return FALSE;
 
     LIST_NODE *node = parents->first;
-    while(node) {
+    while (node) {
         char* parent_path = (char*) node->data;
         if (is_child_of(child_path, parent_path) == TRUE) {
             return TRUE; /* match! */
@@ -439,13 +439,14 @@ bstring format_command(char *command_format, char *event_p_path, char *file_name
     tmp_command = bfromcstr(command_format);
 
     bstring b_root_path = bfromcstr(root_path);
-    bstring b_event_p_path = bfromcstr (event_p_path);
-    bstring b_file_name = bfromcstr (file_name);
-    bstring b_event_name = bfromcstr (event_name);
+    bstring b_event_p_path = bfromcstr(event_p_path);
+    bstring b_file_name = bfromcstr(file_name);
+    bstring b_event_name = bfromcstr(event_name);
 
     char *reg_catch = get_regex_catch(file_name);
     bstring b_regcat = bfromcstr(reg_catch);
     free(reg_catch);
+
     bfindreplace(tmp_command, COMMAND_PATTERN_ROOT,  b_root_path, 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_PATH,  b_event_p_path, 0);
     bfindreplace(tmp_command, COMMAND_PATTERN_FILE,  b_file_name, 0);
@@ -453,7 +454,7 @@ bstring format_command(char *command_format, char *event_p_path, char *file_name
     bfindreplace(tmp_command, COMMAND_PATTERN_REGEX, b_regcat , 0);
 
     sprintf(exec_cstr, "%d", exec_c);
-    bstring b_exec_cstr = bfromcstr (exec_cstr);
+    bstring b_exec_cstr = bfromcstr(exec_cstr);
     bfindreplace(tmp_command, COMMAND_PATTERN_COUNT, b_exec_cstr, 0);
 
     bdestroy(b_root_path);
