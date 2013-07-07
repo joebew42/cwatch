@@ -36,16 +36,17 @@ int main(int argc, char *argv[])
         /* File descriptor inotify */
         fd = inotify_init();
 
-        /* List of all watch directories */
+        /* List of all watched directories */
         list_wd = list_init();
 
         /* Watch the path */
-        if (watch(root_path, NULL) == -1) {
+        if (watch_directory_tree(root_path, NULL, FALSE, -1, NULL) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return EXIT_FAILURE;
         }
 
         /* Start monitoring */
+        /* return monitor(root_path, fd, list_wd) */
         return monitor();
     }
 

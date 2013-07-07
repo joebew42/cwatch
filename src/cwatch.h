@@ -104,7 +104,7 @@ typedef enum {FALSE,TRUE} bool_t;
 /* Used to store information about watched resource */
 typedef struct wd_data_s
 {
-    int    wd;            /* watch descriptor */
+    int    wd;            /* inotify watch descriptor */
     char   *path;         /* absolute real path of the directory */
     LIST   *links;        /* list of symlinks that point to this resource */
 } WD_DATA;
@@ -157,252 +157,184 @@ bool_t recursive_flag;
 bool_t verbose_flag;
 bool_t syslog_flag;
 
-/**
- * Print the version of the program and exit
- */
-void print_version();
+/* print the version of the program and exit */
+void
+print_version();
 
-/**
- * Help
+/* print out the help and exit */
+void
+help(
+    int,                        /* exit code */
+    char * );                   /* message to print at exit */
+
+/* log message via syslog or via standard output */
+void
+log_message(
+    char *,                     /* message to log */
+    ... );                      /* additional characters like printf */
+
+/* resolve the real path of a symbolic or relative path */
+char *                          /* resolved real path, NULL otherwise */
+resolve_real_path(
+    const char * );             /* path of the symbolic link to resolve */
+
+/* searchs and returns the node of the specified path */
+LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
+get_node_from_path(
+    const char * );             /* path to find */
+
+/* searchs and returns the node of the specified wd */
+LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
+get_node_from_wd(
+    const int );                /* wd to find */
+
+/* creates a wd_data */
+WD_DATA *                       /* WD_DATA pointer, NULL otherwise */
+create_wd_data(
+    char *,                     /* absolute real path */
+    int );                      /* inotify watch descriptor (wd) */
+
+/* searchs and returns the list_node from symlink path */
+LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
+get_link_node_from_path(
+    const char * );             /* absolute path to find */
+
+/* searchs and returns the link_data from symlink path */
+/* of a specified WD_DATA */
+LINK_DATA *                     /* LINK_DATA pointer, NULL otherwise */
+get_link_data_from_wd_data(
+    const char *,               /* absolute path to find */
+    const WD_DATA * );          /* WD_DATA pointer in which search */
+
+/* searchs and returns the link_data from symlink path */
+LINK_DATA *                     /* LINK_DATA pointer, NULL otherwise */
+get_link_data_from_path(
+    const char * );             /* absolute path to find */
+
+/* creates a LINK_DATA */
+LINK_DATA *                     /* LINK_DATA pointer, NULL otherwise */
+create_link_data(
+    char *,                     /* absolute path of symbolic link */
+    WD_DATA * );                /* WD_DATA in which symbolic link */
+                                /* will be attached */
+
+/* returns TRUE if the first path is a child of the second one */
+/* FALSE otherwise */
+bool_t
+is_child_of(
+    const char *,               /* first path */
+    const char * );             /* second path */
+
+/* checks whetever a string is contained in a list */
+bool_t                          /* TRUE if found, FALSE otherwise */
+is_listed_in(
+    char *,                     /* string to check */
+    LIST * );                   /* list in which perform search */
+
+/* checks whetever a string match the regular */
+/* expression pattern defined with -x option */
+/* See: exclude_regex */
+bool_t
+excluded(
+    char * );                   /* string to check */
+
+/* checks whetever a pattern match the regular */
+/* expression pattern defined with -X option */
+/* See: user_catch_regex */
+bool_t
+regex_catch(
+    char * );                   /* string to check */
+
+/* return the subexpression matched by regex_catch */
+char *                          /* matched subexpression */
+get_regex_catch(
+    char * );                   /* string to check */
+
+/* replace all occurrences in the command or format string */
+/* specified by the user, with the special characters */
+bstring                         /* resulting string with all occurrences replaced */
+format_command(
+    char *,                     /* command (-c) or the format (-F) defined by user */
+    char *,                     /* full path in which event was triggered */
+    char *,                     /* name of the file or directory that triggered the event */
+    char * );                   /* event name */
+
+/* parse the command line */
+int
+parse_command_line(
+    int,                        /* arguments count */
+    char ** );                  /* argument values */
+
+/* it performs a breadth-first-search to visit a directory tree */
+/* and call the add_to_watch_list(path) for each directory, */
+/* either if it's pointed by a symbolic link or not. */
+int                             /* -1 (An error occurred), 0 (Resource added correctly) */
+watch_directory_tree(
+    char *,                     /* absolute path of directory to watch */
+    char *,                     /* symbolic link that point to the path */
+    bool_t,                     /* traverse directory recursively or not */
+    int,                        /* inotify file descriptor */
+    LIST * );                   /* list of watched resource */
+
+/* add a directory into watch list */
+LIST_NODE *                     /* pointer of the node in the watch list*/
+add_to_watch_list(
+    char *,                     /* absolute path of the directory to watch */
+    char *,                     /* symbolic link that points to the absolute path */
+    int,                        /* inotify file descriptor */
+    int,                        /* inotify watch descriptor */
+    LIST * );                   /* list of watched resources */
+
+/* unwatch a directory */
+void
+unwatch(
+    char *,                     /* absolute path of the resource to remove */
+    bool_t );                   /* TRUE if is path is a symbolic link, FALSE otherwise */
+
+/* returns a LIST of path that is referenced by a symbolic link */
+LIST *
+list_of_referenced_path(
+    const char * );             /* absolute path to inspect */
+
+/* removes from the watch list all resources that are no */
+/* longer referenced by symbolic links and are extern */
+/* from the root_path */
+void
+remove_orphan_watched_resources(
+    const char *,               /* absolute path to remove */
+    LIST * );                   /* LIST of all path that are referenced */
+                                /* by symbolic link */
+
+/* unwatch a symbolic link from the watched resources */
+void
+unwatch_symbolic_link(
+    LIST_NODE * );              /* LIST_NODE of the symbolic link to unwatch */
+
+/* start monitoring of inotify event on watched resources */
+int
+monitor();
+
+/* COMMAND EXECUTION HANDLER
  *
- * @param int : the exit code
- * @param char*: the message to print at exit
+ * _inline   : called when the -c --command option is given
+ * _embedded : called when the -F --format  option is given
  *
- * Print out the help and exit
- */
-void help(int, char *);
-
-/**
- * Log
+ * These functions handles the execution of a command
  *
- * Log message via syslog or via standard output
- * @param char * : Message to log
- */
-void log_message(char *, ...);
-
-/**
- * Resolve the real path
- *
- * This function is used to resolve the
- * absolute real_path of a symbolic link or a relative path.
- * @param char *  : the path of the symbolic link to resolve
- * @return char * : the resolved real_path, NULL otherwise
- */
-char *resolve_real_path(const char *);
-
-/**
- * Searchs and returns the node for the path passed
- * as argument.
- * @param char *       : The path to find
- * @return LIST_NODE * : A pointer to node, NULL otherwise.
- */
-LIST_NODE *get_node_from_path(const char *);
-
-/**
- * Searchs and returns the node for the wd passed
- * as argument.
- * @param int          : The wd to find
- * @return LIST_NODE * : a pointer to node, NULL otherwise.
- */
-LIST_NODE *get_node_from_wd(const int);
-
-/**
- * Create a WD_DATA
- *
- * @param char *     : The real path
- * @param int *      : the watch descriptor
- * @return WD_DATA * : a pointer to WD_DATA, NULL otherwise.
- */
-WD_DATA *create_wd_data(char *, int);
-
-/**
- * Searchs and returns the list_node from symlink path
- *
- * @param char *       : The path to find
- * @return LIST_NODE * : a pointer to list_node, NULL otherwise.
- */
-LIST_NODE *get_link_node_from_path(const char *);
-
-/**
- * Searchs and returns the link_data from symlink path
- * of a specified WD_DATA
- *
- * @param char *       : The path to find
- * @param WD_DATA *    : a pointer to WD_DATA in which search
- * @return LINK_DATA * : a pointer to link data, NULL otherwise.
- */
-LINK_DATA *get_link_data_from_wd_data(const char *, const WD_DATA *);
-
-/**
- * Searchs and returns the link_data from symlink path
- *
- * @param char *       : The path to find
- * @return LINK_DATA * : a pointer to link data, NULL otherwise.
- */
-LINK_DATA *get_link_data_from_path(const char *);
-
-/**
- * Create a LINK_DATA
- *
- * @param char *       : The path of symlink
- * @param WD_DATA *    : The wd_data in which symlink will be attached
- * @return LINK_DATA * : a pointer to link data, NULL otherwise.
- */
-LINK_DATA *create_link_data(char *, WD_DATA *);
-
-/**
- * Returns TRUE if the first path is a child
- * of the second one.
- * @param char * : first path  (the child)
- * @param char * : second path (the parent)
- * @return bool_t
- */
-bool_t is_child_of(const char *, const char *);
-
-/**
- * Checks whetever a string is contained in a list
- *
- * @param char *  : string to check
- * @param LIST *  : list containing string
- * @return bool_t : TRUE if string is contained, FALSE otherwise
- */
-bool_t is_listed_in(char *, LIST *);
-
-/**
- * Checks whetever a string match the regular
- * expression pattern defined with -x option
- * See: exclude_regex
- *
- * @param char * : string to check
- */
-bool_t excluded(char *);
-
-/**
- * Checks whetever a pattern match the regular
- * expression pattern defined with -X option
- * See: user_catch_regex
- *
- * @param char * : string to check
- */
-bool_t regex_catch(char *);
-
-/**
- * Return the subexpression matched by regex_catch
- *
- * @param  char * : string to check
- * @return char * : matched subexpression
- */
-char *get_regex_catch(char *);
-
-/**
- * Replace all occurrences in the command/format
- * specified by the user, with the special characters
- *
- * @param char *   : the command (-c) or the format (-F) defined by user
- * @param char *   : the full path in which event was triggered
- * @param char *   : the name of the file or directory that triggered the event
- * @param char *   : the event name
- * @return bstring : the resulting string with all occurrences replaced
- */
-bstring format_command(char *, char *, char *, char *);
-
-/**
- * Parse command line
- *
- * This function is used to parse command line and initialize some environment variables
- * @param int     : arguments count
- * @param char ** : arguments value
- * @return int
- */
-int parse_command_line(int, char **);
-
-/**
- * Watch a directory
- *
- * It performs a breath-first-search to traverse a directory and
- * call the add_to_watch_list(path) for each directory, either if it's pointed by a symbolic link or not.
- * @param char * : The path of directory to watch
- * @param char * : The symbolic link that point to the path
- * @return int   : -1 (An error occurred), 0 (Resource added correctly)
- */
-int watch(char *, char *);
-
-/**
- * Add a directory into watch list
- *
- * This function is used to append a directory into watch list
- * @param char* : The absolute path of the directory to watch
- * @param char* : The symbolic link that point to the path
- * @return LIST_NODE* : the pointer of the node of the watch list
- */
-LIST_NODE *add_to_watch_list(char *, char *);
-
-/**
- * Unwatch a directory
- *
- * Used to remove a file or directory
- * from the list of watched resources
- * @param char * : the path of the resource to remove
- * @param bool_t : TRUE if the path to unwatch is a symlink, FALSE otherwise.
- */
-void unwatch(char *, bool_t);
-
-/**
- * Return a list of path that is referenced by a symbolic link
- * and is child or a parent of the pathe given as argument
- * @param char * : the path to inspect
- * @return LIST  : the list of all paths
- */
-LIST *list_of_referenced_path(const char *);
-
-/**
- * Remove from the watch list all resources that are no
- * longer referenced by symbolic links and are extern
- * from the root_path
- * @param char * : the path to remove
- * @return LIST  : the list of all path that are referenced by symlink
- */
-void remove_orphan_watched_resources(const char *, LIST *);
-
-/**
- * Unwatch a symbolic link from the watched resources
- *
- * @param LIST_NODE * : the list_node of the symbolic link to unwatch
- */
-void unwatch_symbolic_link(LIST_NODE *);
-
-/**
- * Start monitoring
- *
- * Used to monitor inotify event on watched resources
- */
-int monitor();
-
-/**
- * Execute a command
- * *_inline   : called when the -c --command option is given
- * *_embedded : called when the -F --format  option is given
- *
- * This function handle the execution of a command
  * @param char *  : the inotify event name
  * @param char *  : the name of file/directory that triggered the event
  * @param char *  : the path where event occured
  * @return int    : -1 in case of error, 0 otherwise
  */
-
 int execute_command_inline(char *, char *, char *);
 int execute_command_embedded(char *, char *, char *);
 
-/**
- * Get the inotify event handler from the event mask
- *
- * @param uint32_t : the inotify event mask
- * @return struct event_t  : the event
- */
-struct event_t *get_inotify_event(const uint32_t);
+/* get the inotify event handler from the event mask */
+struct event_t *                /* event handler descriptor */
+get_inotify_event(
+    const uint32_t );           /* inotify event mask */
 
-/**
- * EVENT HANDLER DEFINITION
+/* EVENT HANDLER DEFINITION
  *
  * Handler functions called when an event occurs
  *
@@ -410,19 +342,14 @@ struct event_t *get_inotify_event(const uint32_t);
  * @param char *                 : the path of file or directory that triggered the event
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
-
 int event_handler_undefined(struct inotify_event *, char *);   /* NO ACTION, it always return 0 */
 int event_handler_create(struct inotify_event *, char *);      /* IN_CREATE */
 int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
 int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
 int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
 
-/* SIGNAL HANDLER DEFINITION
- *
- * Handler function called when a signal occurs
- *
- * @param int : ID of signal
- */
-
-void signal_callback_handler(int);
+/* handler function called when a signal occurs */
+void
+signal_callback_handler(
+    int );                      /* signal identifier */
 #endif /* !__CWATCH_H */
