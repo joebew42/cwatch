@@ -204,7 +204,7 @@ log_message(
             /* Find the type of value */
             char type = b_message->data[++index];
 
-            if (type == 's'){
+            if (type == 's') {
 
                 /* Get the next char* arg and replace it */
                 char *arg_char = va_arg (la, char *);
@@ -212,7 +212,7 @@ log_message(
 
                 breplace(b_message, index - 1, 2, b_arg_char, ' ');
                 bdestroy(b_arg_char);
-            }else if (type == 'd'){
+            } else if (type == 'd') {
 
                 /* Get the next int arg, cast in cstr, and replace it*/
                 int arg_int = va_arg (la, int);
@@ -824,13 +824,11 @@ add_to_watch_list(
     int wd_FAKE,
     LIST *list_wd_FAKE )
 {
-    /* Check if the resource is already in the watch_list */
     LIST_NODE *node = get_node_from_path(real_path);
 
-    /* If the resource is not watched yet, then add it into the watch_list */
+    /* if the resource is not watched yet, then add it into the watch_list */
     if (NULL == node) {
-        /* Append directory to watch_list TODO: extract from here */
-        int wd = inotify_add_watch(fd, real_path, event_mask);
+        int wd = watch_descriptor_from(fd, real_path, event_mask);
 
         /* INFO Check limit in: /proc/sys/fs/inotify/max_user_watches TODO: Extract from here */
         if (wd == -1) {
@@ -841,7 +839,6 @@ add_to_watch_list(
             return NULL;
         }
 
-        /* Create wd_data entry */
         WD_DATA *wd_data = create_wd_data(real_path, wd);
 
         if (wd_data != NULL) {
@@ -850,7 +847,7 @@ add_to_watch_list(
         }
     }
 
-    /* Append symbolic link to watched resource */
+    /* append symbolic link to watched resource */
     if (node != NULL && symlink != NULL) {
         WD_DATA *wd_data = (WD_DATA*) node->data;
         LINK_DATA *link_data = create_link_data(symlink, wd_data);

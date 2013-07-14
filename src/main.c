@@ -33,21 +33,17 @@ int main(int argc, char *argv[])
     signal(SIGINT, (void*)signal_callback_handler);
 
     if (parse_command_line(argc, argv) == 0) {
-        /* File descriptor inotify */
         fd = inotify_init();
-
-        /* List of all watched directories */
         list_wd = list_init();
 
-        /* Watch the path */
+        watch_descriptor_from = inotify_add_watch;
+
         if (watch_directory_tree(root_path, NULL, FALSE, -1, NULL) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return EXIT_FAILURE;
         }
 
-        /* Start monitoring */
-        /* return monitor(root_path, fd, list_wd) */
-        return monitor();
+        return monitor();       /* start monitoring */
     }
 
     return EXIT_SUCCESS;

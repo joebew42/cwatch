@@ -152,6 +152,12 @@ LIST *list_wd;                  /* the list of all watched resource */
 int exec_c;                     /* the number of times command is executed */
 char exec_cstr[10];             /* used as conversion of exec_c to cstring */
 
+/* function pointer to inotify_add_watch */
+int (*watch_descriptor_from)(
+    int,                        /* file descriptor */
+    const char *,               /* absolute full path */
+    uint32_t );                 /* event mask */
+
 bool_t nosymlink_flag;
 bool_t recursive_flag;
 bool_t verbose_flag;
@@ -274,10 +280,10 @@ watch_directory_tree(
     char *,                     /* symbolic link that point to the path */
     bool_t,                     /* traverse directory recursively or not */
     int,                        /* inotify file descriptor */
-    LIST * );                   /* list of watched resource */
+    LIST * );                   /* list of watched resources */
 
 /* add a directory into watch list */
-LIST_NODE *                     /* pointer of the node in the watch list*/
+LIST_NODE *                     /* pointer of the node added in the watch list*/
 add_to_watch_list(
     char *,                     /* absolute path of the directory to watch */
     char *,                     /* symbolic link that points to the absolute path */

@@ -4,23 +4,40 @@
 #include "../src/cwatch.h"
 
 /* helper functions */
-void fill_with_paths(LIST *list, char **paths, int number_of_paths)
+void
+fill_with_paths(
+    LIST *list,
+    char **paths,
+    int number_of_paths)
 {
     int i;
     for (i = 0; i < number_of_paths; i++) {
         list_push(list, (void *) paths[i]);
     }
 }
+
+int
+inotify_add_watch_mock(
+    int fd,
+    const char *path,
+    uint32_t mask)
+{
+    static int wd = 1;
+    return wd++;
+}
 /* end of helper functions */
 
 LIST *list_wd;
 
-void setup(void)
+void
+setup(void)
 {
     list_wd = list_init();
+    watch_descriptor_from = inotify_add_watch_mock;
 }
 
-void teardown(void)
+void
+teardown(void)
 {
     list_free(list_wd);
 }
@@ -128,6 +145,13 @@ START_TEST(returns_false_if_a_path_is_not_listed_in)
 }
 END_TEST
 
+START_TEST(adds_a_directory_to_the_watch_list)
+{
+    /* TODO */
+    ck_assert_ptr_eq(NULL, NULL);
+}
+END_TEST
+
 Suite *cwatch_suite(void)
 {
     Suite *s = suite_create("cwatch");
@@ -135,20 +159,17 @@ Suite *cwatch_suite(void)
     TCase *tc_core = tcase_create("When dealing with cwatch");
     tcase_add_checked_fixture(tc_core, setup, teardown);
 
-    /* object creation */
-    tcase_add_test(tc_core, creates_a_wd_data);
-    tcase_add_test(tc_core, creates_a_link_data);
-
-    /* command format */
-    tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
-
     /* utility functions */
     tcase_add_test(tc_core, returns_true_if_a_path_is_a_child_of_another_path);
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_a_child_of_another_path);
     tcase_add_test(tc_core, returns_true_if_a_path_is_listed_in);
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_listed_in);
 
-    /* tcase_add_test(tc_core, creates_a_wd_data); */
+    /* cwatch functions */
+    tcase_add_test(tc_core, creates_a_wd_data);
+    tcase_add_test(tc_core, creates_a_link_data);
+    tcase_add_test(tc_core, adds_a_directory_to_the_watch_list);
+    tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
     suite_add_tcase(s, tc_core);
 
