@@ -87,7 +87,6 @@ static struct event_t events_lut[] =
     {"close",         event_handler_undefined},  /* 32. IN_CLOSE */
     {"move",          event_handler_undefined},  /* 33. IN_MOVE */
     {"all_events",    event_handler_undefined},  /* 34. IN_ALL_EVENTS */
-
 };
 
 void
@@ -264,7 +263,8 @@ resolve_real_path(
 
 LIST_NODE *
 get_node_from_path(
-    const char *path )
+    const char *path,
+    LIST *list_wd )
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -279,7 +279,8 @@ get_node_from_path(
 
 LIST_NODE *
 get_node_from_wd(
-    const int wd )
+    const int wd,
+    LIST *list_wd )
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -311,7 +312,8 @@ create_wd_data(
 
 LIST_NODE *
 get_link_node_from_path(
-    const char *symlink )
+    const char *symlink,
+    LIST *list_wd )
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -361,7 +363,8 @@ get_link_data_from_wd_data(
 
 LINK_DATA *
 get_link_data_from_path(
-    const char *symlink )
+    const char *symlink,
+    LIST *list_wd )
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -735,12 +738,12 @@ int
 watch_directory_tree(
     char *real_path,
     char *symlink,
-    bool_t recursive_FAKE,
-    int fd_FAKE,
-    LIST *list_wd_FAKE )
+    bool_t recursive,
+    int fd,
+    LIST *list_wd )
 {
     /* Add initial path to the watch list */
-    LIST_NODE *node = add_to_watch_list(real_path, symlink, -1, -1, NULL);
+    LIST_NODE *node = add_to_watch_list(real_path, symlink, fd, list_wd);
     if (node == NULL)
         return -1;
 
@@ -781,7 +784,7 @@ watch_directory_tree(
 
                 /* Continue directory traversing */
                 if (recursive_flag == TRUE) {
-                    add_to_watch_list(path_to_watch, NULL, -1, -1, NULL);
+                    add_to_watch_list(path_to_watch, NULL, fd, list_wd);
                     list_push(list, (void*) path_to_watch);
                 }
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
@@ -791,7 +794,7 @@ watch_directory_tree(
                 strcat(symlink, dir->d_name);
 
                 /* Check if the symbolic link is already watched */
-                if (get_link_data_from_path(symlink) != NULL) {
+                if (get_link_data_from_path(symlink, NULL) != NULL) {
                     continue;
                 }
 
@@ -804,7 +807,7 @@ watch_directory_tree(
 
                     /* Continue directory traversing */
                     if (recursive_flag == TRUE) {
-                        add_to_watch_list(real_path, symlink, -1, -1, NULL);
+                        add_to_watch_list(real_path, symlink, fd, list_wd);
                         list_push(list, (void*) real_path);
                     }
                 }
@@ -821,11 +824,10 @@ LIST_NODE *
 add_to_watch_list(
     char *real_path,
     char *symlink,
-    int fd_FAKE,
-    int wd_FAKE,
-    LIST *list_wd_FAKE )
+    int fd,
+    LIST *list_wd)
 {
-    LIST_NODE *node = get_node_from_path(real_path);
+    LIST_NODE *node = get_node_from_path(real_path, NULL);
 
     /* if the resource is not watched yet, then add it into the watch_list */
     if (NULL == node) {
@@ -873,7 +875,7 @@ unwatch(
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
         /* Retrieve the watch descriptor from path */
-        LIST_NODE *node = get_node_from_path(path);
+        LIST_NODE *node = get_node_from_path(path, NULL);
         if (node != NULL) {
             WD_DATA *wd_data = (WD_DATA *) node->data;
 
@@ -894,7 +896,7 @@ unwatch(
         while (list->first != NULL) {
             char *symlink = (char*) list_pop(list);
 
-            LIST_NODE *link_node = get_link_node_from_path(symlink);
+            LIST_NODE *link_node = get_link_node_from_path(symlink, NULL);
             if (link_node == NULL)
                 continue;
 
@@ -1010,7 +1012,9 @@ unwatch_symbolic_link(
 }
 
 int
-monitor()
+monitor(
+    int fd,
+    LIST *list_wd)
 {
     /* Initialize patterns that will be replaced */
     COMMAND_PATTERN_ROOT = bfromcstr("%r");
@@ -1060,7 +1064,7 @@ monitor()
             }
 
             /* Build the full path of the directory or symbolic link */
-            node = get_node_from_wd(event->wd);
+            node = get_node_from_wd(event->wd, NULL);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
                 path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);

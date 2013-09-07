@@ -187,12 +187,14 @@ resolve_real_path(
 /* searchs and returns the node of the specified path */
 LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
 get_node_from_path(
-    const char * );             /* path to find */
+    const char *,               /* absolute path to find */
+    LIST * );                   /* list of watched resources */
 
 /* searchs and returns the node of the specified wd */
 LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
 get_node_from_wd(
-    const int );                /* wd to find */
+    const int,                  /* wd to find */
+    LIST * );                   /* list of watched resources */
 
 /* creates a wd_data */
 WD_DATA *                       /* WD_DATA pointer, NULL otherwise */
@@ -203,7 +205,8 @@ create_wd_data(
 /* searchs and returns the list_node from symlink path */
 LIST_NODE *                     /* LIST_NODE pointer, NULL otherwise */
 get_link_node_from_path(
-    const char * );             /* absolute path to find */
+    const char *,               /* absolute path to find */
+    LIST * );                   /* list of watched resources */
 
 /* searchs and returns the link_data from symlink path */
 /* of a specified WD_DATA */
@@ -215,7 +218,8 @@ get_link_data_from_wd_data(
 /* searchs and returns the link_data from symlink path */
 LINK_DATA *                     /* LINK_DATA pointer, NULL otherwise */
 get_link_data_from_path(
-    const char * );             /* absolute path to find */
+    const char *,               /* absolute path to find */
+    LIST * );                   /* list of watched resources */
 
 /* creates a LINK_DATA */
 LINK_DATA *                     /* LINK_DATA pointer, NULL otherwise */
@@ -288,7 +292,6 @@ add_to_watch_list(
     char *,                     /* absolute path of the directory to watch */
     char *,                     /* symbolic link that points to the absolute path */
     int,                        /* inotify file descriptor */
-    int,                        /* inotify watch descriptor */
     LIST * );                   /* list of watched resources */
 
 /* unwatch a directory */
@@ -318,7 +321,9 @@ unwatch_symbolic_link(
 
 /* start monitoring of inotify event on watched resources */
 int
-monitor();
+monitor(
+    int,                        /* inotify file descriptor */
+    LIST *);                    /* list of watched resources */
 
 /* COMMAND EXECUTION HANDLER
  *

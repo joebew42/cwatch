@@ -38,12 +38,12 @@ int main(int argc, char *argv[])
 
         watch_descriptor_from = inotify_add_watch;
 
-        if (watch_directory_tree(root_path, NULL, FALSE, -1, NULL) == -1) {
+        if (watch_directory_tree(root_path, NULL, FALSE, fd, list_wd) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return EXIT_FAILURE;
         }
 
-        return monitor();       /* start monitoring */
+        return monitor(fd, list_wd);       /* start monitoring */
     }
 
     return EXIT_SUCCESS;
