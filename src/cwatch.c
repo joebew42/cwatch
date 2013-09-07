@@ -177,7 +177,8 @@ help(
     printf("Reports bugs to: <https://github.com/joebew42/cwatch/issues/>\n");
     printf("%s home page: <https://github.com/joebew42/cwatch/>\n\n", PROGRAM_NAME);
 
-    printf("%s", message);
+    if (message != NULL)
+      printf("%s", message);
 
     exit(error);
 }
