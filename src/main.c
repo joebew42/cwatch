@@ -24,9 +24,6 @@
 
 #include "cwatch.h"
 
-/**
- * MAIN
- */
 int main(int argc, char *argv[])
 {
     /* bind the signal handler */
