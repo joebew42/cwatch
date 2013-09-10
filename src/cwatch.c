@@ -755,19 +755,16 @@ watch_directory_tree(
     struct dirent *dir;
 
     while (list->first != NULL) {
-        /* Directory to watch */
-        char *p = (char*) list_pop(list);
-        dir_stream = opendir(p);
+        char *directory_to_watch = (char*) list_pop(list);
+        dir_stream = opendir(directory_to_watch);
 
         if (dir_stream == NULL) {
-            printf("UNABLE TO OPEN DIRECTORY:\t\"%s\" -> %d\n", p, errno);
+            printf("UNABLE TO OPEN DIRECTORY:\t\"%s\" -> %d\n", directory_to_watch, errno);
             exit(ENOENT);
         }
 
-        /* Traverse directory */
         while ((dir = readdir(dir_stream))) {
-
-            /* Discard all filename that matches regular expression (-x option) */
+            /* Discard all file names that matches regular expression (-x option) */
             if ((dir->d_type == DT_DIR) && excluded(dir->d_name)) {
                 continue;
             }
@@ -777,8 +774,8 @@ watch_directory_tree(
                 && strcmp(dir->d_name, "..") != 0)
             {
                 /* Absolute path to watch */
-                char *path_to_watch = (char *) malloc(strlen(p) + strlen(dir->d_name) + 2);
-                strcpy(path_to_watch, p);
+                char *path_to_watch = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 2);
+                strcpy(path_to_watch, directory_to_watch);
                 strcat(path_to_watch, dir->d_name);
                 strcat(path_to_watch, "/");
 
@@ -789,8 +786,8 @@ watch_directory_tree(
                 }
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
-                char *symlink = (char *) malloc(strlen(p) + strlen(dir->d_name) + 1);
-                strcpy(symlink, p);
+                char *symlink = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 1);
+                strcpy(symlink, directory_to_watch);
                 strcat(symlink, dir->d_name);
 
                 /* Check if the symbolic link is already watched */
@@ -827,7 +824,7 @@ add_to_watch_list(
     int fd,
     LIST *list_wd)
 {
-    LIST_NODE *node = get_node_from_path(real_path, NULL);
+    LIST_NODE *node = get_node_from_path(real_path, list_wd);
 
     /* if the resource is not watched yet, then add it into the watch_list */
     if (NULL == node) {
@@ -850,7 +847,7 @@ add_to_watch_list(
         }
     }
 
-    /* append symbolic link to watched resource */
+    /* append symbolic link to watched resources */
     if (node != NULL && symlink != NULL) {
         WD_DATA *wd_data = (WD_DATA*) node->data;
         LINK_DATA *link_data = create_link_data(symlink, wd_data);
@@ -868,14 +865,14 @@ add_to_watch_list(
 void
 unwatch(
     char *path,
-    bool_t is_link )
+    bool_t is_link,
+    int fd,
+    LIST *list_wd )
 {
-    /* TODO REFACTOR HERE */
-
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
         /* Retrieve the watch descriptor from path */
-        LIST_NODE *node = get_node_from_path(path, NULL);
+        LIST_NODE *node = get_node_from_path(path, list_wd);
         if (node != NULL) {
             WD_DATA *wd_data = (WD_DATA *) node->data;
 
@@ -896,7 +893,7 @@ unwatch(
         while (list->first != NULL) {
             char *symlink = (char*) list_pop(list);
 
-            LIST_NODE *link_node = get_link_node_from_path(symlink, NULL);
+            LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
             if (link_node == NULL)
                 continue;
 
@@ -924,7 +921,7 @@ unwatch(
             }
 
             if (link_node != NULL)
-                unwatch_symbolic_link(link_node);
+                unwatch_symbolic_link(link_node, fd, list_wd);
         }
 
         list_free(list);
@@ -933,7 +930,8 @@ unwatch(
 
 LIST *
 list_of_referenced_path(
-    const char *path )
+    const char *path,
+    LIST *list_wd )
 {
     LIST *tmp_references_list = list_init();
     LIST_NODE *node;
@@ -959,7 +957,9 @@ list_of_referenced_path(
 void
 remove_orphan_watched_resources(
     const char *path,
-    LIST *references_list )
+    LIST *references_list,
+    int fd,
+    LIST *list_wd )
 {
     LIST_NODE *node;
     WD_DATA *wd_data;
@@ -984,7 +984,9 @@ remove_orphan_watched_resources(
 
 void
 unwatch_symbolic_link(
-    LIST_NODE *link_node )
+    LIST_NODE *link_node,
+    int fd,
+    LIST *list_wd )
 {
     LINK_DATA *link_data = (LINK_DATA*) link_node->data;
     char *link_path = (char*) link_data->path;
@@ -1003,9 +1005,9 @@ unwatch_symbolic_link(
     if (wd_data->links->first == NULL
         && is_child_of(wd_data->path, root_path) == FALSE)
     {
-        LIST *references_list = list_of_referenced_path(wd_data->path);
+        LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
         if (NULL != references_list) {
-            remove_orphan_watched_resources(wd_data->path, references_list);
+            remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
         }
         list_free(references_list);
     }
@@ -1064,7 +1066,7 @@ monitor(
             }
 
             /* Build the full path of the directory or symbolic link */
-            node = get_node_from_wd(event->wd, NULL);
+            node = get_node_from_wd(event->wd, list_wd);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
                 path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);
@@ -1083,7 +1085,7 @@ monitor(
                 && (triggered_event = get_inotify_event(event->mask & event_mask)) != NULL
                 && triggered_event->name != NULL
                 && regex_catch(event->name)
-                && triggered_event->handler(event, path) == 0)
+                && triggered_event->handler(event, path, fd, list_wd) == 0)
             {
                 ++exec_c;
 
@@ -1164,7 +1166,9 @@ get_inotify_event(
 int
 event_handler_undefined(
     struct inotify_event *event,
-    char *path )
+    char *path,
+    int fd,
+    LIST *list_wd )
 {
     return 0;
 }
@@ -1172,7 +1176,9 @@ event_handler_undefined(
 int
 event_handler_create(
     struct inotify_event *event,
-    char *path )
+    char *path,
+    int fd,
+    LIST *list_wd )
 {
     /* Return 0 if recurively monitoring is disabled */
     if (recursive_flag == FALSE)
@@ -1180,7 +1186,7 @@ event_handler_create(
 
     /* Check for a directory */
     if (event->mask & IN_ISDIR) {
-        watch_directory_tree(path, NULL, FALSE, -1, NULL);
+        watch_directory_tree(path, NULL, FALSE, fd, list_wd);
     } else if (nosymlink_flag == FALSE) {
         /* Check for a symbolic link */
         DIR *dir_stream = opendir(path);
@@ -1188,7 +1194,7 @@ event_handler_create(
             closedir(dir_stream);
 
             char *real_path = resolve_real_path(path);
-            watch_directory_tree(real_path, path, FALSE, -1, NULL);
+            watch_directory_tree(real_path, path, FALSE, fd, list_wd);
         }
     }
 
@@ -1198,11 +1204,13 @@ event_handler_create(
 int
 event_handler_delete(
     struct inotify_event *event,
-    char *path )
+    char *path,
+    int fd,
+    LIST *list_wd )
 {
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
-        unwatch(path, FALSE);
+        unwatch(path, FALSE, fd, list_wd);
     } else if (nosymlink_flag == FALSE) {
         /*
          * XXX Since it is not possible to know if the
@@ -1212,7 +1220,7 @@ event_handler_delete(
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        unwatch(path, TRUE);
+        unwatch(path, TRUE, fd, list_wd);
     }
 
     return 0;
@@ -1221,59 +1229,63 @@ event_handler_delete(
 int
 event_handler_moved_from(
     struct inotify_event *event,
-    char *path )
+    char *path,
+    int fd,
+    LIST *list_wd)
 {
-    return event_handler_delete(event, path);
+    return event_handler_delete(event, path, fd, list_wd);
 }
 
 int
 event_handler_moved_to(
     struct inotify_event *event,
-    char *path )
+    char *path,
+    int fd,
+    LIST *list_wd)
 {
     if (strncmp(path, root_path, strlen(root_path)) == 0) /* replace with is_child_of */
-        return event_handler_create(event, path);
+        return event_handler_create(event, path, fd, list_wd);
 
     return 0; /* do nothing */
 }
 
 void
 signal_callback_handler(
-    int signum )
+    int signum)
 {
     printf("Cleaning...\n");
 
-    bdestroy (command);
-    bdestroy (format);
-    bdestroy (tmp_command);
-    bdestroy (B_ACCESS);
-    bdestroy (B_MODIFY);
-    bdestroy (B_ATTRIB);
-    bdestroy (B_CLOSE_WRITE);
-    bdestroy (B_CLOSE_NOWRITE);
-    bdestroy (B_CLOSE);
-    bdestroy (B_OPEN);
-    bdestroy (B_MOVED_FROM);
-    bdestroy (B_MOVED_TO);
-    bdestroy (B_MOVE);
-    bdestroy (B_CREATE);
-    bdestroy (B_DELETE);
-    bdestroy (B_DELETE_SELF);
-    bdestroy (B_UNMOUNT);
-    bdestroy (B_Q_OVERFLOW);
-    bdestroy (B_IGNORED);
-    bdestroy (B_ISDIR);
-    bdestroy (B_ONESHOT);
-    bdestroy (B_DEFAULT);
-    bdestroy (B_ALL_EVENTS);
+    bdestroy(command);
+    bdestroy(format);
+    bdestroy(tmp_command);
+    bdestroy(B_ACCESS);
+    bdestroy(B_MODIFY);
+    bdestroy(B_ATTRIB);
+    bdestroy(B_CLOSE_WRITE);
+    bdestroy(B_CLOSE_NOWRITE);
+    bdestroy(B_CLOSE);
+    bdestroy(B_OPEN);
+    bdestroy(B_MOVED_FROM);
+    bdestroy(B_MOVED_TO);
+    bdestroy(B_MOVE);
+    bdestroy(B_CREATE);
+    bdestroy(B_DELETE);
+    bdestroy(B_DELETE_SELF);
+    bdestroy(B_UNMOUNT);
+    bdestroy(B_Q_OVERFLOW);
+    bdestroy(B_IGNORED);
+    bdestroy(B_ISDIR);
+    bdestroy(B_ONESHOT);
+    bdestroy(B_DEFAULT);
+    bdestroy(B_ALL_EVENTS);
 
-    bdestroy (COMMAND_PATTERN_ROOT);
-    bdestroy (COMMAND_PATTERN_PATH );
-    bdestroy (COMMAND_PATTERN_FILE);
-    bdestroy (COMMAND_PATTERN_EVENT);
-    bdestroy (COMMAND_PATTERN_REGEX);
-    bdestroy (COMMAND_PATTERN_COUNT);
+    bdestroy(COMMAND_PATTERN_ROOT);
+    bdestroy(COMMAND_PATTERN_PATH );
+    bdestroy(COMMAND_PATTERN_FILE);
+    bdestroy(COMMAND_PATTERN_EVENT);
+    bdestroy(COMMAND_PATTERN_REGEX);
+    bdestroy(COMMAND_PATTERN_COUNT);
 
-    list_free(list_wd);
+    /* TODO how to free??? list_free(list_wd); */
     exit(signum);
 }

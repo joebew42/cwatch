@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
     signal(SIGINT, (void*)signal_callback_handler);
 
     if (parse_command_line(argc, argv) == 0) {
-        fd = inotify_init();
-        list_wd = list_init();
+        int fd = inotify_init();
+        LIST *list_wd = list_init();
 
         watch_descriptor_from = inotify_add_watch;
 
@@ -42,6 +42,6 @@ int main(int argc, char *argv[])
 
         return monitor(fd, list_wd);       /* start monitoring */
     }
-
+    printf("* * * BYE BYE * * *");
     return EXIT_SUCCESS;
 }

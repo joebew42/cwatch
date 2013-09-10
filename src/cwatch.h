@@ -125,7 +125,9 @@ struct event_t
     char *name;           /* the event name (delete,create,modify,etc ...) */
     int (*handler)(
         struct inotify_event *,
-        char *
+        char *,
+        int,
+        LIST *
         );                /* function handler called when the event occurs */
 };
 
@@ -145,9 +147,6 @@ uint32_t event_mask;            /* the resulting event_mask */
 regex_t *exclude_regex;         /* the posix regular expression defined by -x option */
 regex_t *user_catch_regex;      /* the posix regular expression defined by -X option */
 regmatch_t p_match[2];          /* store the matched regular expression by -X option */
-
-int fd;                         /* inotify file descriptor */
-LIST *list_wd;                  /* the list of all watched resource */
 
 int exec_c;                     /* the number of times command is executed */
 char exec_cstr[10];             /* used as conversion of exec_c to cstring */
@@ -298,12 +297,15 @@ add_to_watch_list(
 void
 unwatch(
     char *,                     /* absolute path of the resource to remove */
-    bool_t );                   /* TRUE if is path is a symbolic link, FALSE otherwise */
+    bool_t,                     /* TRUE if is path is a symbolic link, FALSE otherwise */
+    int,                        /* inotify file desciptor */
+    LIST * );                   /* list of watched resources */
 
 /* returns a LIST of path that is referenced by a symbolic link */
 LIST *
 list_of_referenced_path(
-    const char * );             /* absolute path to inspect */
+    const char *,               /* absolute path to inspect */
+    LIST * );                   /* list of watched resources */
 
 /* removes from the watch list all resources that are no */
 /* longer referenced by symbolic links and are extern */
@@ -311,13 +313,16 @@ list_of_referenced_path(
 void
 remove_orphan_watched_resources(
     const char *,               /* absolute path to remove */
-    LIST * );                   /* LIST of all path that are referenced */
-                                /* by symbolic link */
+    LIST *,                     /* list of all path that are referenced by symbolic link */
+    int,                        /* inotify file descriptor */
+    LIST * );                   /* list of watched resources */
 
 /* unwatch a symbolic link from the watched resources */
 void
 unwatch_symbolic_link(
-    LIST_NODE * );              /* LIST_NODE of the symbolic link to unwatch */
+    LIST_NODE *,                /* LIST_NODE of the symbolic link to unwatch */
+    int,                        /* inotify file descriptor */
+    LIST * );                   /* list of watched resources */
 
 /* start monitoring of inotify event on watched resources */
 int
@@ -351,16 +356,18 @@ get_inotify_event(
  *
  * @param struct inotify_event * : inotify event
  * @param char *                 : the path of file or directory that triggered the event
+ * @param LIST *                 : the list of all watched resources
+ * @param int                    : file descriptor
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
-int event_handler_undefined(struct inotify_event *, char *);   /* NO ACTION, it always return 0 */
-int event_handler_create(struct inotify_event *, char *);      /* IN_CREATE */
-int event_handler_delete(struct inotify_event *, char *);      /* IN_DELETE */
-int event_handler_moved_from(struct inotify_event *, char *);  /* IN_MOVED_FROM */
-int event_handler_moved_to(struct inotify_event *, char *);    /* IN_MOVED_TO */
+int event_handler_undefined(struct inotify_event *, char *, int, LIST *);  /* NO ACTION */
+int event_handler_create(struct inotify_event *, char *, int, LIST *);     /* IN_CREATE */
+int event_handler_delete(struct inotify_event *, char *, int, LIST *);     /* IN_DELETE */
+int event_handler_moved_from(struct inotify_event *, char *, int, LIST *); /* IN_MOVED_FROM */
+int event_handler_moved_to(struct inotify_event *, char *, int, LIST *);   /* IN_MOVED_TO */
 
 /* handler function called when a signal occurs */
 void
 signal_callback_handler(
-    int );                      /* signal identifier */
+    int);                       /* signal identifier */
 #endif /* !__CWATCH_H */
