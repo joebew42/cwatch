@@ -42,6 +42,6 @@ int main(int argc, char *argv[])
 
         return monitor(fd, list_wd);       /* start monitoring */
     }
-    printf("* * * BYE BYE * * *");
+
     return EXIT_SUCCESS;
 }
