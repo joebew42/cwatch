@@ -147,8 +147,13 @@ END_TEST
 
 START_TEST(adds_a_directory_to_the_watch_list)
 {
-    /* TODO */
+    /* TODO Implement this test */
+    int fd = 1;
+    LIST *list_wd = list_init();
+
     ck_assert_ptr_eq(NULL, NULL);
+
+    list_free(list_wd);
 }
 END_TEST
 
