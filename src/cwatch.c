@@ -854,7 +854,6 @@ add_to_watch_list(
 
         if (link_data != NULL) {
             list_push(wd_data->links, (void *) link_data);
-
             log_message("ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
         }
     }
