@@ -3,12 +3,12 @@
 
 #include "../src/cwatch.h"
 
-/* helper functions */
+/* HELPER FUNCTIONS */
 void
 fill_with_paths(
     LIST *list,
     char **paths,
-    int number_of_paths)
+    int number_of_paths )
 {
     int i;
     for (i = 0; i < number_of_paths; i++) {
@@ -20,26 +20,30 @@ int
 inotify_add_watch_mock(
     int fd,
     const char *path,
-    uint32_t mask)
+    uint32_t mask )
 {
     static int wd = 1;
     return wd++;
 }
-/* end of helper functions */
 
-LIST *list_wd;
+int
+list_count(
+    LIST *list )
+{
+    return 0;
+}
+/* END HELPER FUNCTIONS */
 
 void
 setup(void)
 {
-    list_wd = list_init();
     watch_descriptor_from = inotify_add_watch_mock;
 }
 
 void
 teardown(void)
 {
-    list_free(list_wd);
+    /* PASS */
 }
 
 START_TEST(creates_a_wd_data)
