@@ -100,9 +100,7 @@ print_version()
 }
 
 void
-help(
-    int error,
-    char *message )
+help(int error, char *message)
 {
     printf("Usage: %s -c COMMAND -d DIRECTORY [-v] [-s] [-options]\n", PROGRAM_NAME);
     printf("   or: %s -F FORMAT  -d DIRECTORY [-v] [-s] [-options]\n", PROGRAM_NAME);
@@ -183,9 +181,7 @@ help(
 }
 
 void
-log_message(
-    char *message,
-    ... )
+log_message(char *message, ...)
 {
     /* Init variable argument list */
     va_list la;
@@ -246,8 +242,7 @@ log_message(
 }
 
 char *
-resolve_real_path(
-    const char *path )
+resolve_real_path(const char *path)
 {
     char *resolved = (char*) malloc(MAXPATHLEN + 1);
 
@@ -262,9 +257,7 @@ resolve_real_path(
 }
 
 LIST_NODE *
-get_node_from_path(
-    const char *path,
-    LIST *list_wd )
+get_node_from_path(const char *path, LIST *list_wd)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -278,9 +271,7 @@ get_node_from_path(
 }
 
 LIST_NODE *
-get_node_from_wd(
-    const int wd,
-    LIST *list_wd )
+get_node_from_wd(const int wd, LIST *list_wd)
 {
     LIST_NODE *node = list_wd->first;
     while (node) {
@@ -294,9 +285,7 @@ get_node_from_wd(
 }
 
 WD_DATA *
-create_wd_data(
-    char *real_path,
-    int wd )
+create_wd_data(char *real_path, int wd)
 {
     WD_DATA *wd_data = (WD_DATA*) malloc(sizeof(WD_DATA));
 
@@ -311,9 +300,7 @@ create_wd_data(
 }
 
 LIST_NODE *
-get_link_node_from_path(
-    const char *symlink,
-    LIST *list_wd )
+get_link_node_from_path(const char *symlink, LIST *list_wd)
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -339,9 +326,7 @@ get_link_node_from_path(
 }
 
 LINK_DATA *
-get_link_data_from_wd_data(
-    const char *symlink,
-    const WD_DATA *wd_data )
+get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
 {
     if (NULL == wd_data)
         return NULL;
@@ -362,9 +347,7 @@ get_link_data_from_wd_data(
 }
 
 LINK_DATA *
-get_link_data_from_path(
-    const char *symlink,
-    LIST *list_wd )
+get_link_data_from_path(const char *symlink, LIST *list_wd)
 {
     LIST_NODE *node = list_wd->first;
     WD_DATA *wd_data;
@@ -385,9 +368,7 @@ get_link_data_from_path(
 }
 
 LINK_DATA *
-create_link_data(
-    char *symlink,
-    WD_DATA *wd_data )
+create_link_data(char *symlink, WD_DATA *wd_data)
 {
     LINK_DATA *link_data = (LINK_DATA*) malloc(sizeof(LINK_DATA));
 
@@ -401,9 +382,7 @@ create_link_data(
 }
 
 bool_t
-is_child_of(
-    const char *child,
-    const char *parent )
+is_child_of(const char *child, const char *parent)
 {
     if (child == NULL
         || parent == NULL
@@ -416,9 +395,7 @@ is_child_of(
 }
 
 bool_t
-is_listed_in(
-    char* child_path,
-    LIST *parents )
+is_listed_in(char* child_path, LIST *parents)
 {
     if (parents == NULL || parents->first == NULL)
         return FALSE;
@@ -435,8 +412,7 @@ is_listed_in(
 }
 
 bool_t
-excluded(
-    char *str )
+excluded(char *str)
 {
     if (NULL == exclude_regex)
         return FALSE;
@@ -448,8 +424,7 @@ excluded(
 }
 
 bool_t
-regex_catch(
-    char *str )
+regex_catch(char *str)
 {
     if (NULL == user_catch_regex)
         return TRUE;
@@ -461,8 +436,7 @@ regex_catch(
 }
 
 char *
-get_regex_catch(
-    char *str )
+get_regex_catch(char *str)
 {
     if (p_match[1].rm_so == -1)
         return NULL;
@@ -477,11 +451,7 @@ get_regex_catch(
 }
 
 bstring
-format_command(
-    char *command_format,
-    char *event_p_path,
-    char *file_name,
-    char *event_name )
+format_command(char *command_format, char *event_p_path, char *file_name, char *event_name)
 {
     tmp_command = bfromcstr(command_format);
 
@@ -515,9 +485,7 @@ format_command(
 }
 
 int
-parse_command_line(
-    int argc,
-    char *argv[] )
+parse_command_line(int argc, char *argv[])
 {
     if (argc == 1) {
         help(EINVAL, NULL);
@@ -735,12 +703,7 @@ parse_command_line(
 }
 
 int
-watch_directory_tree(
-    char *real_path,
-    char *symlink,
-    bool_t recursive,
-    int fd,
-    LIST *list_wd )
+watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, LIST *list_wd)
 {
     /* Add initial path to the watch list */
     LIST_NODE *node = add_to_watch_list(real_path, symlink, fd, list_wd);
@@ -818,11 +781,7 @@ watch_directory_tree(
 }
 
 LIST_NODE *
-add_to_watch_list(
-    char *real_path,
-    char *symlink,
-    int fd,
-    LIST *list_wd)
+add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
 {
     LIST_NODE *node = get_node_from_path(real_path, list_wd);
 
@@ -862,11 +821,7 @@ add_to_watch_list(
 }
 
 void
-unwatch(
-    char *path,
-    bool_t is_link,
-    int fd,
-    LIST *list_wd )
+unwatch(char *path, bool_t is_link, int fd, LIST *list_wd)
 {
     /* Remove the resource from watched resources */
     if (is_link == FALSE) {
@@ -928,9 +883,7 @@ unwatch(
 }
 
 LIST *
-list_of_referenced_path(
-    const char *path,
-    LIST *list_wd )
+list_of_referenced_path(const char *path, LIST *list_wd)
 {
     LIST *tmp_references_list = list_init();
     LIST_NODE *node;
@@ -954,11 +907,7 @@ list_of_referenced_path(
 }
 
 void
-remove_orphan_watched_resources(
-    const char *path,
-    LIST *references_list,
-    int fd,
-    LIST *list_wd )
+remove_orphan_watched_resources(const char *path, LIST *references_list, int fd, LIST *list_wd)
 {
     LIST_NODE *node;
     WD_DATA *wd_data;
@@ -982,10 +931,7 @@ remove_orphan_watched_resources(
 }
 
 void
-unwatch_symbolic_link(
-    LIST_NODE *link_node,
-    int fd,
-    LIST *list_wd )
+unwatch_symbolic_link(LIST_NODE *link_node, int fd, LIST *list_wd)
 {
     LINK_DATA *link_data = (LINK_DATA*) link_node->data;
     char *link_path = (char*) link_data->path;
@@ -1013,9 +959,7 @@ unwatch_symbolic_link(
 }
 
 int
-monitor(
-    int fd,
-    LIST *list_wd)
+monitor(int fd, LIST *list_wd)
 {
     /* Initialize patterns that will be replaced */
     COMMAND_PATTERN_ROOT = bfromcstr("%r");
@@ -1105,10 +1049,7 @@ monitor(
 }
 
 int
-execute_command_inline(
-    char *event_name,
-    char *file_name,
-    char *event_p_path )
+execute_command_inline(char *event_name, char *file_name, char *event_p_path)
 {
     log_message("EVENT TRIGGERED [%s] IN %s%s\nNUMBER OF EXECUTION [%d]\nPROCESS EXECUTED [command: %s]",
                 event_name, event_p_path, file_name, exec_c, command->data);
@@ -1129,10 +1070,7 @@ execute_command_inline(
 }
 
 int
-execute_command_embedded(
-    char *event_name,
-    char *file_name,
-    char *event_p_path )
+execute_command_embedded(char *event_name, char *file_name, char *event_p_path)
 {
     log_message("EVENT TRIGGERED [%s] IN %s%s", event_name, event_p_path, file_name);
 
@@ -1147,8 +1085,7 @@ execute_command_embedded(
 }
 
 struct event_t *
-get_inotify_event(
-    const uint32_t event_mask )
+get_inotify_event(const uint32_t event_mask)
 {
     switch (event_mask) {
     case IN_CLOSE:       return &events_lut[32];
@@ -1163,21 +1100,13 @@ get_inotify_event(
  */
 
 int
-event_handler_undefined(
-    struct inotify_event *event,
-    char *path,
-    int fd,
-    LIST *list_wd )
+event_handler_undefined(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
     return 0;
 }
 
 int
-event_handler_create(
-    struct inotify_event *event,
-    char *path,
-    int fd,
-    LIST *list_wd )
+event_handler_create(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
     /* Return 0 if recurively monitoring is disabled */
     if (recursive_flag == FALSE)
@@ -1201,11 +1130,7 @@ event_handler_create(
 }
 
 int
-event_handler_delete(
-    struct inotify_event *event,
-    char *path,
-    int fd,
-    LIST *list_wd )
+event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
@@ -1226,21 +1151,13 @@ event_handler_delete(
 }
 
 int
-event_handler_moved_from(
-    struct inotify_event *event,
-    char *path,
-    int fd,
-    LIST *list_wd)
+event_handler_moved_from(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
     return event_handler_delete(event, path, fd, list_wd);
 }
 
 int
-event_handler_moved_to(
-    struct inotify_event *event,
-    char *path,
-    int fd,
-    LIST *list_wd)
+event_handler_moved_to(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
     if (strncmp(path, root_path, strlen(root_path)) == 0) /* replace with is_child_of */
         return event_handler_create(event, path, fd, list_wd);
@@ -1249,8 +1166,7 @@ event_handler_moved_to(
 }
 
 void
-signal_callback_handler(
-    int signum)
+signal_callback_handler(int signum)
 {
     printf("Cleaning...\n");
 
