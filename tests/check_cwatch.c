@@ -5,10 +5,7 @@
 
 /* HELPER FUNCTIONS */
 void
-fill_with_paths(
-    LIST *list,
-    char **paths,
-    int number_of_paths )
+fill_with_paths(LIST *list, char **paths, int number_of_paths)
 {
     int i;
     for (i = 0; i < number_of_paths; i++) {
@@ -17,18 +14,14 @@ fill_with_paths(
 }
 
 int
-inotify_add_watch_mock(
-    int fd,
-    const char *path,
-    uint32_t mask )
+inotify_add_watch_mock(int fd, const char *path, uint32_t mask)
 {
     static int wd = 1;
     return wd++;
 }
 
 int
-list_count(
-    LIST *list )
+list_count(LIST *list)
 {
     return 0;
 }
