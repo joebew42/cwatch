@@ -78,7 +78,7 @@ void *list_pop(LIST *list)
     return data;
 }
 
-void list_remove(LIST* list, LIST_NODE *node)
+void list_remove(LIST *list, LIST_NODE *node)
 {
     if (list->first == NULL)
         return;
@@ -94,6 +94,21 @@ void list_remove(LIST* list, LIST_NODE *node)
         node->next->prev = node->prev;
 
     free(node);
+}
+
+int list_size(LIST *list)
+{
+    if (list == NULL || list->first == NULL)
+        return 0;
+
+    int size = 0;
+    LIST_NODE *node = list->first;
+    while (node != NULL) {
+        node = node->next;
+        ++size;
+    }
+
+    return size;
 }
 
 void list_free(LIST *list)

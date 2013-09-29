@@ -79,18 +79,13 @@ START_TEST(remove_one_item)
 }
 END_TEST
 
-START_TEST(count_number_of_items)
+START_TEST(size_of_the_list)
 {
     int expected = 10;
-    int actual = 0;
 
     add_items_to(list, expected);
 
-    LIST_NODE *node = list->first;
-    while (node != NULL) {
-        node = node->next;
-        actual++;
-    }
+    int actual = list_size(list);
 
     ck_assert_int_eq(actual, expected);
 }
@@ -109,7 +104,7 @@ Suite *list_suite(void)
     tcase_add_test(tc_core, push_two_items);
     tcase_add_test(tc_core, pop_one_item);
     tcase_add_test(tc_core, remove_one_item);
-    tcase_add_test(tc_core, count_number_of_items);
+    tcase_add_test(tc_core, size_of_the_list);
 
     suite_add_tcase(s, tc_core);
 

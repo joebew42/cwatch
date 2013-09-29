@@ -76,6 +76,13 @@ void *list_pop(LIST *);
  */
 void list_remove(LIST *, LIST_NODE *);
 
+/* returns the size of a list
+ *
+ * @param  LIST * : list
+ * @return int    : number of elements
+ */
+int list_size(LIST *);
+
 /* deallocates list data structure */
 void list_free(LIST *);
 
