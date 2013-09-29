@@ -19,12 +19,6 @@ inotify_add_watch_mock(int fd, const char *path, uint32_t mask)
     static int wd = 1;
     return wd++;
 }
-
-int
-list_count(LIST *list)
-{
-    return 0;
-}
 /* END HELPER FUNCTIONS */
 
 void
