@@ -48,37 +48,35 @@ typedef struct list
     LIST_NODE *last;
 } LIST;
 
-/**
- * Initialize list data structure
+/* initialize list data structure
+ *
  * @return list * : a pointer to the new allocated list structure
  */
 LIST *list_init();
 
-/**
- * Push an element at the end of list
- * @param LIST * : a LIST pointer
- * @param void * : a void pointer
- * @return LIST_NODE: return the pointer of the node added
+/* push an element at the end of list
+ *
+ * @param  LIST *    : a LIST pointer
+ * @param  void *    : a void pointer
+ * @return LIST_NODE : return the pointer of the node added
  */
 LIST_NODE *list_push(LIST *, void *);
 
-/**
- * Remove and return the first element of the list
- * @param LIST *  : a LIST pointer
- * @return void * : a VOID pointer to destination data pointer
+/* remove and return the first element of the list
+ *
+ * @param  LIST *  : a LIST pointer
+ * @return void *  : a VOID pointer to destination data pointer
  */
 void *list_pop(LIST *);
 
-/**
- * Remove a node from list
+/* remove a node from list
+ *
  * @param LIST *      : a pointer to the list
  * @param LIST_NODE * : a to the list_node to remove
  */
 void list_remove(LIST *, LIST_NODE *);
 
-/**
- * Deallocate list data structure
- */
+/* deallocates list data structure */
 void list_free(LIST *);
 
 #endif /* !__LIST_H */
