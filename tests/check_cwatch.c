@@ -138,11 +138,21 @@ END_TEST
 
 START_TEST(adds_a_directory_to_the_watch_list)
 {
-    /* TODO Implement this test */
+    uint32_t event_mask = 0;
+
     int fd = 1;
     LIST *list_wd = list_init();
 
-    ck_assert_ptr_eq(NULL, NULL);
+    char *real_path = "/home/cwatch/";
+    char *symlink = NULL;
+
+    add_to_watch_list(real_path, symlink, fd, list_wd);
+
+    ck_assert_int_eq(list_size(list_wd), 1);
+
+    LIST_NODE *node = get_node_from_path(real_path, list_wd);
+
+    ck_assert_ptr_ne(node, NULL);
 
     list_free(list_wd);
 }
