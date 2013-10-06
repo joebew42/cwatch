@@ -832,7 +832,7 @@ unwatch(char *path, bool_t is_link, int fd, LIST *list_wd)
 
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, path);
 
-            inotify_rm_watch(fd, wd_data->wd);
+            remove_watch_descriptor(fd, wd_data->wd);
 
             if (wd_data->links->first != NULL)
                 list_free(wd_data->links);
@@ -923,7 +923,7 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
         {
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
 
-            inotify_rm_watch(fd, wd_data->wd);
+            remove_watch_descriptor(fd, wd_data->wd);
             list_remove(list_wd, node);
         }
         node = node->next;

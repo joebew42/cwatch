@@ -150,7 +150,16 @@ bool_t syslog_flag;
  * @return int          : watch descriptor
  */
 int
-(*watch_descriptor_from)(int, const char *, uint32_t );
+(*watch_descriptor_from)(int, const char *, uint32_t);
+
+/* function pointer to inotify_rm_watch
+ *
+ * @param  int          : file descriptor
+ * @param  int          : watch descriptor
+ * @return int          : 0 if success, -1 otherwise
+ */
+int
+(*remove_watch_descriptor)(int, int);
 
 /* print the version of the program and exit */
 void
