@@ -19,12 +19,19 @@ inotify_add_watch_mock(int fd, const char *path, uint32_t mask)
     static int wd = 1;
     return wd++;
 }
+
+int
+inotify_rm_watch_mock(int fd, int wd)
+{
+    return 0;
+}
 /* END HELPER FUNCTIONS */
 
 void
 setup(void)
 {
     watch_descriptor_from = inotify_add_watch_mock;
+    remove_watch_descriptor = inotify_rm_watch_mock;
 }
 
 void
@@ -178,6 +185,23 @@ START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
 }
 END_TEST
 
+START_TEST(unwatch_a_directory_from_the_watch_list)
+{
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+
+    add_to_watch_list(real_path, NULL, fd, list_wd);
+
+    unwatch(real_path, FALSE, fd, list_wd);
+
+    ck_assert_int_eq(list_size(list_wd), 0);
+
+    list_free(list_wd);
+}
+END_TEST
+
 Suite *cwatch_suite(void)
 {
     Suite *s = suite_create("cwatch");
@@ -196,6 +220,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, creates_a_link_data);
     tcase_add_test(tc_core, adds_a_directory_to_the_watch_list);
     tcase_add_test(tc_core, adds_a_directory_that_is_reached_by_symlink_to_the_watch_list);
+    tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
     suite_add_tcase(s, tc_core);
