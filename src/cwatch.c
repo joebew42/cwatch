@@ -882,6 +882,69 @@ unwatch(char *path, bool_t is_link, int fd, LIST *list_wd)
     }
 }
 
+void
+unwatch_path(char *absolute_path, int fd, LIST *list_wd)
+{
+    LIST_NODE *node = get_node_from_path(absolute_path, list_wd);
+    if (NULL == node)
+        return;
+
+    WD_DATA *wd_data = (WD_DATA *) node->data;
+
+    log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, absolute_path);
+
+    remove_watch_descriptor(fd, wd_data->wd);
+
+    if (wd_data->links->first != NULL)
+        list_free(wd_data->links);
+
+    list_remove(list_wd, node);
+}
+
+void
+unwatch_symbolic_link_tmp(char *path, char* symbolic_link, int fd, LIST *list_wd)
+{
+    /* Search for all other symbolic links to unwatch */
+    LIST *list = list_init();
+    list_push(list, (void *) path);
+
+    while (list->first != NULL) {
+        char *symlink = (char*) list_pop(list);
+
+        LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
+        if (link_node == NULL)
+            continue;
+
+        LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+        char *resolved_path = (char*) link_data->wd_data->path;
+
+        /* TODO: Refactor this section */
+        LIST_NODE *node = list_wd->first;
+        LIST_NODE *sub_node = NULL;
+
+        WD_DATA *wd_data = NULL;
+        LINK_DATA *link_data2 = NULL;
+        while (node) {
+            wd_data = (WD_DATA*) node->data;
+            sub_node = (LIST_NODE*) wd_data->links->first;
+            while (sub_node) {
+                link_data2 = (LINK_DATA*) sub_node->data;
+                if (is_child_of(link_data2->path, resolved_path) == TRUE) {
+                    /* printf("-> SYMLINK TO REMOVE: %s\n", link_data2->path); */
+                    list_push(list, (void*) link_data2->path);
+                }
+                sub_node = sub_node->next;
+            }
+            node = node->next;
+        }
+
+        if (link_node != NULL)
+            unwatch_symbolic_link(link_node, fd, list_wd);
+    }
+
+    list_free(list);
+}
+
 LIST *
 list_of_referenced_path(const char *path, LIST *list_wd)
 {
