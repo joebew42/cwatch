@@ -177,6 +177,8 @@ START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
 
     add_to_watch_list(real_path, symlink, fd, list_wd);
 
+    ck_assert_int_eq(list_size(list_wd), 1);
+
     LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
 
     ck_assert_ptr_ne(link_node, NULL);
