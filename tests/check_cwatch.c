@@ -196,7 +196,7 @@ START_TEST(unwatch_a_directory_from_the_watch_list)
 
     add_to_watch_list(real_path, NULL, fd, list_wd);
 
-    unwatch(real_path, FALSE, fd, list_wd);
+    unwatch_path(real_path, fd, list_wd);
 
     ck_assert_int_eq(list_size(list_wd), 0);
 
