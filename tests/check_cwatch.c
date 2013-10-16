@@ -212,6 +212,33 @@ START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/cwatch/symlink_to_cwatch";
 
+    root_path = real_path;
+
+    add_to_watch_list(real_path, symlink, fd, list_wd);
+
+    LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
+
+    LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+    WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
+
+    unwatch_symbolic_link(link_node, fd, list_wd);
+
+    ck_assert_int_eq(list_size(wd_data->links), 0);
+
+    list_free(list_wd);
+}
+END_TEST
+
+START_TEST(unwatch_a_symbolic_link_tmp_from_the_watch_list)
+{
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+    char *symlink = "/home/cwatch/symlink_to_cwatch";
+
+    root_path = real_path;
+
     add_to_watch_list(real_path, symlink, fd, list_wd);
 
     unwatch_symbolic_link_tmp(real_path, symlink, fd, list_wd);
@@ -245,6 +272,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, adds_a_directory_that_is_reached_by_symlink_to_the_watch_list);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
+    tcase_add_test(tc_core, unwatch_a_symbolic_link_tmp_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
     suite_add_tcase(s, tc_core);
