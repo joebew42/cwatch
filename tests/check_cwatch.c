@@ -264,8 +264,8 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, creates_a_wd_data);
     tcase_add_test(tc_core, creates_a_link_data);
     tcase_add_test(tc_core, adds_a_directory_to_the_watch_list);
-    tcase_add_test(tc_core, get_a_link_node_from_path);
     tcase_add_test(tc_core, adds_a_directory_that_is_reached_by_symlink_to_the_watch_list);
+    tcase_add_test(tc_core, get_a_link_node_from_path);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_tmp_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
