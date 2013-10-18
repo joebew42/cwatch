@@ -840,11 +840,11 @@ unwatch_path(char *absolute_path, int fd, LIST *list_wd)
 }
 
 void
-unwatch_symbolic_link_tmp(char* symbolic_link, int fd, LIST *list_wd)
+unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
     /* Search for all other symbolic links to unwatch */
     LIST *list = list_init();
-    list_push(list, (void *) symbolic_link);
+    list_push(list, (void *) path_of_symlink);
 
     while (list->first != NULL) {
         char *symlink = (char*) list_pop(list);
@@ -1141,11 +1141,13 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        unwatch_symbolic_link_tmp(path, fd, list_wd);
+        unwatch_symlink(path, fd, list_wd);
     }
 
     return 0;
 }
+
+void foo(){return;}
 
 int
 event_handler_moved_from(struct inotify_event *event, char *path, int fd, LIST *list_wd)
