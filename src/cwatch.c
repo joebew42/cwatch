@@ -821,68 +821,6 @@ add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
 }
 
 void
-unwatch(char *path, bool_t is_link, int fd, LIST *list_wd)
-{
-    /* Remove the resource from watched resources */
-    if (is_link == FALSE) {
-        /* Retrieve the watch descriptor from path */
-        LIST_NODE *node = get_node_from_path(path, list_wd);
-        if (node != NULL) {
-            WD_DATA *wd_data = (WD_DATA *) node->data;
-
-            log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, path);
-
-            remove_watch_descriptor(fd, wd_data->wd);
-
-            if (wd_data->links->first != NULL)
-                list_free(wd_data->links);
-
-            list_remove(list_wd, node);
-        }
-    } else {
-        /* Search for all other symbolic links to unwatch */
-        LIST *list = list_init();
-        list_push(list, (void *) path);
-
-        while (list->first != NULL) {
-            char *symlink = (char*) list_pop(list);
-
-            LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
-            if (link_node == NULL)
-                continue;
-
-            LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-            char *resolved_path = (char*) link_data->wd_data->path;
-
-            /* TODO: Refactor this section */
-            LIST_NODE *node = list_wd->first;
-            LIST_NODE *sub_node = NULL;
-
-            WD_DATA *wd_data = NULL;
-            LINK_DATA *link_data2 = NULL;
-            while (node) {
-                wd_data = (WD_DATA*) node->data;
-                sub_node = (LIST_NODE*) wd_data->links->first;
-                while (sub_node) {
-                    link_data2 = (LINK_DATA*) sub_node->data;
-                    if (is_child_of(link_data2->path, resolved_path) == TRUE) {
-                        /* printf("-> SYMLINK TO REMOVE: %s\n", link_data2->path); */
-                        list_push(list, (void*) link_data2->path);
-                    }
-                    sub_node = sub_node->next;
-                }
-                node = node->next;
-            }
-
-            if (link_node != NULL)
-                unwatch_symbolic_link(link_node, fd, list_wd);
-        }
-
-        list_free(list);
-    }
-}
-
-void
 unwatch_path(char *absolute_path, int fd, LIST *list_wd)
 {
     LIST_NODE *node = get_node_from_path(absolute_path, list_wd);
@@ -1014,33 +952,6 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
             list_remove(list_wd, node);
         }
         node = node->next;
-    }
-}
-
-unwatch_symbolic_link(LIST_NODE *link_node, int fd, LIST *list_wd)
-{
-    LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-    char *link_path = (char*) link_data->path;
-    WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
-
-    log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
-
-    list_remove(wd_data->links, link_node);
-
-    /*
-     * if there is no other symbolic links that point to the
-     * watched resource and the watched resource is not a child
-     * of the the root path then unwatch it and relative orphan
-     * directories (no longer reached by any symbolic links within root_path)
-     */
-    if (wd_data->links->first == NULL
-        && is_child_of(wd_data->path, root_path) == FALSE)
-    {
-        LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
-        if (NULL != references_list) {
-            remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
-        }
-        list_free(references_list);
     }
 }
 
@@ -1220,7 +1131,7 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
 {
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR) {
-        unwatch(path, FALSE, fd, list_wd);
+        unwatch_path(path, fd, list_wd);
     } else if (nosymlink_flag == FALSE) {
         /*
          * XXX Since it is not possible to know if the
@@ -1230,7 +1141,7 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        unwatch(path, TRUE, fd, list_wd);
+        unwatch_symbolic_link_tmp(path, fd, list_wd);
     }
 
     return 0;

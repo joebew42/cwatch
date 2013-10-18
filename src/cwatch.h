@@ -347,16 +347,6 @@ watch_directory_tree(char *, char *, bool_t, int, LIST *);
 LIST_NODE *
 add_to_watch_list(char *, char *, int, LIST *);
 
-/* unwatch a directory from the watch list
- *
- * @param char *  : absolute path of the resource to remove
- * @param bool_t  : TRUE if is path is a symbolic link, FALSE otherwise
- * @param int     : inotify file descriptor
- * @param  LIST * : list of watched resources
- */
-void
-unwatch(char *, bool_t, int, LIST *);
-
 /* given a real path unwatch a directory from the watch list
  *
  * @param char *  : absolute path of the resource to remove
@@ -394,15 +384,6 @@ list_of_referenced_path(const char *, LIST *);
  */
 void
 remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
-
-/* unwatch a symbolic link from the watched resources
- *
- * @param LIST_NODE * : symbolic link to unwatch
- * @param int         : inotify file descriptor
- * @param LIST *      : list of watched resources
- */
-void
-unwatch_symbolic_link(LIST_NODE *, int, LIST *);
 
 /* start monitoring of inotify event on watched resources
  *
