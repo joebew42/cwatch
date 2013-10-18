@@ -902,11 +902,11 @@ unwatch_path(char *absolute_path, int fd, LIST *list_wd)
 }
 
 void
-unwatch_symbolic_link_tmp(char *path, char* symbolic_link, int fd, LIST *list_wd)
+unwatch_symbolic_link_tmp(char* symbolic_link, int fd, LIST *list_wd)
 {
     /* Search for all other symbolic links to unwatch */
     LIST *list = list_init();
-    list_push(list, (void *) path);
+    list_push(list, (void *) symbolic_link);
 
     while (list->first != NULL) {
         char *symlink = (char*) list_pop(list);
@@ -939,7 +939,31 @@ unwatch_symbolic_link_tmp(char *path, char* symbolic_link, int fd, LIST *list_wd
         }
 
         if (link_node != NULL)
-            unwatch_symbolic_link(link_node, fd, list_wd);
+        {
+            LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+            char *link_path = (char*) link_data->path;
+            WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
+
+            log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
+
+            list_remove(wd_data->links, link_node);
+
+            /*
+            * if there is no other symbolic links that point to the
+            * watched resource and the watched resource is not a child
+            * of the the root path then unwatch it and relative orphan
+            * directories (no longer reached by any symbolic links within root_path)
+            */
+            if (wd_data->links->first == NULL
+                && is_child_of(wd_data->path, root_path) == FALSE)
+            {
+                LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
+                if (NULL != references_list) {
+                    remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
+                }
+                list_free(references_list);
+            }
+        }
     }
 
     list_free(list);
@@ -993,7 +1017,6 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
     }
 }
 
-void
 unwatch_symbolic_link(LIST_NODE *link_node, int fd, LIST *list_wd)
 {
     LINK_DATA *link_data = (LINK_DATA*) link_node->data;

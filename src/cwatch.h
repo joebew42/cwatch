@@ -368,13 +368,12 @@ unwatch_path(char *, int, LIST *);
 
 /* given a symbolic link unwatch a directory from the watch list
  *
- * @param char *  : absolute path of the resource to remove
  * @param char *  : symbolic link of the resource to remove
  * @param int     : inotify file descriptor
  * @param  LIST * : list of watched resources
  */
 void
-unwatch_symbolic_link_tmp(char *, char *, int, LIST *);
+unwatch_symbolic_link_tmp(char *, int, LIST *);
 
 /* returns a LIST of paths that are referenced by a symbolic links
  *

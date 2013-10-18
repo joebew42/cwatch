@@ -261,7 +261,7 @@ START_TEST(unwatch_a_symbolic_link_tmp_from_the_watch_list)
 
     add_to_watch_list(real_path, symlink, fd, list_wd);
 
-    unwatch_symbolic_link_tmp(real_path, symlink, fd, list_wd);
+    unwatch_symbolic_link_tmp(symlink, fd, list_wd);
 
     LIST_NODE *node = get_node_from_path(real_path, list_wd);
     WD_DATA *wd_data = (WD_DATA*) node->data;
