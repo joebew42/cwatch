@@ -201,6 +201,28 @@ START_TEST(get_a_node_from_wd)
     list_free(list_wd);
 }END_TEST
 
+START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
+{
+    uint32_t event_mask = 0;
+
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+    char *symlink = "/home/symlink_to_cwatch";
+
+    add_to_watch_list(real_path, symlink, fd, list_wd);
+
+    ck_assert_int_eq(list_size(list_wd), 1);
+
+    LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
+
+    ck_assert_ptr_ne(link_node, NULL);
+
+    list_free(list_wd);
+}
+END_TEST
+
 START_TEST(get_a_link_node_from_path)
 {
     int fd = 1;
@@ -239,27 +261,6 @@ START_TEST(get_a_link_data_from_wd_data)
    list_free(list_wd);
 }END_TEST
 
-START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
-{
-    uint32_t event_mask = 0;
-
-    int fd = 1;
-    LIST *list_wd = list_init();
-
-    char *real_path = "/home/cwatch/";
-    char *symlink = "/home/symlink_to_cwatch";
-
-    add_to_watch_list(real_path, symlink, fd, list_wd);
-
-    ck_assert_int_eq(list_size(list_wd), 1);
-
-    LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
-
-    ck_assert_ptr_ne(link_node, NULL);
-
-    list_free(list_wd);
-}
-END_TEST
 
 START_TEST(unwatch_a_directory_from_the_watch_list)
 {
