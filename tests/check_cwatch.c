@@ -215,9 +215,9 @@ START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
 
     ck_assert_int_eq(list_size(list_wd), 1);
 
-    LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
+    LIST_NODE *list_node = get_link_node_from_path(symlink, list_wd);
 
-    ck_assert_ptr_ne(link_node, NULL);
+    ck_assert_ptr_ne(list_node, NULL);
 
     list_free(list_wd);
 }
@@ -234,8 +234,8 @@ START_TEST(get_a_link_node_from_path)
     add_to_watch_list(real_path, symlink, fd, list_wd);
     LIST_NODE *list_node = get_link_node_from_path(symlink, list_wd);
 
-    LINK_DATA *link_node = list_node->data;
-    WD_DATA *wd_data = link_node->wd_data;
+    LINK_DATA *link_data = list_node->data;
+    WD_DATA *wd_data = link_data->wd_data;
 
     ck_assert_ptr_eq(real_path, wd_data->path);
 
