@@ -234,7 +234,7 @@ get_link_node_from_path(const char *, LIST *);
  * @return LINK_DATA *
  */
 LINK_DATA *
-get_link_data_from_wd_data(const char *,const WD_DATA * );
+get_link_data_from_wd_data(const char *, const WD_DATA *);
 
 /* searchs and returns the link_data from symlink path
  *
