@@ -300,7 +300,7 @@ START_TEST(unwatch_a_directory_from_the_watch_list)
 }
 END_TEST
 
-START_TEST(unwatch_a_symbolic_link_tmp_from_the_watch_list)
+START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 {
     int fd = 1;
     LIST *list_wd = list_init();
@@ -347,7 +347,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, get_a_link_data_from_wd_data);
     tcase_add_test(tc_core, get_a_link_data_from_path);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
-    tcase_add_test(tc_core, unwatch_a_symbolic_link_tmp_from_the_watch_list);
+    tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
     suite_add_tcase(s, tc_core);
