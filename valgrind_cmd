@@ -1,1 +1,0 @@
-valgrind -v --log-file=valgrind.log --leak-check=full --show-reachable=yes --track-origin=yes 
