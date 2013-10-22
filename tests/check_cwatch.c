@@ -177,7 +177,8 @@ START_TEST(get_a_node_from_path)
     ck_assert_ptr_eq(real_path, wd_data->path);
 
     list_free(list_wd);
-}END_TEST
+}
+END_TEST
 
 START_TEST(get_a_node_from_wd)
 {
@@ -199,7 +200,8 @@ START_TEST(get_a_node_from_wd)
     ck_assert_ptr_eq(expected_node, node);
 
     list_free(list_wd);
-}END_TEST
+}
+END_TEST
 
 START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
 {
@@ -241,7 +243,8 @@ START_TEST(get_a_link_node_from_path)
 
     list_free(list_wd);
 
-}END_TEST
+}
+END_TEST
 
 START_TEST(get_a_link_data_from_wd_data)
 {
@@ -259,7 +262,8 @@ START_TEST(get_a_link_data_from_wd_data)
    ck_assert_ptr_eq(link_data->path, symlink);
 
    list_free(list_wd);
-}END_TEST
+}
+END_TEST
 
 START_TEST(get_a_link_data_from_path)
 {
@@ -276,7 +280,8 @@ START_TEST(get_a_link_data_from_path)
     ck_assert_ptr_eq(link_data->path, symlink);
 
     list_free(list_wd);
-}END_TEST
+}
+END_TEST
 
 START_TEST(unwatch_a_directory_from_the_watch_list)
 {
