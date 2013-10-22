@@ -351,10 +351,20 @@ add_to_watch_list(char *, char *, int, LIST *);
  *
  * @param char *  : absolute path of the resource to remove
  * @param int     : inotify file descriptor
- * @param  LIST * : list of watched resources
+ * @param LIST *  : list of watched resources
  */
 void
 unwatch_path(char *, int, LIST *);
+
+/* searches for every symbolic links that are contained
+ * in path, and put them into another list
+ *
+ * @param char * : parent path to check against
+ * @param LIST * : list of symbolic links to check
+ * @param LIST * : list of symbolic links found
+ */
+void
+symlinks_contained_in(char *, LIST *, LIST *);
 
 /* given a symbolic link unwatch a directory from the watch list
  *

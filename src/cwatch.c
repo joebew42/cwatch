@@ -840,6 +840,19 @@ unwatch_path(char *absolute_path, int fd, LIST *list_wd)
 }
 
 void
+symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
+{
+  LIST_NODE *link_node = symlinks_to_check->first;
+  while (link_node) {
+      LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+      if (is_child_of(link_data->path, path) == TRUE) {
+          list_push(symlinks_found, (void*) link_data->path);
+      }
+      link_node = link_node->next;
+  }
+}
+
+void
 unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
     /* Search for all other symbolic links to unwatch */
@@ -856,23 +869,14 @@ unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         LINK_DATA *link_data = (LINK_DATA*) link_node->data;
         char *resolved_path = (char*) link_data->wd_data->path;
 
-        /* TODO: Refactor this section */
         LIST_NODE *node = list_wd->first;
-        LIST_NODE *sub_node = NULL;
 
         WD_DATA *wd_data = NULL;
-        LINK_DATA *link_data2 = NULL;
         while (node) {
             wd_data = (WD_DATA*) node->data;
-            sub_node = (LIST_NODE*) wd_data->links->first;
-            while (sub_node) {
-                link_data2 = (LINK_DATA*) sub_node->data;
-                if (is_child_of(link_data2->path, resolved_path) == TRUE) {
-                    /* printf("-> SYMLINK TO REMOVE: %s\n", link_data2->path); */
-                    list_push(list, (void*) link_data2->path);
-                }
-                sub_node = sub_node->next;
-            }
+
+            symlinks_contained_in(resolved_path, wd_data->links, list);
+
             node = node->next;
         }
 
