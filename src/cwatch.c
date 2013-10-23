@@ -718,7 +718,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
     struct dirent *dir;
 
     while (list->first != NULL) {
-        char *directory_to_watch = (char*) list_pop(list);
+        char *directory_to_watch = (char *) list_pop(list);
         dir_stream = opendir(directory_to_watch);
 
         if (dir_stream == NULL) {
@@ -1155,8 +1155,6 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
 
     return 0;
 }
-
-void foo(){return;}
 
 int
 event_handler_moved_from(struct inotify_event *event, char *path, int fd, LIST *list_wd)
