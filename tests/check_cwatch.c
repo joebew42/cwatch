@@ -300,6 +300,27 @@ START_TEST(unwatch_a_directory_from_the_watch_list)
 }
 END_TEST
 
+START_TEST(find_all_symlinks_that_are_contained_in_some_path)
+{
+    char *path = "/home/cwatch/";
+    LIST *symlinks_to_check = list_init();
+    LIST *symlinks_found = list_init();
+
+    LINK_DATA *symlink_in = create_link_data("/home/cwatch/symlink_in", NULL);
+    LINK_DATA *symlink_out = create_link_data("/home/symlink_out", NULL);
+
+    list_push(symlinks_to_check, (void *) symlink_in);
+    list_push(symlinks_to_check, (void *) symlink_out);
+
+    symlinks_contained_in(path, symlinks_to_check, symlinks_found);
+
+    ck_assert_int_eq(list_size(symlinks_found), 1);
+
+    list_free(symlinks_to_check);
+    list_free(symlinks_found);
+}
+END_TEST
+
 START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 {
     int fd = 1;
@@ -347,6 +368,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, get_a_link_data_from_wd_data);
     tcase_add_test(tc_core, get_a_link_data_from_path);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
+    tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
