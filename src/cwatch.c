@@ -840,6 +840,21 @@ unwatch_path(char *absolute_path, int fd, LIST *list_wd)
 }
 
 void
+all_symlinks_contained_in(char *path, LIST *list_wd, LIST *symlinks_found)
+{
+    LIST_NODE *node = list_wd->first;
+
+    WD_DATA *wd_data = NULL;
+    while (node) {
+        wd_data = (WD_DATA*) node->data;
+
+        symlinks_contained_in(path, wd_data->links, symlinks_found);
+
+        node = node->next;
+    }
+}
+
+void
 symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 {
   LIST_NODE *link_node = symlinks_to_check->first;
@@ -855,12 +870,11 @@ symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 void
 unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
-    /* Search for all other symbolic links to unwatch */
-    LIST *list = list_init();
-    list_push(list, (void *) path_of_symlink);
+    LIST *symlinks_to_remove = list_init();
+    list_push(symlinks_to_remove, (void *) path_of_symlink);
 
-    while (list->first != NULL) {
-        char *symlink = (char*) list_pop(list);
+    while (symlinks_to_remove->first != NULL) {
+        char *symlink = (char*) list_pop(symlinks_to_remove);
 
         LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
         if (link_node == NULL)
@@ -869,16 +883,7 @@ unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         LINK_DATA *link_data = (LINK_DATA*) link_node->data;
         char *resolved_path = (char*) link_data->wd_data->path;
 
-        LIST_NODE *node = list_wd->first;
-
-        WD_DATA *wd_data = NULL;
-        while (node) {
-            wd_data = (WD_DATA*) node->data;
-
-            symlinks_contained_in(resolved_path, wd_data->links, list);
-
-            node = node->next;
-        }
+        all_symlinks_contained_in(resolved_path, list_wd, symlinks_to_remove);
 
         if (link_node != NULL)
         {
@@ -908,7 +913,7 @@ unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         }
     }
 
-    list_free(list);
+    list_free(symlinks_to_remove);
 }
 
 LIST *

@@ -356,8 +356,18 @@ add_to_watch_list(char *, char *, int, LIST *);
 void
 unwatch_path(char *, int, LIST *);
 
-/* searches for every symbolic links that are contained
- * in path, and put them into another list
+/* searches for all symbolic links that are contained
+ * in a path, and put them into another list
+ *
+ * @param char * : path to check
+ * @param LIST * : list of all watched resources
+ * @param LIST * : list of symbolic links found
+ */
+void
+all_symlinks_contained_in(char *, LIST *, LIST *);
+
+/* from a given list of symbolic links,
+ * extract all of them that are contained in a path
  *
  * @param char * : parent path to check against
  * @param LIST * : list of symbolic links to check
