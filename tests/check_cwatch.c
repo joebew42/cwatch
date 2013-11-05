@@ -300,7 +300,7 @@ START_TEST(unwatch_a_directory_from_the_watch_list)
 }
 END_TEST
 
-START_TEST(find_all_symlinks_that_are_contained_in_some_path)
+START_TEST(find_symlinks_that_are_contained_in_some_path)
 {
     char *path = "/home/cwatch/";
     LIST *symlinks_to_check = list_init();
@@ -368,7 +368,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, get_a_link_data_from_wd_data);
     tcase_add_test(tc_core, get_a_link_data_from_path);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
-    tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
+    tcase_add_test(tc_core, find_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
 
