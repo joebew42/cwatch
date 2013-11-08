@@ -325,6 +325,12 @@ get_link_node_from_path(const char *symlink, LIST *list_wd)
     return NULL;
 }
 
+bool_t
+is_symlink(char *path, LIST *list_wd)
+{
+    return (NULL != get_link_node_from_path(path, list_wd));
+}
+
 LINK_DATA *
 get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
 {
@@ -877,39 +883,32 @@ unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         char *symlink = (char*) list_pop(symlinks_to_remove);
 
         LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
-        if (link_node == NULL)
-            continue;
 
         LINK_DATA *link_data = (LINK_DATA*) link_node->data;
         char *resolved_path = (char*) link_data->wd_data->path;
+        char *link_path = (char*) link_data->path;
+
+        WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
+
+        log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
+        list_remove(wd_data->links, link_node);
 
         all_symlinks_contained_in(resolved_path, list_wd, symlinks_to_remove);
 
-        if (link_node != NULL)
+        /*
+        * if there is no other symbolic links that point to the
+        * watched resource and the watched resource is not a child
+        * of the the root path then unwatch it and relative orphan
+        * directories (no longer reached by any symbolic links within root_path)
+        */
+        if (wd_data->links->first == NULL
+            && is_child_of(wd_data->path, root_path) == FALSE)
         {
-            LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-            char *link_path = (char*) link_data->path;
-            WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
-
-            log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
-
-            list_remove(wd_data->links, link_node);
-
-            /*
-            * if there is no other symbolic links that point to the
-            * watched resource and the watched resource is not a child
-            * of the the root path then unwatch it and relative orphan
-            * directories (no longer reached by any symbolic links within root_path)
-            */
-            if (wd_data->links->first == NULL
-                && is_child_of(wd_data->path, root_path) == FALSE)
-            {
-                LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
-                if (NULL != references_list) {
-                    remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
-                }
-                list_free(references_list);
+            LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
+            if (NULL != references_list) {
+                remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
             }
+            list_free(references_list);
         }
     }
 
@@ -1150,7 +1149,8 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        unwatch_symlink(path, fd, list_wd);
+        //if (is_symlink(path, list_wd))
+          unwatch_symlink(path, fd, list_wd);
     }
 
     return 0;

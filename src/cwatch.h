@@ -226,6 +226,16 @@ create_wd_data(char *, int);
 LIST_NODE *
 get_link_node_from_path(const char *, LIST *);
 
+/* checks if a path stored in the list of
+ * watched resources is a symbolic link or not
+ *
+ * @param  char * : path
+ * @param  LIST * : list of watched resources
+ * @return bool_t
+ */
+bool_t
+is_symlink(char *, LIST *);
+
 /* searchs and returns the link_data from symlink path
  * of a specified WD_DATA
  *

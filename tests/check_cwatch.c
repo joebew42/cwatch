@@ -217,10 +217,6 @@ START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
 
     ck_assert_int_eq(list_size(list_wd), 1);
 
-    LIST_NODE *list_node = get_link_node_from_path(symlink, list_wd);
-
-    ck_assert_ptr_ne(list_node, NULL);
-
     list_free(list_wd);
 }
 END_TEST
@@ -242,7 +238,6 @@ START_TEST(get_a_link_node_from_path)
     ck_assert_ptr_eq(real_path, wd_data->path);
 
     list_free(list_wd);
-
 }
 END_TEST
 
@@ -278,6 +273,28 @@ START_TEST(get_a_link_data_from_path)
     LINK_DATA *link_data = get_link_data_from_path(symlink, list_wd);
 
     ck_assert_ptr_eq(link_data->path, symlink);
+
+    list_free(list_wd);
+}
+END_TEST
+
+START_TEST(should_return_true_if_path_is_a_symbolic_link)
+{
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+    char *symlink = "/home/symlink";
+
+    add_to_watch_list(real_path, symlink, fd, list_wd);
+
+    ck_assert_msg(
+        TRUE == is_symlink(symlink, list_wd),
+        "path provided is not a symbolic link");
+
+    ck_assert_msg(
+        FALSE == is_symlink("/home/no_symlink", list_wd),
+        "path provided is a symbolic link");
 
     list_free(list_wd);
 }
@@ -395,6 +412,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, get_a_link_node_from_path);
     tcase_add_test(tc_core, get_a_link_data_from_wd_data);
     tcase_add_test(tc_core, get_a_link_data_from_path);
+    tcase_add_test(tc_core, should_return_true_if_path_is_a_symbolic_link);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, find_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
