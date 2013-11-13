@@ -874,6 +874,19 @@ symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 }
 
 void
+remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
+{
+  if (wd_data->links->first != NULL || is_child_of(wd_data->path, root_path) == TRUE)
+    return;
+
+  LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
+  if (NULL != references_list) {
+    remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
+  }
+  list_free(references_list);
+}
+
+void
 unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
     LIST *symlinks_to_remove = list_init();
@@ -885,31 +898,17 @@ unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
 
         LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-        char *resolved_path = (char*) link_data->wd_data->path;
-        char *link_path = (char*) link_data->path;
-
         WD_DATA *wd_data = (WD_DATA*) link_data->wd_data;
+
+        char *resolved_path = (char*) wd_data->path;
+        char *link_path = (char*) link_data->path;
 
         log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
         list_remove(wd_data->links, link_node);
 
         all_symlinks_contained_in(resolved_path, list_wd, symlinks_to_remove);
 
-        /*
-        * if there is no other symbolic links that point to the
-        * watched resource and the watched resource is not a child
-        * of the the root path then unwatch it and relative orphan
-        * directories (no longer reached by any symbolic links within root_path)
-        */
-        if (wd_data->links->first == NULL
-            && is_child_of(wd_data->path, root_path) == FALSE)
-        {
-            LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
-            if (NULL != references_list) {
-                remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
-            }
-            list_free(references_list);
-        }
+        remove_unreachable_resources(wd_data, fd, list_wd);
     }
 
     list_free(symlinks_to_remove);

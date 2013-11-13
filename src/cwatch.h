@@ -386,6 +386,17 @@ all_symlinks_contained_in(char *, LIST *, LIST *);
 void
 symlinks_contained_in(char *, LIST *, LIST *);
 
+/* if there is no other symbolic links that point to the
+ * watched resource and the watched resource is not a child
+ * of the the root path unwatch it and relative orphan directories
+ *
+ * @param WD_DATA * : watch descriptor
+ * @param int       : inotify file descriptor
+ * @param LIST *    : list of watched resources
+ */
+void
+remove_unreachable_resources(WD_DATA *, int, LIST *);
+
 /* given a symbolic link unwatch a directory from the watch list
  *
  * @param char *  : symbolic link of the resource to remove
