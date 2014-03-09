@@ -76,28 +76,6 @@ bstring COMMAND_PATTERN_EVENT;
 bstring COMMAND_PATTERN_REGEX;
 bstring COMMAND_PATTERN_COUNT;
 
-/* event names */
-bstring B_ACCESS;
-bstring B_MODIFY;
-bstring B_ATTRIB;
-bstring B_CLOSE_WRITE;
-bstring B_CLOSE_NOWRITE;
-bstring B_CLOSE;
-bstring B_OPEN;
-bstring B_MOVED_FROM;
-bstring B_MOVED_TO;
-bstring B_MOVE;
-bstring B_CREATE;
-bstring B_DELETE;
-bstring B_DELETE_SELF;
-bstring B_UNMOUNT;
-bstring B_Q_OVERFLOW;
-bstring B_IGNORED;
-bstring B_ISDIR;
-bstring B_ONESHOT;
-bstring B_DEFAULT;
-bstring B_ALL_EVENTS;
-
 typedef enum {FALSE,TRUE} bool_t;
 
 /* used to store information about watched resource */
@@ -121,6 +99,7 @@ typedef struct link_data_s
 struct event_t
 {
     char *name;
+    uint32_t mask;
     int (*handler)(struct inotify_event *, char *, int, LIST *);
 };
 
