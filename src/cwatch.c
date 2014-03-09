@@ -1100,7 +1100,7 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        //if (is_symlink(path, list_wd))
+        if (is_symlink(path, list_wd))
           unwatch_symlink(path, fd, list_wd);
     }
 
