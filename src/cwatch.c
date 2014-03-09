@@ -87,6 +87,10 @@ static struct event_t events_lut[] =
     {"close",         IN_CLOSE,         event_handler_undefined},
     {"move",          IN_MOVE,          event_handler_undefined},
     {"all_events",    IN_ALL_EVENTS,    event_handler_undefined},
+    {"default",       IN_MODIFY
+                      | IN_DELETE
+                      | IN_CREATE
+                      | IN_MOVE,          event_handler_undefined},
 };
 
 void
@@ -1039,14 +1043,18 @@ execute_command_embedded(char *event_name, char *file_name, char *event_p_path)
 struct event_t *
 get_inotify_event(const uint32_t event_mask)
 {
-    /* NOTE: IN_CLOSE, IN_MOVE and IN_ALL_EVENTS are combinations
+    /* NOTE: The following events are combinations
      * of other base-event so the first bit set can't uniquely
-     * identify this events.
+     * identify these events.
      */
     switch (event_mask) {
     case IN_CLOSE:       return &events_lut[32];
     case IN_MOVE:        return &events_lut[33];
     case IN_ALL_EVENTS:  return &events_lut[34];
+    case IN_MODIFY
+         | IN_CREATE
+         | IN_DELETE
+         | IN_MOVE:      return &events_lut[35];
     default:             return &events_lut[ffs(event_mask)-1];
     }
 }
