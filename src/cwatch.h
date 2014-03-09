@@ -50,6 +50,8 @@
 #define EVENT_SIZE      (sizeof (struct inotify_event))
 #define EVENT_BUF_LEN   (1024 * ( EVENT_SIZE + 16 ))
 
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+
 /* List of pattern that will be replaced during the command execution
  * Note: See their initialization in the monitor() function
  *
