@@ -1051,10 +1051,6 @@ get_inotify_event(const uint32_t event_mask)
     case IN_CLOSE:       return &events_lut[32];
     case IN_MOVE:        return &events_lut[33];
     case IN_ALL_EVENTS:  return &events_lut[34];
-    case IN_MODIFY
-         | IN_CREATE
-         | IN_DELETE
-         | IN_MOVE:      return &events_lut[35];
     default:             return &events_lut[ffs(event_mask)-1];
     }
 }
