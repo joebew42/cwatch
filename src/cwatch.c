@@ -83,14 +83,14 @@ static struct event_t events_lut[] =
     {"isdir",         IN_ISDIR,         event_handler_undefined},
     {"oneshot",       IN_ONESHOT,       event_handler_undefined},
 
-    /* threated as edge cases (see get_inotify_event implementation) */
+    /* handled as edge cases (see get_inotify_event implementation) */
     {"close",         IN_CLOSE,         event_handler_undefined},
     {"move",          IN_MOVE,          event_handler_undefined},
     {"all_events",    IN_ALL_EVENTS,    event_handler_undefined},
     {"default",       IN_MODIFY
-                      | IN_DELETE
-                      | IN_CREATE
-                      | IN_MOVE,          event_handler_undefined},
+     | IN_DELETE
+     | IN_CREATE
+     | IN_MOVE,        event_handler_undefined},
 };
 
 void
@@ -179,7 +179,7 @@ help(int error, char *message)
     printf("%s home page: <https://github.com/joebew42/cwatch/>\n\n", PROGRAM_NAME);
 
     if (message != NULL)
-      printf("%s", message);
+        printf("%s", message);
 
     exit(error);
 }
@@ -583,13 +583,13 @@ parse_command_line(int argc, char *argv[])
                     for (j = 0; j < len_events_lut; ++j){
                         bstring event_name = bfromcstr(events_lut[j].name);
                         if(bstrcmp(split_event->entry[i], event_name) == 0){
-                                event_mask |= events_lut[j].mask;
-                                break;
+                            event_mask |= events_lut[j].mask;
+                            break;
                         }
                         bdestroy (event_name);
                     }
                     if(j == len_events_lut)
-                       help(EINVAL, "Unrecognized event or malformed list of events! Please see the help.\n");
+                        help(EINVAL, "Unrecognized event or malformed list of events! Please see the help.\n");
                 }
                 bdestroy (b_optarg);
                 bstrListDestroy(split_event);
@@ -815,27 +815,27 @@ all_symlinks_contained_in(char *path, LIST *list_wd, LIST *symlinks_found)
 void
 symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 {
-  LIST_NODE *link_node = symlinks_to_check->first;
-  while (link_node) {
-      LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-      if (is_child_of(link_data->path, path) == TRUE) {
-          list_push(symlinks_found, (void*) link_data->path);
-      }
-      link_node = link_node->next;
-  }
+    LIST_NODE *link_node = symlinks_to_check->first;
+    while (link_node) {
+        LINK_DATA *link_data = (LINK_DATA*) link_node->data;
+        if (is_child_of(link_data->path, path) == TRUE) {
+            list_push(symlinks_found, (void*) link_data->path);
+        }
+        link_node = link_node->next;
+    }
 }
 
 void
 remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
 {
-  if (wd_data->links->first != NULL || is_child_of(wd_data->path, root_path) == TRUE)
-    return;
+    if (wd_data->links->first != NULL || is_child_of(wd_data->path, root_path) == TRUE)
+        return;
 
-  LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
-  if (NULL != references_list) {
-    remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
-  }
-  list_free(references_list);
+    LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
+    if (NULL != references_list) {
+        remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
+    }
+    list_free(references_list);
 }
 
 void
@@ -1105,7 +1105,7 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     This is a big computational issue to be treated.
          */
         if (is_symlink(path, list_wd))
-          unwatch_symlink(path, fd, list_wd);
+            unwatch_symlink(path, fd, list_wd);
     }
 
     return 0;
