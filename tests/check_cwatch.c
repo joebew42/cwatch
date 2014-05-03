@@ -278,7 +278,7 @@ START_TEST(get_a_link_data_from_path)
 }
 END_TEST
 
-START_TEST(should_return_true_if_path_is_a_symbolic_link)
+START_TEST(return_true_if_path_is_a_symbolic_link)
 {
     int fd = 1;
     LIST *list_wd = list_init();
@@ -436,7 +436,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, get_a_link_node_from_path);
     tcase_add_test(tc_core, get_a_link_data_from_wd_data);
     tcase_add_test(tc_core, get_a_link_data_from_path);
-    tcase_add_test(tc_core, should_return_true_if_path_is_a_symbolic_link);
+    tcase_add_test(tc_core, return_true_if_path_is_a_symbolic_link);
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, find_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
