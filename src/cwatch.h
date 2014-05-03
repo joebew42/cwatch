@@ -378,15 +378,6 @@ symlinks_contained_in(char *, LIST *, LIST *);
 void
 remove_unreachable_resources(WD_DATA *, int, LIST *);
 
-/* given a symbolic link unwatch a directory from the watch list
- *
- * @param char *  : symbolic link of the resource to remove
- * @param int     : inotify file descriptor
- * @param LIST *  : list of watched resources
- */
-void
-unwatch_symlink(char *, int, LIST *);
-
 /* returns a LIST of paths that are referenced by a symbolic links
  *
  * @param const char * : absolute path to inspect
@@ -406,6 +397,15 @@ list_of_referenced_path(const char *, LIST *);
  */
 void
 remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
+
+/* given a symbolic link unwatch a directory from the watch list
+ *
+ * @param char *  : symbolic link of the resource to remove
+ * @param int     : inotify file descriptor
+ * @param LIST *  : list of watched resources
+ */
+void
+unwatch_symlink(char *, int, LIST *);
 
 /* start monitoring of inotify event on watched resources
  *
