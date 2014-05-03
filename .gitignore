@@ -22,3 +22,5 @@ Makefile
 build-aux
 
 dir_test
+
+TAGS
