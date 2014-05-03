@@ -389,6 +389,30 @@ START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 }
 END_TEST
 
+START_TEST(unwatch_an_outside_directory_removing_a_symlink_inside)
+{
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+    char *outside_dir = "/home/outside/";
+    char *symlink_to_outside = "/home/cwatch/symlink_to_outside";
+
+    root_path = real_path;
+
+    add_to_watch_list(real_path, NULL, fd, list_wd);
+
+    add_to_watch_list(outside_dir, symlink_to_outside, fd, list_wd);
+
+    unwatch_symlink(symlink_to_outside, fd, list_wd);
+
+    LIST_NODE *node = get_node_from_path(outside_dir, list_wd);
+    ck_assert_ptr_eq(node, NULL);
+
+    list_free(list_wd);
+}
+END_TEST
+
 Suite *cwatch_suite(void)
 {
     Suite *s = suite_create("cwatch");
@@ -418,6 +442,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
+    tcase_add_test(tc_core, unwatch_an_outside_directory_removing_a_symlink_inside);
 
     suite_add_tcase(s, tc_core);
 

@@ -4,10 +4,10 @@
 2. refactoring  unwatch_symlink
 3. check remove_orphan_watched_resources (especially if is necessary go through all the list or is sufficient only wd_data)
 4. Uniforming the indentation of all code with 2 spaces.
-5. Test case for this scenario:
-   A directory is not in the root_path, but it can be reached by a symbolic link that is in the root_path.
-   Acceptance Test:
-   I try to delete this symbolic link and the pointed directory should be removed from list_wd
+5. ~~Test case for this scenario:~~
+   ~~A directory is not in the root_path, but it can be reached by a symbolic link that is in the root_path.~~
+   ~~Acceptance Test:~~
+   ~~I try to delete this symbolic link and the pointed directory should be removed from list_wd~~
 6. rename the function symlinks_contained_in ??? (probably yes)
 7. probably during refactor phase we expect to find undercoverd functions
 

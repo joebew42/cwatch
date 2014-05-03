@@ -50,43 +50,47 @@ static struct option long_options[] =
  */
 static struct event_t events_lut[] =
 {
-    {"access",        event_handler_undefined},  /* IN_ACCESS */
-    {"modify",        event_handler_undefined},  /* IN_MODIFY */
-    {"attrib",        event_handler_undefined},  /* IN_ATTRIB */
-    {"close_write",   event_handler_undefined},  /* IN_CLOSE_WRITE */
-    {"close_nowrite", event_handler_undefined},  /* IN_CLOSE_NOWRITE */
-    {"open",          event_handler_undefined},  /* IN_OPEN */
-    {"moved_from",    event_handler_moved_from}, /* IN_MOVED_FROM */
-    {"moved_to",      event_handler_moved_to},   /* IN_MOVED_TO */
-    {"create",        event_handler_create},     /* IN_CREATE */
-    {"delete",        event_handler_delete},     /* IN_DELETE */
-    {"delete_self",   event_handler_undefined},  /* IN_DELETE_SELF */
-    {"move_self",     event_handler_undefined},  /* IN_MOVE_SELF */
-    {NULL,            event_handler_undefined},
-    {"umount",        event_handler_undefined},  /* IN_UMOUNT */
-    {"q_overflow",    event_handler_undefined},  /* IN_Q_OVERFLOW */
-    {"ignored",       event_handler_undefined},  /* IN_IGNORED */
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {"onlydir",       event_handler_undefined},  /* IN_ONLYDIR */
-    {"dont_follow",   event_handler_undefined},  /* IN_DONT_FOLLOW */
-    {"excl_unlink",   event_handler_undefined},  /* IN_EXCL_UNLINK */
-    {NULL,            event_handler_undefined},
-    {NULL,            event_handler_undefined},
-    {"mask_add",      event_handler_undefined},  /* IN_MASK_ADD */
-    {"isdir",         event_handler_undefined},  /* IN_ISDIR */
-    {"oneshot",       event_handler_undefined},  /* IN_ONESHOT */
+    {"access",        IN_ACCESS,        event_handler_undefined},
+    {"modify",        IN_MODIFY,        event_handler_undefined},
+    {"attrib",        IN_ATTRIB,        event_handler_undefined},
+    {"close_write",   IN_CLOSE_WRITE,   event_handler_undefined},
+    {"close_nowrite", IN_CLOSE_NOWRITE, event_handler_undefined},
+    {"open",          IN_OPEN,          event_handler_undefined},
+    {"moved_from",    IN_MOVED_FROM,    event_handler_moved_from},
+    {"moved_to",      IN_MOVED_TO,      event_handler_moved_to},
+    {"create",        IN_CREATE,        event_handler_create},
+    {"delete",        IN_DELETE,        event_handler_delete},
+    {"delete_self",   IN_DELETE_SELF,   event_handler_undefined},
+    {"move_self",     IN_MOVE_SELF,     event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {"unmount",       IN_UNMOUNT,       event_handler_undefined},
+    {"q_overflow",    IN_Q_OVERFLOW,    event_handler_undefined},
+    {"ignored",       IN_IGNORED,       event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {"onlydir",       IN_ONLYDIR,       event_handler_undefined},
+    {"dont_follow",   IN_DONT_FOLLOW,   event_handler_undefined},
+    {"excl_unlink",   IN_EXCL_UNLINK,   event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            NULL,             event_handler_undefined},
+    {"mask_add",      IN_MASK_ADD,      event_handler_undefined},
+    {"isdir",         IN_ISDIR,         event_handler_undefined},
+    {"oneshot",       IN_ONESHOT,       event_handler_undefined},
 
     /* threated as edge cases (see get_inotify_event implementation) */
-    {"close",         event_handler_undefined},  /* 32. IN_CLOSE */
-    {"move",          event_handler_undefined},  /* 33. IN_MOVE */
-    {"all_events",    event_handler_undefined},  /* 34. IN_ALL_EVENTS */
+    {"close",         IN_CLOSE,         event_handler_undefined},
+    {"move",          IN_MOVE,          event_handler_undefined},
+    {"all_events",    IN_ALL_EVENTS,    event_handler_undefined},
+    {"default",       IN_MODIFY
+                      | IN_DELETE
+                      | IN_CREATE
+                      | IN_MOVE,          event_handler_undefined},
 };
 
 void
@@ -570,74 +574,22 @@ parse_command_line(int argc, char *argv[])
             b_optarg = bfromcstr(optarg);
             split_event = bsplit(b_optarg, ',');
 
-            /* init the events name */
-            B_ACCESS =  bfromcstr("access");
-            B_MODIFY = bfromcstr("modify");
-            B_ATTRIB = bfromcstr("attrib");
-            B_CLOSE_WRITE = bfromcstr("close_write");
-            B_CLOSE_NOWRITE = bfromcstr("close_nowrite");
-            B_CLOSE = bfromcstr("close");
-            B_OPEN = bfromcstr("open");
-            B_MOVED_FROM = bfromcstr("moved_from");
-            B_MOVED_TO = bfromcstr("moved_to");
-            B_MOVE = bfromcstr("move");
-            B_CREATE = bfromcstr("create");
-            B_DELETE = bfromcstr("delete");
-            B_DELETE_SELF = bfromcstr("delete_self");
-            B_UNMOUNT = bfromcstr("unmount");
-            B_Q_OVERFLOW = bfromcstr("q_overflow");
-            B_IGNORED = bfromcstr("ignored");
-            B_ISDIR = bfromcstr("isdir");
-            B_ONESHOT = bfromcstr("oneshot");
-            B_DEFAULT = bfromcstr("default");
-            B_ALL_EVENTS = bfromcstr("all_events");
-
             if (split_event != NULL) {
+                int len_events_lut = ARRAY_SIZE(events_lut);
+
                 int i;
                 for (i = 0; i < split_event->qty; ++i) {
-                    if (bstrcmp(split_event->entry[i], B_ACCESS) == 0) {
-                        event_mask |= IN_ACCESS;
-                    } else if (bstrcmp(split_event->entry[i], B_MODIFY) == 0) {
-                        event_mask |= IN_MODIFY;
-                    } else if (bstrcmp(split_event->entry[i], B_ATTRIB) == 0) {
-                        event_mask |= IN_ATTRIB;
-                    } else if (bstrcmp(split_event->entry[i], B_CLOSE_WRITE) == 0) {
-                        event_mask |= IN_CLOSE_WRITE;
-                    } else if (bstrcmp(split_event->entry[i], B_CLOSE_NOWRITE) == 0) {
-                        event_mask |= IN_CLOSE_NOWRITE;
-                    } else if (bstrcmp(split_event->entry[i], B_CLOSE) == 0) {
-                        event_mask |= IN_CLOSE;
-                    } else if (bstrcmp(split_event->entry[i], B_OPEN) == 0) {
-                        event_mask |= IN_OPEN;
-                    } else if (bstrcmp(split_event->entry[i], B_MOVED_FROM) == 0) {
-                        event_mask |= IN_MOVED_FROM;
-                    } else if (bstrcmp(split_event->entry[i], B_MOVED_TO) == 0) {
-                        event_mask |= IN_MOVED_TO;
-                    } else if (bstrcmp(split_event->entry[i], B_MOVE) == 0) {
-                        event_mask |= IN_MOVE;
-                    } else if (bstrcmp(split_event->entry[i], B_CREATE) == 0) {
-                        event_mask |= IN_CREATE;
-                    } else if (bstrcmp(split_event->entry[i], B_DELETE) == 0) {
-                        event_mask |= IN_DELETE;
-                    } else if (bstrcmp(split_event->entry[i], B_DELETE_SELF) == 0) {
-                        event_mask |= IN_DELETE_SELF;
-                    } else if (bstrcmp(split_event->entry[i], B_UNMOUNT) == 0) {
-                        event_mask |= IN_UNMOUNT;
-                    } else if (bstrcmp(split_event->entry[i], B_Q_OVERFLOW) == 0) {
-                        event_mask |= IN_Q_OVERFLOW;
-                    } else if (bstrcmp(split_event->entry[i], B_IGNORED) == 0) {
-                        event_mask |= IN_IGNORED;
-                    } else if (bstrcmp(split_event->entry[i], B_ISDIR) == 0) {
-                        event_mask |= IN_ISDIR;
-                    } else if (bstrcmp(split_event->entry[i], B_ONESHOT) == 0) {
-                        event_mask |= IN_ONESHOT;
-                    } else if (bstrcmp(split_event->entry[i], B_ALL_EVENTS) == 0) {
-                        event_mask |= IN_ALL_EVENTS;
-                    } else if (bstrcmp(split_event->entry[i], B_DEFAULT) == 0) {
-                        event_mask |= IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE;
-                    } else {
-                        help(EINVAL, "Unrecognized event or malformed list of events! Please see the help.\n");
+                    int j;
+                    for (j = 0; j < len_events_lut; ++j){
+                        bstring event_name = bfromcstr(events_lut[j].name);
+                        if(bstrcmp(split_event->entry[i], event_name) == 0){
+                                event_mask |= events_lut[j].mask;
+                                break;
+                        }
+                        bdestroy (event_name);
                     }
+                    if(j == len_events_lut)
+                       help(EINVAL, "Unrecognized event or malformed list of events! Please see the help.\n");
                 }
                 bdestroy (b_optarg);
                 bstrListDestroy(split_event);
@@ -1091,6 +1043,10 @@ execute_command_embedded(char *event_name, char *file_name, char *event_p_path)
 struct event_t *
 get_inotify_event(const uint32_t event_mask)
 {
+    /* NOTE: The following events are combinations
+     * of other base-event so the first bit set can't uniquely
+     * identify these events.
+     */
     switch (event_mask) {
     case IN_CLOSE:       return &events_lut[32];
     case IN_MOVE:        return &events_lut[33];
@@ -1148,7 +1104,7 @@ event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list
          *     so there is no way to stat it.
          *     This is a big computational issue to be treated.
          */
-        //if (is_symlink(path, list_wd))
+        if (is_symlink(path, list_wd))
           unwatch_symlink(path, fd, list_wd);
     }
 
@@ -1174,30 +1130,6 @@ void
 signal_callback_handler(int signum)
 {
     printf("Cleaning...\n");
-
-    bdestroy(command);
-    bdestroy(format);
-    bdestroy(tmp_command);
-    bdestroy(B_ACCESS);
-    bdestroy(B_MODIFY);
-    bdestroy(B_ATTRIB);
-    bdestroy(B_CLOSE_WRITE);
-    bdestroy(B_CLOSE_NOWRITE);
-    bdestroy(B_CLOSE);
-    bdestroy(B_OPEN);
-    bdestroy(B_MOVED_FROM);
-    bdestroy(B_MOVED_TO);
-    bdestroy(B_MOVE);
-    bdestroy(B_CREATE);
-    bdestroy(B_DELETE);
-    bdestroy(B_DELETE_SELF);
-    bdestroy(B_UNMOUNT);
-    bdestroy(B_Q_OVERFLOW);
-    bdestroy(B_IGNORED);
-    bdestroy(B_ISDIR);
-    bdestroy(B_ONESHOT);
-    bdestroy(B_DEFAULT);
-    bdestroy(B_ALL_EVENTS);
 
     bdestroy(COMMAND_PATTERN_ROOT);
     bdestroy(COMMAND_PATTERN_PATH );
