@@ -257,12 +257,12 @@ is_child_of(const char *, const char *);
 
 /* checks whetever a string is contained in a list
  *
- * @param char * : string to check
  * @param LIST * : list in which performs search
+ * @param char * : string to check
  * @return boolt_t
  */
 bool_t
-is_listed_in(char *, LIST *);
+is_listed_in(LIST *, char *);
 
 /* checks whetever a string match the regular
  * expression pattern defined with -x option

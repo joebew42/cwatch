@@ -111,7 +111,7 @@ START_TEST(returns_true_if_a_path_is_listed_in)
     fill_with_paths(list, paths, 3);
 
     bool_t expected = TRUE;
-    bool_t actual = is_listed_in(paths[0], list);
+    bool_t actual = is_listed_in(list, paths[0]);
 
     ck_assert_msg(
         expected == actual,
@@ -133,7 +133,7 @@ START_TEST(returns_false_if_a_path_is_not_listed_in)
     fill_with_paths(list, paths, 3);
 
     bool_t expected = FALSE;
-    bool_t actual = is_listed_in("/usr/opt/not/listed", list);
+    bool_t actual = is_listed_in(list, "/usr/opt/not/listed");
 
     ck_assert_msg(
         expected == actual,

@@ -405,7 +405,7 @@ is_child_of(const char *child, const char *parent)
 }
 
 bool_t
-is_listed_in(char* child_path, LIST *parents)
+is_listed_in(LIST *parents, char* child_path)
 {
     if (parents == NULL || parents->first == NULL)
         return FALSE;
@@ -852,7 +852,7 @@ list_of_referenced_path(const char *path, LIST *list_wd)
         if (wd_data->links->first != NULL
             && (strncmp(path, wd_data->path, strlen(path)) == 0
                 || strncmp(path, wd_data->path, strlen(wd_data->path)) == 0)
-            && is_listed_in(wd_data->path, tmp_references_list) == FALSE)
+            && is_listed_in(tmp_references_list, wd_data->path) == FALSE)
         {
             list_push(tmp_references_list, (void*) wd_data->path);
         }
@@ -875,7 +875,7 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
         if (strcmp(root_path, wd_data->path) != 0
             && wd_data->links->first == NULL
             && is_child_of(wd_data->path, path) == TRUE
-            && is_listed_in(wd_data->path, references_list) == FALSE)
+            && is_listed_in(references_list, wd_data->path) == FALSE)
         {
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
 
