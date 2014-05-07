@@ -405,16 +405,15 @@ is_child_of(const char *child, const char *parent)
 }
 
 bool_t
-is_listed_in(LIST *parents, char* child_path)
+is_listed_in(LIST *list, char* child_string)
 {
-    if (parents == NULL || parents->first == NULL)
+    if (list == NULL || list->first == NULL)
         return FALSE;
 
-    LIST_NODE *node = parents->first;
+    LIST_NODE *node = list->first;
     while (node) {
-        char* parent_path = (char*) node->data;
-        if (is_child_of(child_path, parent_path) == TRUE) {
-            return TRUE; /* match! */
+        if (is_child_of(child_string, (char*) node->data)) {
+            return TRUE;
         }
         node = node->next;
     }
