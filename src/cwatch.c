@@ -1119,7 +1119,7 @@ event_handler_moved_from(struct inotify_event *event, char *path, int fd, LIST *
 int
 event_handler_moved_to(struct inotify_event *event, char *path, int fd, LIST *list_wd)
 {
-    if (strncmp(path, root_path, strlen(root_path)) == 0) /* replace with is_child_of */
+    if (strncmp(path, root_path, strlen(root_path)) == 0) /* TODO: replace with is_child_of */
         return event_handler_create(event, path, fd, list_wd);
 
     return 0; /* do nothing */
