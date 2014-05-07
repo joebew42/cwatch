@@ -77,7 +77,7 @@ START_TEST(returns_true_if_a_path_is_a_child_of_another_path)
     char *child = "/usr/opt/parent/child/of/";
 
     bool_t expected = TRUE;
-    bool_t actual = is_child_of(child, parent);
+    bool_t actual = is_child_of(parent, child);
 
     ck_assert_msg(
         expected == actual,
@@ -91,7 +91,7 @@ START_TEST(returns_false_if_a_path_is_not_a_child_of_another_path)
     char *child = "/usr/opt/another_parent/child/of/";
 
     bool_t expected = FALSE;
-    bool_t actual = is_child_of(child, parent);
+    bool_t actual = is_child_of(parent, child);
 
     ck_assert_msg(
         expected == actual,

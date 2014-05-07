@@ -392,7 +392,7 @@ create_link_data(char *symlink, WD_DATA *wd_data)
 }
 
 bool_t
-is_child_of(const char *child, const char *parent)
+is_child_of(const char *parent, const char *child)
 {
     if (child == NULL
         || parent == NULL
@@ -412,7 +412,7 @@ is_listed_in(LIST *list, char* child_string)
 
     LIST_NODE *node = list->first;
     while (node) {
-        if (is_child_of(child_string, (char*) node->data)) {
+        if (is_child_of((char*) node->data, child_string)) {
             return TRUE;
         }
         node = node->next;
@@ -817,7 +817,7 @@ symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
     LIST_NODE *link_node = symlinks_to_check->first;
     while (link_node) {
         LINK_DATA *link_data = (LINK_DATA*) link_node->data;
-        if (is_child_of(link_data->path, path) == TRUE) {
+        if (is_child_of(path, link_data->path) == TRUE) {
             list_push(symlinks_found, (void*) link_data->path);
         }
         link_node = link_node->next;
@@ -827,7 +827,7 @@ symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 void
 remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
 {
-    if (wd_data->links->first != NULL || is_child_of(wd_data->path, root_path) == TRUE)
+    if (wd_data->links->first != NULL || is_child_of(root_path, wd_data->path) == TRUE)
         return;
 
     LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
@@ -873,7 +873,7 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
 
         if (strcmp(root_path, wd_data->path) != 0
             && wd_data->links->first == NULL
-            && is_child_of(wd_data->path, path) == TRUE
+            && is_child_of(path, wd_data->path) == TRUE
             && is_listed_in(references_list, wd_data->path) == FALSE)
         {
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);

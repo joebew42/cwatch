@@ -245,7 +245,7 @@ get_link_data_from_path(const char *, LIST *);
 LINK_DATA *
 create_link_data(char *, WD_DATA *);
 
-/* returns TRUE if the first path is a child of the second one
+/* returns TRUE if the second path is a child of the second one
  * FALSE otherwise
  *
  * @param  const char * : first path
