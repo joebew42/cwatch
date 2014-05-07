@@ -392,19 +392,6 @@ create_link_data(char *symlink, WD_DATA *wd_data)
 }
 
 bool_t
-is_child_of(const char *parent, const char *child)
-{
-    if (child == NULL
-        || parent == NULL
-        || strlen(parent) > strlen(child))
-    {
-        return FALSE;
-    }
-
-    return (strncmp(child, parent, strlen(parent)) == 0) ? TRUE : FALSE;
-}
-
-bool_t
 is_listed_in(LIST *list, char* child_string)
 {
     if (list == NULL || list->first == NULL)
@@ -418,6 +405,19 @@ is_listed_in(LIST *list, char* child_string)
         node = node->next;
     }
     return FALSE;
+}
+
+bool_t
+is_child_of(const char *parent, const char *child)
+{
+    if (child == NULL
+        || parent == NULL
+        || strlen(parent) > strlen(child))
+    {
+        return FALSE;
+    }
+
+    return (strncmp(child, parent, strlen(parent)) == 0) ? TRUE : FALSE;
 }
 
 bool_t

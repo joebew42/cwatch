@@ -245,6 +245,15 @@ get_link_data_from_path(const char *, LIST *);
 LINK_DATA *
 create_link_data(char *, WD_DATA *);
 
+/* checks whetever a string is contained in a list
+ *
+ * @param LIST * : list in which performs search
+ * @param char * : string to check
+ * @return boolt_t
+ */
+bool_t
+is_listed_in(LIST *, char *);
+
 /* returns TRUE if the second path is a child of the second one
  * FALSE otherwise
  *
@@ -254,15 +263,6 @@ create_link_data(char *, WD_DATA *);
  */
 bool_t
 is_child_of(const char *, const char *);
-
-/* checks whetever a string is contained in a list
- *
- * @param LIST * : list in which performs search
- * @param char * : string to check
- * @return boolt_t
- */
-bool_t
-is_listed_in(LIST *, char *);
 
 /* checks whetever a string match the regular
  * expression pattern defined with -x option
