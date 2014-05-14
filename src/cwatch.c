@@ -392,14 +392,14 @@ create_link_data(char *symlink, WD_DATA *wd_data)
 }
 
 bool_t
-is_listed_in(LIST *list, char* child_string)
+is_listed_as_child(char *string, LIST *list)
 {
     if (list == NULL || list->first == NULL)
         return FALSE;
 
     LIST_NODE *node = list->first;
     while (node) {
-        if (is_child_of((char*) node->data, child_string)) {
+        if (is_child_of((char*) node->data, string)) {
             return TRUE;
         }
         node = node->next;
@@ -827,6 +827,8 @@ symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
 void
 remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
 {
+    // TODO EXTRACT THIS CONTROL IN is_orphan
+    // wd_data->links->first == NULL && !is_child_of(root_path, wd_data->path)
     if (wd_data->links->first != NULL || is_child_of(root_path, wd_data->path) == TRUE)
         return;
 
@@ -837,6 +839,7 @@ remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
     list_free(references_list);
 }
 
+// TODO CHANGE NAME HERE related_paths_for
 LIST *
 list_of_referenced_path(const char *path, LIST *list_wd)
 {
@@ -850,8 +853,7 @@ list_of_referenced_path(const char *path, LIST *list_wd)
 
         if (wd_data->links->first != NULL
             && is_related_to(path, wd_data->path)
-            // TODO REWRITE IT IN !is_listed_in...
-            && is_listed_in(tmp_references_list, wd_data->path) == FALSE)
+            && !is_listed_as_child(wd_data->path, tmp_references_list))
         {
             list_push(tmp_references_list, (void*) wd_data->path);
         }
@@ -885,7 +887,7 @@ remove_orphan_watched_resources(const char *path, LIST *references_list, int fd,
         if (strcmp(root_path, wd_data->path) != 0
             && wd_data->links->first == NULL
             && is_child_of(path, wd_data->path) == TRUE
-            && is_listed_in(references_list, wd_data->path) == FALSE)
+            && !is_listed_as_child(wd_data->path, references_list))
         {
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
 

@@ -246,13 +246,14 @@ LINK_DATA *
 create_link_data(char *, WD_DATA *);
 
 /* checks whetever a string is contained in a list
+ * as a substring
  *
- * @param LIST * : list in which performs search
  * @param char * : string to check
+ * @param LIST * : list in which performs search
  * @return boolt_t
  */
 bool_t
-is_listed_in(LIST *, char *);
+is_listed_as_child(char *, LIST *);
 
 /* returns TRUE if the second path is a child of the second one
  * FALSE otherwise

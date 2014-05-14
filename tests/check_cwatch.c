@@ -99,11 +99,11 @@ START_TEST(returns_false_if_a_path_is_not_a_child_of_another_path)
 }
 END_TEST
 
-START_TEST(returns_true_if_a_path_is_listed_in)
+START_TEST(returns_true_if_a_path_is_listed_as_child)
 {
     char *paths[] = {
         "/usr/opt/path1",
-        "/usr/opt/path2",
+        "/usr/opt/path1/child",
         "/usr/opt/path3"
     };
 
@@ -111,17 +111,17 @@ START_TEST(returns_true_if_a_path_is_listed_in)
     fill_with_paths(list, paths, 3);
 
     bool_t expected = TRUE;
-    bool_t actual = is_listed_in(list, paths[0]);
+    bool_t actual = is_listed_as_child(paths[1], list);
 
     ck_assert_msg(
         expected == actual,
-        "The path provided is not listed in the list of paths");
+        "The provided path is not listed as a child of the list of paths");
 
     list_free(list);
 }
 END_TEST
 
-START_TEST(returns_false_if_a_path_is_not_listed_in)
+START_TEST(returns_false_if_a_path_is_not_listed_as_child)
 {
     char *paths[] = {
         "/usr/opt/path1",
@@ -133,11 +133,11 @@ START_TEST(returns_false_if_a_path_is_not_listed_in)
     fill_with_paths(list, paths, 3);
 
     bool_t expected = FALSE;
-    bool_t actual = is_listed_in(list, "/usr/opt/not/listed");
+    bool_t actual = is_listed_as_child("/usr/opt/not/listed", list);
 
     ck_assert_msg(
         expected == actual,
-        "The path provided is not listed in the list of paths");
+        "The provided path is not listed as a child of the list of paths");
 
     list_free(list);
 }
@@ -455,8 +455,8 @@ Suite *cwatch_suite(void)
     /* utility functions */
     tcase_add_test(tc_core, returns_true_if_a_path_is_a_child_of_another_path);
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_a_child_of_another_path);
-    tcase_add_test(tc_core, returns_true_if_a_path_is_listed_in);
-    tcase_add_test(tc_core, returns_false_if_a_path_is_not_listed_in);
+    tcase_add_test(tc_core, returns_true_if_a_path_is_listed_as_child);
+    tcase_add_test(tc_core, returns_false_if_a_path_is_not_listed_as_child);
     tcase_add_test(tc_core, returns_true_if_a_path_is_related_to_another);
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_related_to_another);
 
