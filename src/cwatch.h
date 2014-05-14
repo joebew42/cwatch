@@ -386,6 +386,16 @@ remove_unreachable_resources(WD_DATA *, int, LIST *);
 LIST *
 list_of_referenced_path(const char *, LIST *);
 
+/* returns TRUE if a path is related to another,
+ * FALSE, otherwise
+ *
+ * @param  const char * : first path
+ * @param  const char * : second path
+ * @return bool_t
+ */
+bool_t
+is_related_to(const char *, const char *);
+
 /* removes from the watch list all resources that are no
  * longer referenced by symbolic links and are outside
  * from the root_path

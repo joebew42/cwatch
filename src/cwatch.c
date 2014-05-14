@@ -849,8 +849,8 @@ list_of_referenced_path(const char *path, LIST *list_wd)
         wd_data = (WD_DATA*) node->data;
 
         if (wd_data->links->first != NULL
-            && (strncmp(path, wd_data->path, strlen(path)) == 0
-                || strncmp(path, wd_data->path, strlen(wd_data->path)) == 0)
+            && is_related_to(path, wd_data->path)
+            // TODO REWRITE IT IN !is_listed_in...
             && is_listed_in(tmp_references_list, wd_data->path) == FALSE)
         {
             list_push(tmp_references_list, (void*) wd_data->path);
@@ -859,6 +859,17 @@ list_of_referenced_path(const char *path, LIST *list_wd)
     }
 
     return tmp_references_list;
+}
+
+bool_t
+is_related_to(const char *path, const char *path_to_check)
+{
+    if (strncmp(path, path_to_check, strlen(path)) == 0
+        || strncmp(path, path_to_check, strlen(path_to_check)) == 0)
+    {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 void

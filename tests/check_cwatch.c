@@ -143,6 +143,38 @@ START_TEST(returns_false_if_a_path_is_not_listed_in)
 }
 END_TEST
 
+START_TEST(returns_true_if_a_path_is_related_to_another)
+{
+    char *first_path = "/usr/opt/";
+    char *second_path = "/usr/opt/path1/";
+    char *third_path = "/usr/opt/path1/subpath1/";
+
+    ck_assert_msg(
+        TRUE == is_related_to(second_path, first_path),
+        "The first path is not related to the second path");
+
+    ck_assert_msg(
+        TRUE == is_related_to(second_path, third_path),
+        "The third path is not related to the second path");
+}
+END_TEST
+
+START_TEST(returns_false_if_a_path_is_not_related_to_another)
+{
+    char *first_path = "/usr/opt/";
+    char *second_path = "/var/opt/path1/";
+    char *third_path = "/usr/opt/path1/subpath1/";
+
+    ck_assert_msg(
+        FALSE == is_related_to(second_path, first_path),
+        "The first path is related to the second path");
+
+    ck_assert_msg(
+        FALSE == is_related_to(second_path, third_path),
+        "The third path is related to the second path");
+}
+END_TEST
+
 START_TEST(adds_a_directory_to_the_watch_list)
 {
     uint32_t event_mask = 0;
@@ -425,6 +457,8 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_a_child_of_another_path);
     tcase_add_test(tc_core, returns_true_if_a_path_is_listed_in);
     tcase_add_test(tc_core, returns_false_if_a_path_is_not_listed_in);
+    tcase_add_test(tc_core, returns_true_if_a_path_is_related_to_another);
+    tcase_add_test(tc_core, returns_false_if_a_path_is_not_related_to_another);
 
     /* cwatch functions */
     tcase_add_test(tc_core, creates_a_wd_data);
