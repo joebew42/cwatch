@@ -398,6 +398,28 @@ START_TEST(find_all_symlinks_that_are_contained_in_some_path)
 }
 END_TEST
 
+START_TEST(find_common_referenced_paths_of_a_path)
+{
+    uint32_t event_mask = 0;
+
+    int fd = 1;
+
+    LIST *list_wd = list_init();
+
+    add_to_watch_list("/home/user/directory/", NULL, fd, list_wd);
+    add_to_watch_list("/home/user/directory/a/", "/home/cwatch/symlink_one", fd, list_wd);
+    add_to_watch_list("/home/user/directory/a/aa/", "/home/cwatch/symlink_two", fd, list_wd);
+    add_to_watch_list("/home/user/directory/b/", "/home/cwatch/symlink_three", fd, list_wd);
+    add_to_watch_list("/home/user/directory/b/bb", "/home/cwatch/symlink_four", fd, list_wd);
+
+    LIST *referenced_paths = common_referenced_paths_for("/home/user/directory/", list_wd);
+
+    ck_assert_int_eq(list_size(referenced_paths), 2);
+
+    list_free(list_wd);
+}
+END_TEST
+
 START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 {
     int fd = 1;
@@ -474,6 +496,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, unwatch_a_directory_from_the_watch_list);
     tcase_add_test(tc_core, find_symlinks_that_are_contained_in_some_path);
     tcase_add_test(tc_core, find_all_symlinks_that_are_contained_in_some_path);
+    tcase_add_test(tc_core, find_common_referenced_paths_of_a_path);
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
     tcase_add_test(tc_core, unwatch_an_outside_directory_removing_a_symlink_inside);

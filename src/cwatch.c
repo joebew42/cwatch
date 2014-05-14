@@ -832,18 +832,17 @@ remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
     if (wd_data->links->first != NULL || is_child_of(root_path, wd_data->path) == TRUE)
         return;
 
-    LIST *references_list = list_of_referenced_path(wd_data->path, list_wd);
-    if (NULL != references_list) {
-        remove_orphan_watched_resources(wd_data->path, references_list, fd, list_wd);
+    LIST *referenced_paths = common_referenced_paths_for(wd_data->path, list_wd);
+    if (NULL != referenced_paths) {
+        remove_orphan_watched_resources(wd_data->path, referenced_paths, fd, list_wd);
     }
-    list_free(references_list);
+    list_free(referenced_paths);
 }
 
-// TODO CHANGE NAME HERE related_paths_for
 LIST *
-list_of_referenced_path(const char *path, LIST *list_wd)
+common_referenced_paths_for(const char *path, LIST *list_wd)
 {
-    LIST *tmp_references_list = list_init();
+    LIST *referenced_paths = list_init();
     LIST_NODE *node;
     WD_DATA *wd_data;
 
@@ -853,14 +852,14 @@ list_of_referenced_path(const char *path, LIST *list_wd)
 
         if (wd_data->links->first != NULL
             && is_related_to(path, wd_data->path)
-            && !is_listed_as_child(wd_data->path, tmp_references_list))
+            && !is_listed_as_child(wd_data->path, referenced_paths))
         {
-            list_push(tmp_references_list, (void*) wd_data->path);
+            list_push(referenced_paths, (void*) wd_data->path);
         }
         node = node->next;
     }
 
-    return tmp_references_list;
+    return referenced_paths;
 }
 
 bool_t

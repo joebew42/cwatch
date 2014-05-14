@@ -379,13 +379,15 @@ symlinks_contained_in(char *, LIST *, LIST *);
 void
 remove_unreachable_resources(WD_DATA *, int, LIST *);
 
-/* returns a LIST of paths that are referenced by a symbolic links
+/* returns a LIST of paths that holds:
+ * - each path is related with some other path
+ * - each path is referenced by a symbolic link
  *
- * @param const char * : absolute path to inspect
- * @param LIST *       : list of watched resources
+ * @param const char * : path to inspect
+ * @param LIST *       : list of referenced paths
  */
 LIST *
-list_of_referenced_path(const char *, LIST *);
+common_referenced_paths_for(const char *, LIST *);
 
 /* returns TRUE if a path is related to another,
  * FALSE, otherwise
