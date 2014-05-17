@@ -27,7 +27,7 @@
 int main(int argc, char *argv[])
 {
     /* bind the signal handler */
-    signal(SIGINT, (void*)signal_callback_handler);
+    signal(SIGINT, signal_callback_handler);
 
     if (parse_command_line(argc, argv) == 0) {
         int fd = inotify_init();
