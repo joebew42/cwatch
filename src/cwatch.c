@@ -234,7 +234,11 @@ log_message(char *message, ...)
 
         if (syslog_flag) {
             openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
-            syslog(LOG_INFO, b_message->data);
+
+            char *cstr_message = bstr2cstr(b_message, '\0');
+            syslog(LOG_INFO, cstr_message);
+            bcstrfree(cstr_message);
+
             closelog();
         }
     }
