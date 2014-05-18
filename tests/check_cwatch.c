@@ -467,6 +467,39 @@ START_TEST(unwatch_an_outside_directory_removing_a_symlink_inside)
 }
 END_TEST
 
+START_TEST(remove_orphan_resources_from_a_tree_with_symlink_outside)
+{
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *real_path = "/home/cwatch/";
+    char *symlink = "/home/cwatch/symlink_to_pointed/";
+
+    root_path = real_path;
+
+    add_to_watch_list(root_path, NULL, fd, list_wd);
+    add_to_watch_list("/home/cwatch/to_be_removed/", NULL, fd, list_wd);
+    add_to_watch_list("/home/cwatch/to_be_removed/inside/", NULL, fd, list_wd);
+
+    add_to_watch_list("/home/cwatch/to_be_removed/inside/pointed/", symlink, fd, list_wd);
+    add_to_watch_list("/home/cwatch/to_be_removed/inside/pointed/sub_pointed/", NULL, fd, list_wd);
+
+    LIST *referenced_resources = common_referenced_paths_for("/home/cwatch/to_be_removed", list_wd);
+    remove_orphan_watched_resources(real_path, referenced_resources, fd, list_wd);
+
+    /*
+     * after the clean should be removed all the directories
+     * except:
+     *    1. root_path
+     *    2. pointed/ and its content (sub_pointed)
+     */
+    ck_assert_int_eq(3, list_size(list_wd));
+
+    list_free(list_wd);
+    list_free(referenced_resources);
+}
+END_TEST
+
 Suite *cwatch_suite(void)
 {
     Suite *s = suite_create("cwatch");
@@ -500,6 +533,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, unwatch_a_symbolic_link_from_the_watch_list);
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
     tcase_add_test(tc_core, unwatch_an_outside_directory_removing_a_symlink_inside);
+    tcase_add_test(tc_core, remove_orphan_resources_from_a_tree_with_symlink_outside);
 
     suite_add_tcase(s, tc_core);
 
