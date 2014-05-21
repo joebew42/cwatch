@@ -715,7 +715,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 strcat(symlink, dir->d_name);
 
                 /* Check if the symbolic link is already watched */
-                if (get_link_data_from_path(symlink, NULL) != NULL) {
+                if (get_link_data_from_path(symlink, list_wd) != NULL) {
                     continue;
                 }
 
