@@ -1,5 +1,6 @@
-cwatch(1)
-=========
+[![Build Status](https://travis-ci.org/joebew42/cwatch.svg?branch=dev)](https://travis-ci.org/joebew42/cwatch)
+
+# cwatch
 
 A program to monitor the filesystem activity through the inotify Linux kernel library and executes a user defined command when specific events occurs. Useful for automatic backup system, alert monitor for directories and files, continuous testing and more.
 
