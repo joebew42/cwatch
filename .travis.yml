@@ -1,5 +1,6 @@
 language: c
-before_install: apt-get install check
+before_install: sudo apt-get update
+install: sudo apt-get install check
 script: ./configure && make && make -s check
 compiler:
   - clang
