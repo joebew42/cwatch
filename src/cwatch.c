@@ -714,17 +714,19 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 strcpy(symlink, directory_to_watch);
                 strcat(symlink, dir->d_name);
 
-                /* Check if the symbolic link is already watched */
-                if (get_link_data_from_path(symlink, list_wd) != NULL) {
-                    continue;
-                }
-
                 char *real_path = resolve_real_path(symlink);
 
-                DIR *is_a_dir;
-                is_a_dir = opendir(real_path);
-                if (real_path != NULL && is_a_dir != NULL) {
+                DIR *is_a_dir = NULL;
+                if(real_path)
+                    is_a_dir = opendir(real_path);
+
+                if(is_a_dir) {
                     closedir(is_a_dir);
+
+                    /* Check if the symbolic link is already watched */
+                    if (get_link_data_from_path(symlink, list_wd) != NULL) {
+                        continue;
+                    }
 
                     /* Continue directory traversing */
                     if (recursive_flag == TRUE) {
