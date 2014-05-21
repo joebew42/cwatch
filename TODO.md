@@ -4,7 +4,6 @@
 2. refactoring  unwatch_symlink
 3. check remove_orphan_watched_resources (especially if is necessary go through all the list or is sufficient only wd_data)
 4. rename the function symlinks_contained_in ??? (probably yes)
-
 5. Extract utility functions in specific header (regex.h, command.h, etc) and find a easy way to glue them trough a extension system.
 6. Extract command_line in a specific header (command_line.h)
 7. create_wd_data(path, wd); -> fix the WD_DATA structure: path first and then wd
