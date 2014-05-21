@@ -1,7 +1,7 @@
 language: c
 before_install: sudo apt-get update
 install: sudo apt-get install dh-autoreconf check
-script: autoreconf --install && ./configure && make && make -s check
+script: autoreconf -vfi && ./configure && make && make -s check
 compiler:
   - clang
   - gcc
