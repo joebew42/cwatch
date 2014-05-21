@@ -62,23 +62,23 @@ static struct event_t events_lut[] =
     {"delete",        IN_DELETE,        event_handler_delete},
     {"delete_self",   IN_DELETE_SELF,   event_handler_undefined},
     {"move_self",     IN_MOVE_SELF,     event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
     {"unmount",       IN_UNMOUNT,       event_handler_undefined},
     {"q_overflow",    IN_Q_OVERFLOW,    event_handler_undefined},
     {"ignored",       IN_IGNORED,       event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
     {"onlydir",       IN_ONLYDIR,       event_handler_undefined},
     {"dont_follow",   IN_DONT_FOLLOW,   event_handler_undefined},
     {"excl_unlink",   IN_EXCL_UNLINK,   event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
-    {NULL,            NULL,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
+    {NULL,            0,             event_handler_undefined},
     {"mask_add",      IN_MASK_ADD,      event_handler_undefined},
     {"isdir",         IN_ISDIR,         event_handler_undefined},
     {"oneshot",       IN_ONESHOT,       event_handler_undefined},
@@ -234,7 +234,11 @@ log_message(char *message, ...)
 
         if (syslog_flag) {
             openlog(PROGRAM_NAME, LOG_PID, LOG_LOCAL1);
-            syslog(LOG_INFO, b_message->data);
+
+            char *cstr_message = bstr2cstr(b_message, '\0');
+            syslog(LOG_INFO, cstr_message);
+            bcstrfree(cstr_message);
+
             closelog();
         }
     }
