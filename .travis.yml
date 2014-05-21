@@ -1,0 +1,13 @@
+language: c
+before_install: apt-get install check
+script: ./confgure && make && make -s check
+compiler:
+  - clang
+  - gcc
+branches:
+  only:
+    - dev
+notifications:
+  email:
+    - joebew42@gmail.com
+    - enzodicicco@gmail.com
