@@ -526,7 +526,7 @@ START_TEST(remove_unreachable_resources_not_in_root_path)
     ck_assert_int_eq(list_size(links), 0);
 
     WD_DATA *wd_data = (WD_DATA *) get_node_from_path(outside_path, list_wd)->data;
-    remove_unreachable_resources(wd_data, 1, list_wd);
+    remove_unreachable_resources(wd_data, fd, list_wd);
 
     ck_assert_int_eq(list_size(list_wd), 0);
 
