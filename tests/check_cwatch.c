@@ -500,6 +500,40 @@ START_TEST(remove_orphan_resources_from_a_tree_with_symlink_outside)
 }
 END_TEST
 
+START_TEST(remove_unreachable_resources_not_in_root_path)
+{
+    uint32_t event_mask = 0;
+
+    int fd = 1;
+    LIST *list_wd = list_init();
+
+    char *root_path = "/home/cwatch";
+
+    char *outside_path = "/tmp/cwatch/";
+    char *symlink = "/home/cwatch/link_to_tmp";
+
+    add_to_watch_list(outside_path, symlink, fd, list_wd);
+    add_to_watch_list("/tmp/cwatch/dir1", NULL, fd, list_wd);
+    add_to_watch_list("/tmp/cwatch/dir2", NULL, fd, list_wd);
+
+    ck_assert_int_eq(list_size(list_wd), 3);
+
+    LINK_DATA *link_data = get_link_data_from_path(symlink, list_wd);
+    LIST *links = link_data->wd_data->links;
+
+    list_remove(links, links->first);
+
+    ck_assert_int_eq(list_size(links), 0);
+
+    WD_DATA *wd_data = (WD_DATA *) get_node_from_path(outside_path, list_wd)->data;
+    remove_unreachable_resources(wd_data, 1, list_wd);
+
+    ck_assert_int_eq(list_size(list_wd), 0);
+
+    list_free(list_wd);
+}
+END_TEST
+
 Suite *cwatch_suite(void)
 {
     Suite *s = suite_create("cwatch");
@@ -534,6 +568,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, formats_command_correctly_using_special_characters);
     tcase_add_test(tc_core, unwatch_an_outside_directory_removing_a_symlink_inside);
     tcase_add_test(tc_core, remove_orphan_resources_from_a_tree_with_symlink_outside);
+    tcase_add_test(tc_core, remove_unreachable_resources_not_in_root_path);
 
     suite_add_tcase(s, tc_core);
 
