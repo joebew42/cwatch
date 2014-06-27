@@ -26,7 +26,6 @@
 
 int main(int argc, char *argv[])
 {
-    /* bind the signal handler */
     signal(SIGINT, signal_callback_handler);
 
     if (parse_command_line(argc, argv) == 0) {
@@ -41,7 +40,7 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
 
-        return monitor(fd, list_wd);       /* start monitoring */
+        return monitor(fd, list_wd);
     }
 
     return EXIT_SUCCESS;
