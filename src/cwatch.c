@@ -671,6 +671,9 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
     if (node == NULL)
         return -1;
 
+    if(recursive == FALSE)
+        return 0;
+
     /* Temporary list to perform a BFS directory traversing */
     LIST *list = list_init();
     list_push(list, (void *) real_path);
@@ -704,10 +707,9 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 strcat(path_to_watch, "/");
 
                 /* Continue directory traversing */
-                if (recursive == TRUE) {
-                    add_to_watch_list(path_to_watch, NULL, fd, list_wd);
-                    list_push(list, (void*) path_to_watch);
-                }
+                add_to_watch_list(path_to_watch, NULL, fd, list_wd);
+                list_push(list, (void*) path_to_watch);
+
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
                 char *symlink = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 1);
@@ -729,10 +731,8 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                     }
 
                     /* Continue directory traversing */
-                    if (recursive == TRUE) {
-                        add_to_watch_list(real_path, symlink, fd, list_wd);
-                        list_push(list, (void*) real_path);
-                    }
+                    add_to_watch_list(real_path, symlink, fd, list_wd);
+                    list_push(list, (void*) real_path);
                 }
             }
         }
