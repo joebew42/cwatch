@@ -704,7 +704,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 strcat(path_to_watch, "/");
 
                 /* Continue directory traversing */
-                if (recursive_flag == TRUE) {
+                if (recursive == TRUE) {
                     add_to_watch_list(path_to_watch, NULL, fd, list_wd);
                     list_push(list, (void*) path_to_watch);
                 }
@@ -729,7 +729,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                     }
 
                     /* Continue directory traversing */
-                    if (recursive_flag == TRUE) {
+                    if (recursive == TRUE) {
                         add_to_watch_list(real_path, symlink, fd, list_wd);
                         list_push(list, (void*) real_path);
                     }
@@ -1099,7 +1099,7 @@ event_handler_create(struct inotify_event *event, char *path, int fd, LIST *list
             closedir(dir_stream);
 
             char *real_path = resolve_real_path(path);
-            watch_directory_tree(real_path, path, FALSE, fd, list_wd);
+            watch_directory_tree(real_path, path, TRUE, fd, list_wd);
         }
     }
 
