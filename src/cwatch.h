@@ -39,6 +39,7 @@
 #include <regex.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 
 #include "bstrlib.h"
 #include "list.h"
@@ -170,6 +171,16 @@ log_message(char *, ...);
  */
 char *
 resolve_real_path(const char *);
+
+/*
+ * checks if the given path is a directory.
+ * If the path is a symlink checks the pointed resource.
+ *
+ * @param  const char * : path
+ * @return bool_t
+ */
+inline bool_t
+is_dir(const char *);
 
 /* searchs and returns the node of the specified path
  *

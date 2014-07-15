@@ -264,6 +264,17 @@ resolve_real_path(const char *path)
     return resolved;
 }
 
+inline bool_t
+is_dir(const char *path)
+{
+    struct stat st_path;
+
+    if(!stat(path, &st_path) && S_ISDIR(st_path.st_mode))
+        return TRUE;
+
+    return FALSE;
+}
+
 LIST_NODE *
 get_node_from_path(const char *path, LIST *list_wd)
 {
@@ -556,11 +567,8 @@ parse_command_line(int argc, char *argv[])
             }
 
             /* Check if it is a valid directory */
-            DIR *dir = opendir(root_path);
-            if (dir == NULL) {
+            if(!is_dir(root_path))
                 help(ENOENT, "The -d --directory requires a valid DIRECTORY.\n");
-            }
-            closedir(dir);
 
             /* Check if the path is absolute or not */
             /* TODO Dealloc after keyboard Ctrl+C interrupt */
@@ -718,13 +726,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
 
                 char *real_path = resolve_real_path(symlink);
 
-                DIR *is_a_dir = NULL;
-                if(real_path)
-                    is_a_dir = opendir(real_path);
-
-                if(is_a_dir) {
-                    closedir(is_a_dir);
-
+                if(is_dir(real_path)){
                     /* Check if the symbolic link is already watched */
                     if (get_link_data_from_path(symlink, list_wd) != NULL) {
                         continue;
@@ -1094,10 +1096,7 @@ event_handler_create(struct inotify_event *event, char *path, int fd, LIST *list
         watch_directory_tree(path, NULL, FALSE, fd, list_wd);
     } else if (nosymlink_flag == FALSE) {
         /* Check for a symbolic link */
-        DIR *dir_stream = opendir(path);
-        if (dir_stream != NULL) {
-            closedir(dir_stream);
-
+        if(is_dir(path)) {
             char *real_path = resolve_real_path(path);
             watch_directory_tree(real_path, path, TRUE, fd, list_wd);
         }
