@@ -17,6 +17,8 @@ Makefile
 /tests/check_list.trs
 /tests/check_cwatch
 /tests/check_cwatch.trs
+/tests/check_commandline
+/tests/check_commandline.trs
 /tests/.deps/
 
 build-aux
