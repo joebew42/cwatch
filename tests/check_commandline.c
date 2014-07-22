@@ -11,9 +11,22 @@ void teardown(void)
 {
 }
 
-START_TEST(test_that_foo_pass)
+START_TEST(empty_commandline_return_null)
 {
-    ck_assert_int_eq(foo(), 0);
+    CMDLINE_OPTS *cmdline_opts = commandline_parse("");
+
+    ck_assert_ptr_eq(cmdline_opts, NULL);
+}
+END_TEST
+
+START_TEST(commandline_without_options_sets_directory)
+{
+    char *commandline = "/home/cwatch";
+    CMDLINE_OPTS *cmdline_opts = commandline_parse(commandline);
+
+    ck_assert_str_eq(cmdline_opts->directory, commandline);
+
+    free(cmdline_opts);
 }
 END_TEST
 
@@ -24,7 +37,8 @@ Suite *list_suite(void)
     TCase *tc_core = tcase_create("When parsing the command line");
     tcase_add_checked_fixture(tc_core, setup, teardown);
 
-    tcase_add_test(tc_core, test_that_foo_pass);
+    tcase_add_test(tc_core, empty_commandline_return_null);
+    tcase_add_test(tc_core, commandline_without_options_sets_directory);
 
     suite_add_tcase(s, tc_core);
 

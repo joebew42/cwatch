@@ -1,7 +1,7 @@
 /* commandline.h
  * Command line parsing utility for cwatch
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2014, Giuseppe Leone <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
@@ -25,7 +25,16 @@
 #ifndef __COMMANDLINE_H
 #define __COMMANDLINE_H
 
-int
-foo();
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct cmdline_opts_s
+{
+    char *directory;
+} CMDLINE_OPTS;
+
+CMDLINE_OPTS *
+commandline_parse(char *commandline);
 
 #endif /* !__COMMANDLINE_H */

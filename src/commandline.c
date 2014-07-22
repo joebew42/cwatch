@@ -1,7 +1,7 @@
 /* commandline.c
  * Command line parsing utility for cwatch
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2014, Giuseppe Leone <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
@@ -24,8 +24,14 @@
 
 #include "commandline.h"
 
-int
-foo()
+CMDLINE_OPTS *
+commandline_parse(char *commandline)
 {
-    return 0;
+    if (strlen(commandline) > 0)
+    {
+        CMDLINE_OPTS *cmdline_opts = (CMDLINE_OPTS *) malloc(sizeof(CMDLINE_OPTS));
+        cmdline_opts->directory = strdup(commandline);
+        return cmdline_opts;
+    }
+    return NULL;
 }
