@@ -198,6 +198,22 @@ is_dir(const char *);
 char *
 append_dir(const char *, const char *);
 
+/*
+ * Return a new string appending a filename to a
+ * path.
+ * Ensure that the path doesn't has the trailing slash.
+ *
+ * Warning: the function doesn't checks if the given
+ * path is malformed.
+ *
+ * @param const char * : path
+ * @param const cahr * : filename to append
+ * @return char *      : the compete path, or NULL
+ *                       if insufficient memory
+ */
+char *
+append_file(const char *, const char *);
+
 /* searchs and returns the node of the specified path
  *
  * @param  const char * : absolute path to find

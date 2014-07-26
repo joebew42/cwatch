@@ -72,6 +72,24 @@ START_TEST(test_cases_for_append_dir)
 }
 END_TEST
 
+START_TEST(test_cases_for_append_file)
+{
+    ck_assert_str_eq("",   append_file("", ""));
+    ck_assert_str_eq("file",  append_file("", "file"));
+    ck_assert_str_eq("a/file",  append_file("a", "file"));
+    ck_assert_str_eq("./a/file", append_file("./a", "file"));
+
+    ck_assert_str_eq("/file", append_file("///", "file"));
+    ck_assert_str_eq("file", append_file("", "///file"));
+    ck_assert_str_eq("file", append_file("", "////file////"));
+    ck_assert_str_eq("", append_file("", "/"));
+    ck_assert_str_eq("/", append_file("/", "/"));
+    ck_assert_str_eq("", append_file("", "/"));
+
+    ck_assert_str_eq("a/", append_file("a", ""));
+}
+END_TEST
+
 START_TEST(creates_a_wd_data)
 {
     char *path = "/usr/opt/path/";
@@ -602,6 +620,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, remove_orphan_resources_from_a_tree_with_symlink_outside);
     tcase_add_test(tc_core, remove_unreachable_resources_not_in_root_path);
     tcase_add_test(tc_core, test_cases_for_append_dir);
+    tcase_add_test(tc_core, test_cases_for_append_file);
 
     suite_add_tcase(s, tc_core);
 

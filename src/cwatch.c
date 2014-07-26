@@ -312,6 +312,29 @@ append_dir(const char *path, const char *dir)
     return ret;
 }
 
+char *
+append_file(const char *path, const char *file)
+{
+    char *ret;
+    int lret;
+
+    for(; *file == '/'; file++);
+
+    /* handle with append_dir and remove
+     * the trailing slash
+     */
+    ret = append_dir(path, file);
+    if(!ret)
+        return NULL;
+
+    if(*file) {
+        lret = strlen(ret);
+        ret[lret - 1] = '\0';
+    }
+
+    return ret;
+}
+
 LIST_NODE *
 get_node_from_path(const char *path, LIST *list_wd)
 {
@@ -747,10 +770,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
 
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
-                char *symlink = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 1);
-                strcpy(symlink, directory_to_watch);
-                strcat(symlink, dir->d_name);
-
+                char *symlink = append_file(directory_to_watch, dir->d_name);
                 char *real_path = resolve_real_path(symlink);
 
                 if(is_dir(real_path)){
@@ -1014,9 +1034,7 @@ monitor(int fd, LIST *list_wd)
             node = get_node_from_wd(event->wd, list_wd);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
-                path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);
-                strcpy(path, wd_data->path);
-                strcat(path, event->name);
+                path = append_file(wd_data->path, event->name);
                 if (event->mask & IN_ISDIR) {
                     free(path);
                     path = append_dir(wd_data->path, event->name);
