@@ -182,6 +182,22 @@ resolve_real_path(const char *);
 inline bool_t
 is_dir(const char *);
 
+/*
+ * Return a new string appending a directory path
+ * to another.
+ * Ensure that the path has *one* trailing slash.
+ *
+ * Warning: the function doesn't checks if the given
+ * paths are malformed.
+ *
+ * @param const char * : first path
+ * @param const cahr * : directory path to append
+ * @return char *      : the compete path, or NULL
+ *                       if insufficient memory
+ */
+char *
+append_dir(const char *, const char *);
+
 /* searchs and returns the node of the specified path
  *
  * @param  const char * : absolute path to find

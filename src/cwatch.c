@@ -275,6 +275,43 @@ is_dir(const char *path)
     return FALSE;
 }
 
+char *
+append_dir(const char *path, const char *dir)
+{
+    char *clean_path, *ret;
+    size_t lret, lpath, ldir;
+
+    lpath = strlen(path);
+    ldir = strlen(dir);
+
+    if(!lpath) {
+        if(!ldir)
+            return strdup("");
+        else {
+            /* handle such as append_dir(dir, path) */
+            path = dir; lpath = ldir;
+            dir = ""; ldir = 0;
+        }
+    }
+
+    for(; lpath && path[lpath - 1] == '/'; --lpath);
+    for(; ldir  && dir[ldir - 1]   == '/'; --ldir);
+    for(; ldir  && dir[0] == '/'; --ldir, dir++);
+
+    /* if dir is not empty count the final slash */
+    lret = lpath + 1 + ldir + !!ldir;
+    ret = (char *) malloc(lret + 1);
+    clean_path = strndup(path, lpath);
+
+    if(!ret || !clean_path)
+        return NULL;
+
+    snprintf(ret, lret + 1, "%s/%s/", clean_path, dir);
+
+    free(clean_path);
+    return ret;
+}
+
 LIST_NODE *
 get_node_from_path(const char *path, LIST *list_wd)
 {
@@ -556,15 +593,8 @@ parse_command_line(int argc, char *argv[])
             if (NULL == optarg || strcmp(optarg, "") == 0)
                 help(EINVAL, "The option -d --directory requires a DIRECTORY.\n");
 
-            /* Check if the path has the ending slash */
-            if (optarg[strlen(optarg)-1] != '/') {
-                root_path = (char *) malloc(strlen(optarg) + 2);
-                strcpy(root_path, optarg);
-                strcat(root_path, "/");
-            } else {
-                root_path = (char *) malloc(strlen(optarg) + 1);
-                strcpy(root_path, optarg);
-            }
+            /* Ensure that the path has the trailing slash */
+            root_path = append_dir(optarg, "/");
 
             /* Check if it is a valid directory */
             if(!is_dir(root_path))
@@ -709,10 +739,7 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 && strcmp(dir->d_name, "..") != 0)
             {
                 /* Absolute path to watch */
-                char *path_to_watch = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 2);
-                strcpy(path_to_watch, directory_to_watch);
-                strcat(path_to_watch, dir->d_name);
-                strcat(path_to_watch, "/");
+                char *path_to_watch = append_dir(directory_to_watch, dir->d_name);
 
                 /* Continue directory traversing */
                 add_to_watch_list(path_to_watch, NULL, fd, list_wd);
@@ -990,8 +1017,10 @@ monitor(int fd, LIST *list_wd)
                 path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);
                 strcpy(path, wd_data->path);
                 strcat(path, event->name);
-                if (event->mask & IN_ISDIR)
-                    strcat(path, "/");
+                if (event->mask & IN_ISDIR) {
+                    free(path);
+                    path = append_dir(wd_data->path, event->name);
+                }
             } else {
                 /* Next event */
                 i += EVENT_SIZE + event->len;

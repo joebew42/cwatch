@@ -40,6 +40,38 @@ teardown(void)
     /* PASS */
 }
 
+START_TEST(test_cases_for_append_dir)
+{
+    ck_assert_str_eq("",   append_dir("", ""));
+    ck_assert_str_eq("/",  append_dir("", "/"));
+    ck_assert_str_eq("/",  append_dir("", "//"));
+    ck_assert_str_eq("a/", append_dir("", "a"));
+
+    ck_assert_str_eq("/", append_dir("/", ""));
+    ck_assert_str_eq("/", append_dir("/", "//"));
+
+    ck_assert_str_eq("a/",   append_dir("a", ""));
+    ck_assert_str_eq("a/b/", append_dir("a", "b"));
+    ck_assert_str_eq("a/b/", append_dir("a", "/b"));
+    ck_assert_str_eq("a/b/", append_dir("a", "b/"));
+    ck_assert_str_eq("a/b/", append_dir("a", "/b/"));
+    ck_assert_str_eq("a/b/", append_dir("a", "///b"));
+    ck_assert_str_eq("a/b/", append_dir("a", "b///"));
+    ck_assert_str_eq("a/b/", append_dir("a", "///b///"));
+
+    ck_assert_str_eq("a/b/", append_dir("a/", "b"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "/b"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "b/"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "/b/"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "///b"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "b///"));
+    ck_assert_str_eq("a/b/", append_dir("a/", "///b///"));
+
+    ck_assert_str_eq("a/", append_dir("a//", ""));
+    ck_assert_str_eq("a/b/", append_dir("a///", "///b/////"));
+}
+END_TEST
+
 START_TEST(creates_a_wd_data)
 {
     char *path = "/usr/opt/path/";
@@ -569,6 +601,7 @@ Suite *cwatch_suite(void)
     tcase_add_test(tc_core, unwatch_an_outside_directory_removing_a_symlink_inside);
     tcase_add_test(tc_core, remove_orphan_resources_from_a_tree_with_symlink_outside);
     tcase_add_test(tc_core, remove_unreachable_resources_not_in_root_path);
+    tcase_add_test(tc_core, test_cases_for_append_dir);
 
     suite_add_tcase(s, tc_core);
 
