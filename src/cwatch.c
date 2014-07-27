@@ -264,6 +264,77 @@ resolve_real_path(const char *path)
     return resolved;
 }
 
+inline bool_t
+is_dir(const char *path)
+{
+    struct stat st_path;
+
+    if(!stat(path, &st_path) && S_ISDIR(st_path.st_mode))
+        return TRUE;
+
+    return FALSE;
+}
+
+char *
+append_dir(const char *path, const char *dir)
+{
+    char *clean_path, *ret;
+    size_t lret, lpath, ldir;
+
+    lpath = strlen(path);
+    ldir = strlen(dir);
+
+    if(!lpath) {
+        if(!ldir)
+            return strdup("");
+        else {
+            /* handle such as append_dir(dir, path) */
+            path = dir; lpath = ldir;
+            dir = ""; ldir = 0;
+        }
+    }
+
+    for(; lpath && path[lpath - 1] == '/'; --lpath);
+    for(; ldir  && dir[ldir - 1]   == '/'; --ldir);
+    for(; ldir  && dir[0] == '/'; --ldir, dir++);
+
+    /* if dir is not empty count the final slash */
+    lret = lpath + 1 + ldir + !!ldir;
+    ret = (char *) malloc(lret + 1);
+    clean_path = strndup(path, lpath);
+
+    if(!ret || !clean_path)
+        return NULL;
+
+    snprintf(ret, lret + 1, "%s/%s/", clean_path, dir);
+
+    free(clean_path);
+    return ret;
+}
+
+char *
+append_file(const char *path, const char *file)
+{
+    char *ret;
+    int lret;
+
+    for(; *file == '/'; file++);
+
+    /* handle with append_dir and remove
+     * the trailing slash
+     */
+    ret = append_dir(path, file);
+    if(!ret)
+        return NULL;
+
+    if(*file) {
+        lret = strlen(ret);
+        ret[lret - 1] = '\0';
+    }
+
+    return ret;
+}
+
 LIST_NODE *
 get_node_from_path(const char *path, LIST *list_wd)
 {
@@ -545,22 +616,12 @@ parse_command_line(int argc, char *argv[])
             if (NULL == optarg || strcmp(optarg, "") == 0)
                 help(EINVAL, "The option -d --directory requires a DIRECTORY.\n");
 
-            /* Check if the path has the ending slash */
-            if (optarg[strlen(optarg)-1] != '/') {
-                root_path = (char *) malloc(strlen(optarg) + 2);
-                strcpy(root_path, optarg);
-                strcat(root_path, "/");
-            } else {
-                root_path = (char *) malloc(strlen(optarg) + 1);
-                strcpy(root_path, optarg);
-            }
+            /* Ensure that the path has the trailing slash */
+            root_path = append_dir(optarg, "/");
 
             /* Check if it is a valid directory */
-            DIR *dir = opendir(root_path);
-            if (dir == NULL) {
+            if(!is_dir(root_path))
                 help(ENOENT, "The -d --directory requires a valid DIRECTORY.\n");
-            }
-            closedir(dir);
 
             /* Check if the path is absolute or not */
             /* TODO Dealloc after keyboard Ctrl+C interrupt */
@@ -671,6 +732,9 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
     if (node == NULL)
         return -1;
 
+    if(recursive == FALSE)
+        return 0;
+
     /* Temporary list to perform a BFS directory traversing */
     LIST *list = list_init();
     list_push(list, (void *) real_path);
@@ -698,41 +762,26 @@ watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, L
                 && strcmp(dir->d_name, "..") != 0)
             {
                 /* Absolute path to watch */
-                char *path_to_watch = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 2);
-                strcpy(path_to_watch, directory_to_watch);
-                strcat(path_to_watch, dir->d_name);
-                strcat(path_to_watch, "/");
+                char *path_to_watch = append_dir(directory_to_watch, dir->d_name);
 
                 /* Continue directory traversing */
-                if (recursive_flag == TRUE) {
-                    add_to_watch_list(path_to_watch, NULL, fd, list_wd);
-                    list_push(list, (void*) path_to_watch);
-                }
+                add_to_watch_list(path_to_watch, NULL, fd, list_wd);
+                list_push(list, (void*) path_to_watch);
+
             } else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE) {
                 /* Resolve symbolic link */
-                char *symlink = (char *) malloc(strlen(directory_to_watch) + strlen(dir->d_name) + 1);
-                strcpy(symlink, directory_to_watch);
-                strcat(symlink, dir->d_name);
-
+                char *symlink = append_file(directory_to_watch, dir->d_name);
                 char *real_path = resolve_real_path(symlink);
 
-                DIR *is_a_dir = NULL;
-                if(real_path)
-                    is_a_dir = opendir(real_path);
-
-                if(is_a_dir) {
-                    closedir(is_a_dir);
-
+                if(is_dir(real_path)){
                     /* Check if the symbolic link is already watched */
                     if (get_link_data_from_path(symlink, list_wd) != NULL) {
                         continue;
                     }
 
                     /* Continue directory traversing */
-                    if (recursive_flag == TRUE) {
-                        add_to_watch_list(real_path, symlink, fd, list_wd);
-                        list_push(list, (void*) real_path);
-                    }
+                    add_to_watch_list(real_path, symlink, fd, list_wd);
+                    list_push(list, (void*) real_path);
                 }
             }
         }
@@ -985,11 +1034,11 @@ monitor(int fd, LIST *list_wd)
             node = get_node_from_wd(event->wd, list_wd);
             if (node != NULL) {
                 wd_data = (WD_DATA *) node->data;
-                path = (char *)malloc(strlen(wd_data->path) + strlen(event->name) + 2);
-                strcpy(path, wd_data->path);
-                strcat(path, event->name);
-                if (event->mask & IN_ISDIR)
-                    strcat(path, "/");
+                path = append_file(wd_data->path, event->name);
+                if (event->mask & IN_ISDIR) {
+                    free(path);
+                    path = append_dir(wd_data->path, event->name);
+                }
             } else {
                 /* Next event */
                 i += EVENT_SIZE + event->len;
@@ -1094,12 +1143,9 @@ event_handler_create(struct inotify_event *event, char *path, int fd, LIST *list
         watch_directory_tree(path, NULL, FALSE, fd, list_wd);
     } else if (nosymlink_flag == FALSE) {
         /* Check for a symbolic link */
-        DIR *dir_stream = opendir(path);
-        if (dir_stream != NULL) {
-            closedir(dir_stream);
-
+        if(is_dir(path)) {
             char *real_path = resolve_real_path(path);
-            watch_directory_tree(real_path, path, FALSE, fd, list_wd);
+            watch_directory_tree(real_path, path, TRUE, fd, list_wd);
         }
     }
 

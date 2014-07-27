@@ -39,6 +39,7 @@
 #include <regex.h>
 #include <sys/inotify.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 
 #include "bstrlib.h"
 #include "list.h"
@@ -170,6 +171,48 @@ log_message(char *, ...);
  */
 char *
 resolve_real_path(const char *);
+
+/*
+ * checks if the given path is a directory.
+ * If the path is a symlink checks the pointed resource.
+ *
+ * @param  const char * : path
+ * @return bool_t
+ */
+inline bool_t
+is_dir(const char *);
+
+/*
+ * Return a new string appending a directory path
+ * to another.
+ * Ensure that the path has *one* trailing slash.
+ *
+ * Warning: the function doesn't checks if the given
+ * paths are malformed.
+ *
+ * @param const char * : first path
+ * @param const cahr * : directory path to append
+ * @return char *      : the compete path, or NULL
+ *                       if insufficient memory
+ */
+char *
+append_dir(const char *, const char *);
+
+/*
+ * Return a new string appending a filename to a
+ * path.
+ * Ensure that the path doesn't has the trailing slash.
+ *
+ * Warning: the function doesn't checks if the given
+ * path is malformed.
+ *
+ * @param const char * : path
+ * @param const cahr * : filename to append
+ * @return char *      : the compete path, or NULL
+ *                       if insufficient memory
+ */
+char *
+append_file(const char *, const char *);
 
 /* searchs and returns the node of the specified path
  *

@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
         watch_descriptor_from = inotify_add_watch;
         remove_watch_descriptor = inotify_rm_watch;
 
-        if (watch_directory_tree(root_path, NULL, FALSE, fd, list_wd) == -1) {
+        if (watch_directory_tree(root_path, NULL, recursive_flag, fd, list_wd) == -1) {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return EXIT_FAILURE;
         }
