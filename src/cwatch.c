@@ -230,6 +230,7 @@ log_message(char *message, ...)
 
         if (verbose_flag && (NULL == format)) {
             printf("%s\n", b_message->data);
+            fflush(stdout);
         }
 
         if (syslog_flag) {
