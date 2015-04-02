@@ -19,6 +19,7 @@ Makefile
 /tests/check_cwatch.trs
 /tests/.deps/
 /tests/uat/test-results/
+/tests/uat/*.trs
 
 build-aux
 
