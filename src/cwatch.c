@@ -134,7 +134,7 @@ help(int error, char *message)
     printf("  *LIST OF OTHER OPTIONS*\n\n");
     printf("  -e  --events [event,[event,[,..]]]\n");
     printf("      Specify which type of events to monitor. List of events:\n");
-    printf("        access           : File was modified\n");
+    printf("        access           : File was accessed\n");
     printf("        modify           : File was modified\n");
     printf("        attrib           : File attributes changed\n");
     printf("        close_write      : File closed, after being opened in writeable mode\n");
