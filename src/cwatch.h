@@ -179,7 +179,7 @@ resolve_real_path(const char *);
  * @param  const char * : path
  * @return bool_t
  */
-inline bool_t
+bool_t
 is_dir(const char *);
 
 /*

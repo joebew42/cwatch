@@ -42,6 +42,7 @@ AC_CONFIG_FILES([
 Makefile
 src/Makefile
 tests/Makefile
+tests/uat/Makefile
 ])
 
 AC_CONFIG_MACRO_DIR([m4])

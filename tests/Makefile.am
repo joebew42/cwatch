@@ -1,4 +1,5 @@
 ## Process this file with automake to produce Makefile.in
+SUBDIRS = uat
 
 TESTS = check_list check_cwatch check_commandline
 check_PROGRAMS = check_list check_cwatch check_commandline

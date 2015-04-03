@@ -20,6 +20,8 @@ Makefile
 /tests/check_commandline
 /tests/check_commandline.trs
 /tests/.deps/
+/tests/uat/test-results/
+/tests/uat/*.trs
 
 build-aux
 
