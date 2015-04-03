@@ -22,12 +22,12 @@
 CWATCH_PID=""
 CWATCH_DIR=".."
 
-function cwatch() {
+cwatch() {
     $CWATCH_DIR/cwatch "$@" &
     CWATCH_PID=$!
 }
 
-function kill_cwatch() {
+kill_cwatch() {
     if [ $CWATCH_PID != "" ]; then
         kill $CWATCH_PID
     fi
