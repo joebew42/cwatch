@@ -6,6 +6,12 @@ A program to monitor the filesystem activity through the inotify Linux kernel li
 
 This is a **experimental release**. At this stage we are testing the software as best as we can. If you would like to help us to test and improve this software, feel free to do everything you want.
 
+Requirements:
+
+```
+sudo apt install check
+```
+
 A Quick-start:
 
 1. Clone the project:
@@ -35,3 +41,19 @@ A Quick-start:
    4.2. *Share with us your use case*
 
 *Note*: This README is just a draft. In the next days we will provide a new one well organized.
+
+## Practical Examples
+
+### Run tests every time a file changes in the `src/` directory
+
+```
+./src/cwatch -c "make -s check" -d src/ -v -n
+```
+
+> **NOTE** :warning: This generates a loop since `make -s check` will update the objects files (`.o`) inside the `src/` folder.
+
+### Run tests every time a `*.c` or `*.h` changes in the `src/` directory
+
+```
+./src/cwatch -c "make -s check" -d src/ -v -n -X '.*\.[ch]$'
+```
