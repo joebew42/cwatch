@@ -1,28 +1,17 @@
 ### TODO
 
-1. refactoring  unwatch_symlink
-2. check remove_orphan_watched_resources (especially if is necessary go through all the list or is sufficient only wd_data)
-3. rename the function symlinks_contained_in ??? (probably yes)
-4. Extract utility functions in specific header (regex.h, command.h, etc) and find a easy way to glue them trough a extension system.
-5. Extract command_line in a specific header (command_line.h)
-6. create_wd_data(path, wd); -> fix the WD_DATA structure: path first and then wd
-
-### TO REFACTOR
-
-excluded (exclude_regex as an argument)
-regex_catch (user_catch_regex as an argument)
-get_regex_catch (p_match as an argument ???how???)
-
-format_command (root_path and COMMAND_PATTERN.... as an argument)
-
-### WHAT ELSE
-
-* integration test : prepare a suite of test with bash scripting
-* glob patterns
-
-### FINAL ADJUSTMENTS
-
-* the list is a QUEUE, it should expose enqueue and dequeue methods rather than push and pop.
-* list_push(LIST, element) -> list_push(element, LIST)
-* assure that all functions follow a form of foo(INPUT VARIABLE, OUTPUT VARIABLE)
-* probably we can use only a list to store all symbolic links
+- the list is a queue, it should expose enqueue and dequeue methods rather than push and pop.
+  - rename `list` in `queue`
+- create_wd_data(path, wd);
+  - Maybe the order of the arguments does not follow our convention? `wd` should always be the first argument?
+  - fix the `WD_DATA` structure: path first and then wd
+- refactor unwatch_symlink
+- check remove_orphan_watched_resources (especially if is necessary go through all the list or is sufficient only wd_data)
+- rename the function symlinks_contained_in ??? (probably yes)
+- Extract functions in specific header (regex.h, command.h, etc)
+- Extract command_line in a specific header (command_line.h)
+  - refactor `excluded` (`exclude_regex` as an argument)
+  - refactor `regex_catch` (`user_catch_regex` as an argument)
+  - refactor `get_regex_catch` (`p_match` as an argument ???how???)
+  - refactor `format_command` (`root_path` and COMMAND_PATTERN.... as an argument)
+- Is it possible to use only one list to store all symbolic links?
