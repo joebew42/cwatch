@@ -30,22 +30,19 @@
   http://www.montefiore.ulg.ac.be/~piater/Cours/Coding-Style/index.html#id2465262
 */
 
-/* List node */
-/* typedef struct list_node_t */
-typedef struct list_node_s
+typedef struct queue_node_t
 {
   void *data;
-  struct list_node_s *prev;
-  struct list_node_s *next;
-} LIST_NODE;
-/* } ListNode; */
+  struct queue_node_t *prev;
+  struct queue_node_t *next;
+} QueueNode;
 
 /* List data structure */
 typedef struct list
 {
   /* Pointer to first and last node */
-  LIST_NODE *first;
-  LIST_NODE *last;
+  QueueNode *first;
+  QueueNode *last;
 } LIST;
 
 /* initialize list data structure
@@ -58,9 +55,9 @@ LIST *queue_init();
  *
  * @param  LIST *    : a LIST pointer
  * @param  void *    : a void pointer
- * @return LIST_NODE : return the pointer of the node added
+ * @return QueueNode : return the pointer of the node added
  */
-LIST_NODE *queue_enqueue(LIST *, void *);
+QueueNode *queue_enqueue(LIST *, void *);
 
 /* remove and return the first element of the list
  *
@@ -72,9 +69,9 @@ void *queue_dequeue(LIST *);
 /* remove a node from list
  *
  * @param LIST *      : a pointer to the list
- * @param LIST_NODE * : a to the list_node to remove
+ * @param QueueNode * : a to the list_node to remove
  */
-void queue_remove(LIST *, LIST_NODE *);
+void queue_remove(LIST *, QueueNode *);
 
 /* returns the size of a list
  *

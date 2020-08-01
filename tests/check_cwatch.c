@@ -247,7 +247,7 @@ START_TEST(get_a_node_from_path)
 
     add_to_watch_list(real_path, symlink, fd, list_wd);
 
-    LIST_NODE *node = get_node_from_path(real_path, list_wd);
+    QueueNode *node = get_node_from_path(real_path, list_wd);
     WD_DATA *wd_data = node->data;
 
     ck_assert_ptr_eq(real_path, wd_data->path);
@@ -266,12 +266,12 @@ START_TEST(get_a_node_from_wd)
 
     add_to_watch_list(real_path, symlink, fd, list_wd);
 
-    LIST_NODE *expected_node = get_node_from_path(real_path, list_wd);
+    QueueNode *expected_node = get_node_from_path(real_path, list_wd);
     WD_DATA *wd_data = expected_node->data;
 
     int real_wd = wd_data->wd;
 
-    LIST_NODE *node = get_node_from_wd(real_wd, list_wd);
+    QueueNode *node = get_node_from_wd(real_wd, list_wd);
 
     ck_assert_ptr_eq(expected_node, node);
 
@@ -306,7 +306,7 @@ START_TEST(get_a_link_node_from_path)
     char *symlink = "/home/symlink";
 
     add_to_watch_list(real_path, symlink, fd, list_wd);
-    LIST_NODE *list_node = get_link_node_from_path(symlink, list_wd);
+    QueueNode *list_node = get_link_node_from_path(symlink, list_wd);
 
     LINK_DATA *link_data = list_node->data;
     WD_DATA *wd_data = link_data->wd_data;
@@ -478,7 +478,7 @@ START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 
     unwatch_symlink(path_of_symlink, fd, list_wd);
 
-    LIST_NODE *node = get_node_from_path(real_path, list_wd);
+    QueueNode *node = get_node_from_path(real_path, list_wd);
     WD_DATA *wd_data = (WD_DATA *)node->data;
 
     ck_assert_int_eq(queue_size(wd_data->links), 0);
@@ -504,7 +504,7 @@ START_TEST(unwatch_an_outside_directory_removing_a_symlink_inside)
 
     unwatch_symlink(symlink_to_outside, fd, list_wd);
 
-    LIST_NODE *node = get_node_from_path(outside_dir, list_wd);
+    QueueNode *node = get_node_from_path(outside_dir, list_wd);
     ck_assert_ptr_eq(node, NULL);
 
     queue_free(list_wd);

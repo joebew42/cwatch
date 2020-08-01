@@ -37,9 +37,9 @@ LIST *queue_init()
     return list;
 }
 
-LIST_NODE *queue_enqueue(LIST *list, void *data)
+QueueNode *queue_enqueue(LIST *list, void *data)
 {
-    LIST_NODE *node = (LIST_NODE *)malloc(sizeof(LIST_NODE));
+    QueueNode *node = (QueueNode *)malloc(sizeof(QueueNode));
     if (node == NULL)
         return NULL;
 
@@ -67,7 +67,7 @@ void *queue_dequeue(LIST *list)
 
     void *data = list->first->data;
 
-    LIST_NODE *node = list->first;
+    QueueNode *node = list->first;
 
     if (list->first == list->last)
     {
@@ -84,7 +84,7 @@ void *queue_dequeue(LIST *list)
     return data;
 }
 
-void queue_remove(LIST *list, LIST_NODE *node)
+void queue_remove(LIST *list, QueueNode *node)
 {
     if (list->first == NULL)
         return;
@@ -108,7 +108,7 @@ int queue_size(LIST *list)
         return 0;
 
     int size = 0;
-    LIST_NODE *node = list->first;
+    QueueNode *node = list->first;
     while (node != NULL)
     {
         node = node->next;
@@ -123,11 +123,11 @@ void queue_free(LIST *list)
     if (list == NULL)
         return;
 
-    LIST_NODE *node = list->first;
+    QueueNode *node = list->first;
 
     while (node)
     {
-        LIST_NODE *next = node->next;
+        QueueNode *next = node->next;
         free(node);
         node = next;
     }
