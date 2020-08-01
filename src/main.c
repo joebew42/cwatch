@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     if (parse_command_line(argc, argv) == 0)
     {
         int fd = inotify_init();
-        LIST *list_wd = list_init();
+        LIST *list_wd = queue_init();
 
         watch_descriptor_from = inotify_add_watch;
         remove_watch_descriptor = inotify_rm_watch;

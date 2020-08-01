@@ -24,12 +24,12 @@ LIST *list;
 
 void setup(void)
 {
-    list = list_init();
+    list = queue_init();
 }
 
 void teardown(void)
 {
-    list_free(list);
+    queue_free(list);
 }
 
 START_TEST(has_a_good_factory)
@@ -63,7 +63,7 @@ START_TEST(pop_one_item)
     add_items_to(list, 2);
 
     int expected = 0;
-    int *actual = (int *)list_pop(list);
+    int *actual = (int *)queue_dequeue(list);
 
     ck_assert_int_eq(*actual, expected);
 }
@@ -73,7 +73,7 @@ START_TEST(remove_one_item)
 {
     add_items_to(list, 1);
 
-    list_remove(list, list->first);
+    queue_remove(list, list->first);
 
     ck_assert_ptr_eq(list->first, NULL);
     ck_assert_ptr_eq(list->last, NULL);
@@ -86,7 +86,7 @@ START_TEST(size_of_the_list)
 
     add_items_to(list, expected);
 
-    int actual = list_size(list);
+    int actual = queue_size(list);
 
     ck_assert_int_eq(actual, expected);
 }

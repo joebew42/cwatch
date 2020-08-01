@@ -385,7 +385,7 @@ create_wd_data(char *real_path, int wd)
 
     wd_data->wd = wd;
     wd_data->path = real_path;
-    wd_data->links = list_init();
+    wd_data->links = queue_init();
 
     return wd_data;
 }
@@ -763,7 +763,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
         return 0;
 
     /* Temporary list to perform a BFS directory traversing */
-    LIST *list = list_init();
+    LIST *list = queue_init();
     queue_enqueue(list, (void *)real_path);
 
     DIR *dir_stream;
@@ -771,7 +771,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
 
     while (list->first != NULL)
     {
-        char *directory_to_watch = (char *)list_pop(list);
+        char *directory_to_watch = (char *)queue_dequeue(list);
         dir_stream = opendir(directory_to_watch);
 
         if (dir_stream == NULL)
@@ -820,7 +820,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
         closedir(dir_stream);
     }
 
-    list_free(list);
+    queue_free(list);
     return 0;
 }
 
@@ -882,9 +882,9 @@ void unwatch_path(char *absolute_path, int fd, LIST *list_wd)
     remove_watch_descriptor(fd, wd_data->wd);
 
     if (wd_data->links->first != NULL)
-        list_free(wd_data->links);
+        queue_free(wd_data->links);
 
-    list_remove(list_wd, node);
+    queue_remove(list_wd, node);
 }
 
 void all_symlinks_contained_in(char *path, LIST *list_wd, LIST *symlinks_found)
@@ -928,13 +928,13 @@ void remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
     {
         remove_orphan_watched_resources(wd_data->path, referenced_paths, fd, list_wd);
     }
-    list_free(referenced_paths);
+    queue_free(referenced_paths);
 }
 
 LIST *
 common_referenced_paths_for(const char *path, LIST *list_wd)
 {
-    LIST *referenced_paths = list_init();
+    LIST *referenced_paths = queue_init();
     LIST_NODE *node;
     WD_DATA *wd_data;
 
@@ -978,7 +978,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list, in
             log_message("UNWATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, wd_data->path);
 
             remove_watch_descriptor(fd, wd_data->wd);
-            list_remove(list_wd, node);
+            queue_remove(list_wd, node);
         }
         node = node->next;
     }
@@ -986,12 +986,12 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list, in
 
 void unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
-    LIST *symlinks_to_remove = list_init();
+    LIST *symlinks_to_remove = queue_init();
     queue_enqueue(symlinks_to_remove, (void *)path_of_symlink);
 
     while (symlinks_to_remove->first != NULL)
     {
-        char *symlink = (char *)list_pop(symlinks_to_remove);
+        char *symlink = (char *)queue_dequeue(symlinks_to_remove);
 
         LIST_NODE *link_node = get_link_node_from_path(symlink, list_wd);
 
@@ -1002,14 +1002,14 @@ void unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
         char *link_path = (char *)link_data->path;
 
         log_message("UNWATCHING SYMBOLIC LINK: \t\"%s\" -> \"%s\"", link_path, wd_data->path);
-        list_remove(wd_data->links, link_node);
+        queue_remove(wd_data->links, link_node);
 
         all_symlinks_contained_in(resolved_path, list_wd, symlinks_to_remove);
 
         remove_unreachable_resources(wd_data, fd, list_wd);
     }
 
-    list_free(symlinks_to_remove);
+    queue_free(symlinks_to_remove);
 }
 
 int monitor(int fd, LIST *list_wd)
@@ -1244,6 +1244,6 @@ void signal_callback_handler(int signum)
     bdestroy(COMMAND_PATTERN_REGEX);
     bdestroy(COMMAND_PATTERN_COUNT);
 
-    /* TODO how to free??? list_free(list_wd); */
+    /* TODO how to free??? queue_free(list_wd); */
     exit(signum);
 }

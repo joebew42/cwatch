@@ -52,7 +52,7 @@ typedef struct list
  *
  * @return list * : a pointer to the new allocated list structure
  */
-LIST *list_init();
+LIST *queue_init();
 
 /* push an element at the end of list
  *
@@ -67,23 +67,23 @@ LIST_NODE *queue_enqueue(LIST *, void *);
  * @param  LIST *  : a LIST pointer
  * @return void *  : a VOID pointer to destination data pointer
  */
-void *list_pop(LIST *);
+void *queue_dequeue(LIST *);
 
 /* remove a node from list
  *
  * @param LIST *      : a pointer to the list
  * @param LIST_NODE * : a to the list_node to remove
  */
-void list_remove(LIST *, LIST_NODE *);
+void queue_remove(LIST *, LIST_NODE *);
 
 /* returns the size of a list
  *
  * @param  LIST * : list
  * @return int    : number of elements
  */
-int list_size(LIST *);
+int queue_size(LIST *);
 
 /* deallocates list data structure */
-void list_free(LIST *);
+void queue_free(LIST *);
 
 #endif /* !__LIST_H */
