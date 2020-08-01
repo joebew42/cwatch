@@ -217,18 +217,18 @@ append_file(const char *, const char *);
  *
  * @param  const char * : absolute path to find
  * @param  Queue *       : list of watched resources
- * @return QueueNode *
+ * @return QueueElement *
  */
-QueueNode *
+QueueElement *
 get_node_from_path(const char *, Queue *);
 
 /* searchs and returns the node of the specified watch descriptor
  *
  * @param  const int   : wd to find
  * @param  Queue *      : list of watched resources
- * @return QueueNode *
+ * @return QueueElement *
  */
-QueueNode *
+QueueElement *
 get_node_from_wd(const int, Queue *);
 
 /* creates a wd_data
@@ -244,9 +244,9 @@ create_wd_data(char *, int);
  *
  * @param  const char * : absolute path to find
  * @param  Queue *       : list of watched resources
- * @return QueueNode *
+ * @return QueueElement *
  */
-QueueNode *
+QueueElement *
 get_link_node_from_path(const char *, Queue *);
 
 /* checks if a path stored in the list of
@@ -374,9 +374,9 @@ int watch_directory_tree(char *, char *, bool_t, int, Queue *);
  * @param  char *      : symbolic link that points to the absolute path
  * @param  int         : inotify file descriptor
  * @param  Queue *      : list of watched resources
- * @return QueueNode * : pointer of the node added in the watch list
+ * @return QueueElement * : pointer of the node added in the watch list
  */
-QueueNode *
+QueueElement *
 add_to_watch_list(char *, char *, int, Queue *);
 
 /* given a real path unwatch a directory from the watch list

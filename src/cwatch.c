@@ -345,10 +345,10 @@ append_file(const char *path, const char *file)
     return ret;
 }
 
-QueueNode *
+QueueElement *
 get_node_from_path(const char *path, Queue *list_wd)
 {
-    QueueNode *node = list_wd->first;
+    QueueElement *node = list_wd->first;
     while (node)
     {
         WD_DATA *wd_data = (WD_DATA *)node->data;
@@ -360,10 +360,10 @@ get_node_from_path(const char *path, Queue *list_wd)
     return NULL;
 }
 
-QueueNode *
+QueueElement *
 get_node_from_wd(const int wd, Queue *list_wd)
 {
-    QueueNode *node = list_wd->first;
+    QueueElement *node = list_wd->first;
     while (node)
     {
         WD_DATA *wd_data = (WD_DATA *)node->data;
@@ -390,12 +390,12 @@ create_wd_data(char *real_path, int wd)
     return wd_data;
 }
 
-QueueNode *
+QueueElement *
 get_link_node_from_path(const char *symlink, Queue *list_wd)
 {
-    QueueNode *node = list_wd->first;
+    QueueElement *node = list_wd->first;
     WD_DATA *wd_data;
-    QueueNode *link_node;
+    QueueElement *link_node;
     LINK_DATA *link_data;
 
     while (node)
@@ -431,7 +431,7 @@ get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
     if (NULL == wd_data)
         return NULL;
 
-    QueueNode *link_node;
+    QueueElement *link_node;
     LINK_DATA *link_data;
 
     link_node = wd_data->links->first;
@@ -451,7 +451,7 @@ get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
 LINK_DATA *
 get_link_data_from_path(const char *symlink, Queue *list_wd)
 {
-    QueueNode *node = list_wd->first;
+    QueueElement *node = list_wd->first;
     WD_DATA *wd_data;
     LINK_DATA *link_data;
 
@@ -491,7 +491,7 @@ is_listed_as_child(char *string, Queue *list)
     if (list == NULL || list->first == NULL)
         return FALSE;
 
-    QueueNode *node = list->first;
+    QueueElement *node = list->first;
     while (node)
     {
         if (is_child_of((char *)node->data, string))
@@ -755,7 +755,7 @@ int parse_command_line(int argc, char *argv[])
 int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, Queue *list_wd)
 {
     /* Add initial path to the watch list */
-    QueueNode *node = add_to_watch_list(real_path, symlink, fd, list_wd);
+    QueueElement *node = add_to_watch_list(real_path, symlink, fd, list_wd);
     if (node == NULL)
         return -1;
 
@@ -824,10 +824,10 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
     return 0;
 }
 
-QueueNode *
+QueueElement *
 add_to_watch_list(char *real_path, char *symlink, int fd, Queue *list_wd)
 {
-    QueueNode *node = get_node_from_path(real_path, list_wd);
+    QueueElement *node = get_node_from_path(real_path, list_wd);
 
     /* if the resource is not watched yet, then add it into the watch_list */
     if (NULL == node)
@@ -871,7 +871,7 @@ add_to_watch_list(char *real_path, char *symlink, int fd, Queue *list_wd)
 
 void unwatch_path(char *absolute_path, int fd, Queue *list_wd)
 {
-    QueueNode *node = get_node_from_path(absolute_path, list_wd);
+    QueueElement *node = get_node_from_path(absolute_path, list_wd);
     if (NULL == node)
         return;
 
@@ -889,7 +889,7 @@ void unwatch_path(char *absolute_path, int fd, Queue *list_wd)
 
 void all_symlinks_contained_in(char *path, Queue *list_wd, Queue *symlinks_found)
 {
-    QueueNode *node = list_wd->first;
+    QueueElement *node = list_wd->first;
 
     WD_DATA *wd_data = NULL;
     while (node)
@@ -904,7 +904,7 @@ void all_symlinks_contained_in(char *path, Queue *list_wd, Queue *symlinks_found
 
 void symlinks_contained_in(char *path, Queue *symlinks_to_check, Queue *symlinks_found)
 {
-    QueueNode *link_node = symlinks_to_check->first;
+    QueueElement *link_node = symlinks_to_check->first;
     while (link_node)
     {
         LINK_DATA *link_data = (LINK_DATA *)link_node->data;
@@ -935,7 +935,7 @@ Queue *
 common_referenced_paths_for(const char *path, Queue *list_wd)
 {
     Queue *referenced_paths = queue_init();
-    QueueNode *node;
+    QueueElement *node;
     WD_DATA *wd_data;
 
     node = list_wd->first;
@@ -965,7 +965,7 @@ is_related_to(const char *path, const char *path_to_check)
 
 void remove_orphan_watched_resources(const char *path, Queue *references_list, int fd, Queue *list_wd)
 {
-    QueueNode *node;
+    QueueElement *node;
     WD_DATA *wd_data;
 
     node = list_wd->first;
@@ -993,7 +993,7 @@ void unwatch_symlink(char *path_of_symlink, int fd, Queue *list_wd)
     {
         char *symlink = (char *)queue_dequeue(symlinks_to_remove);
 
-        QueueNode *link_node = get_link_node_from_path(symlink, list_wd);
+        QueueElement *link_node = get_link_node_from_path(symlink, list_wd);
 
         LINK_DATA *link_data = (LINK_DATA *)link_node->data;
         WD_DATA *wd_data = (WD_DATA *)link_data->wd_data;
@@ -1038,7 +1038,7 @@ int monitor(int fd, Queue *list_wd)
     int i;
 
     /* Temporary node information */
-    QueueNode *node = NULL;
+    QueueElement *node = NULL;
     WD_DATA *wd_data = NULL;
 
     /* Wait for events */

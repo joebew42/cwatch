@@ -35,12 +35,12 @@ typedef struct queue_node_t
   void *data;
   struct queue_node_t *prev;
   struct queue_node_t *next;
-} QueueNode;
+} QueueElement;
 
 typedef struct queue_t
 {
-  QueueNode *first;
-  QueueNode *last;
+  QueueElement *first;
+  QueueElement *last;
 } Queue;
 
 /* initialize a queue
@@ -51,11 +51,11 @@ Queue *queue_init();
 
 /* add an element at the end of the queue
  *
- * @param  Queue *     : a Queue pointer
- * @param  void *      : a void pointer
- * @return QueueNode * : return the pointer of the node added
+ * @param  Queue *        : a Queue pointer
+ * @param  void *         : a void pointer
+ * @return QueueElement * : return the pointer of the element added
  */
-QueueNode *queue_enqueue(Queue *, void *);
+QueueElement *queue_enqueue(Queue *, void *);
 
 /* removes and returns the element at the beginning of the queue
  *
@@ -66,10 +66,10 @@ void *queue_dequeue(Queue *);
 
 /* removes an element from the queue
  *
- * @param Queue *      : a pointer to the queue
- * @param QueueNode *  : a pointer to the element to remove
+ * @param Queue *         : a pointer to the queue
+ * @param QueueElement *  : a pointer to the element to remove
  */
-void queue_remove(Queue *, QueueNode *);
+void queue_remove(Queue *, QueueElement *);
 
 /* returns the size of a queue
  *
