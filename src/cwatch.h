@@ -1,7 +1,7 @@
 /* cwatch.h
  * Monitor file system activity using the inotify linux kernel library
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2012, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
@@ -44,14 +44,14 @@
 #include "bstrlib.h"
 #include "list.h"
 
-#define PROGRAM_NAME    "cwatch"
+#define PROGRAM_NAME "cwatch"
 #define PROGRAM_VERSION "1.2.3"
-#define PROGRAM_STAGE   "experimental"
+#define PROGRAM_STAGE "experimental"
 
-#define EVENT_SIZE      (sizeof (struct inotify_event))
-#define EVENT_BUF_LEN   (1024 * ( EVENT_SIZE + 16 ))
+#define EVENT_SIZE (sizeof(struct inotify_event))
+#define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
 
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 /* List of pattern that will be replaced during the command execution
  * Note: See their initialization in the monitor() function
@@ -79,20 +79,24 @@ bstring COMMAND_PATTERN_EVENT;
 bstring COMMAND_PATTERN_REGEX;
 bstring COMMAND_PATTERN_COUNT;
 
-typedef enum {FALSE,TRUE} bool_t;
+typedef enum
+{
+    FALSE,
+    TRUE
+} bool_t;
 
 /* used to store information about watched resource */
 typedef struct wd_data_s
 {
-    int    wd;     /* inotify watch descriptor */
-    char   *path;  /* absolute real path of the directory */
-    LIST   *links; /* list of symlinks that point to this resource */
+    int wd;      /* inotify watch descriptor */
+    char *path;  /* absolute real path of the directory */
+    LIST *links; /* list of symlinks that point to this resource */
 } WD_DATA;
 
 /* used to store information about symbolic link */
 typedef struct link_data_s
 {
-    char    *path;    /* absolute real path of the symbolic link */
+    char *path;       /* absolute real path of the symbolic link */
     WD_DATA *wd_data; /* a pointer to it wd_data */
 } LINK_DATA;
 
@@ -106,18 +110,18 @@ struct event_t
     int (*handler)(struct inotify_event *, char *, int, LIST *);
 };
 
-char *root_path;                /* root path that cwatch is monitoring */
-bstring command;                /* the command to be execute, defined by -c option*/
-bstring format;                 /* a string containing the output format defined by -F option */
-bstring tmp_command;            /* temporary command used by execute_command */
-struct bstrList *split_event;   /* list of events parsed from command line */
-uint32_t event_mask;            /* the resulting event_mask */
-regex_t *exclude_regex;         /* the posix regular expression defined by -x option */
-regex_t *user_catch_regex;      /* the posix regular expression defined by -X option */
-regmatch_t p_match[2];          /* store the matched regular expression by -X option */
+char *root_path;              /* root path that cwatch is monitoring */
+bstring command;              /* the command to be execute, defined by -c option*/
+bstring format;               /* a string containing the output format defined by -F option */
+bstring tmp_command;          /* temporary command used by execute_command */
+struct bstrList *split_event; /* list of events parsed from command line */
+uint32_t event_mask;          /* the resulting event_mask */
+regex_t *exclude_regex;       /* the posix regular expression defined by -x option */
+regex_t *user_catch_regex;    /* the posix regular expression defined by -X option */
+regmatch_t p_match[2];        /* store the matched regular expression by -X option */
 
-int exec_c;                     /* the number of times command is executed */
-char exec_cstr[10];             /* used as conversion of exec_c to cstring */
+int exec_c;         /* the number of times command is executed */
+char exec_cstr[10]; /* used as conversion of exec_c to cstring */
 
 bool_t nosymlink_flag;
 bool_t recursive_flag;
@@ -131,8 +135,7 @@ bool_t syslog_flag;
  * @param  uint32_t     : event mask
  * @return int          : watch descriptor
  */
-int
-(*watch_descriptor_from)(int, const char *, uint32_t);
+int (*watch_descriptor_from)(int, const char *, uint32_t);
 
 /* function pointer to inotify_rm_watch
  *
@@ -140,20 +143,17 @@ int
  * @param  int          : watch descriptor
  * @return int          : 0 if success, -1 otherwise
  */
-int
-(*remove_watch_descriptor)(int, int);
+int (*remove_watch_descriptor)(int, int);
 
 /* print the version of the program and exit */
-void
-print_version();
+void print_version();
 
 /* print out the help and exit
  *
  * @param int    : exit code
  * @param char * : message to print at exit
  */
-void
-help(int, char *);
+void help(int, char *);
 
 /* log message via syslog or via standard output
  * this function act like a printf
@@ -161,8 +161,7 @@ help(int, char *);
  * @param char * : message to log
  * @param ...    : additional characters
  */
-void
-log_message(char *, ...);
+void log_message(char *, ...);
 
 /* resolve the real path of a symbolic or relative path
  *
@@ -346,7 +345,7 @@ get_regex_catch(char *);
  * @return bstring
  */
 bstring
-format_command(char *, char *, char *, char * );
+format_command(char *, char *, char *, char *);
 
 /* parse the command line
  *
@@ -354,8 +353,7 @@ format_command(char *, char *, char *, char * );
  * @param  char ** : arguments
  * @return int
  */
-int
-parse_command_line(int, char **);
+int parse_command_line(int, char **);
 
 /* it performs a breadth-first-search to visit a directory tree
  * and call the add_to_watch_list(path) for each directory,
@@ -368,8 +366,7 @@ parse_command_line(int, char **);
  * @param  LIST *   : list of watched resources
  * @return int      : -1 (An error occurred), 0 (Resource added correctly)
  */
-int
-watch_directory_tree(char *, char *, bool_t, int, LIST *);
+int watch_directory_tree(char *, char *, bool_t, int, LIST *);
 
 /* add a directory into watch LIST
  *
@@ -388,8 +385,7 @@ add_to_watch_list(char *, char *, int, LIST *);
  * @param int     : inotify file descriptor
  * @param LIST *  : list of watched resources
  */
-void
-unwatch_path(char *, int, LIST *);
+void unwatch_path(char *, int, LIST *);
 
 /* searches for all symbolic links that are contained
  * in a path, and put them into another list
@@ -398,8 +394,7 @@ unwatch_path(char *, int, LIST *);
  * @param LIST * : list of all watched resources
  * @param LIST * : list of symbolic links found
  */
-void
-all_symlinks_contained_in(char *, LIST *, LIST *);
+void all_symlinks_contained_in(char *, LIST *, LIST *);
 
 /* from a given list of symbolic links,
  * extract all of them that are contained in a path
@@ -408,8 +403,7 @@ all_symlinks_contained_in(char *, LIST *, LIST *);
  * @param LIST * : list of symbolic links to check
  * @param LIST * : list of symbolic links found
  */
-void
-symlinks_contained_in(char *, LIST *, LIST *);
+void symlinks_contained_in(char *, LIST *, LIST *);
 
 /* if there is no other symbolic links that point to the
  * watched resource and the watched resource is not a child
@@ -419,8 +413,7 @@ symlinks_contained_in(char *, LIST *, LIST *);
  * @param int       : inotify file descriptor
  * @param LIST *    : list of watched resources
  */
-void
-remove_unreachable_resources(WD_DATA *, int, LIST *);
+void remove_unreachable_resources(WD_DATA *, int, LIST *);
 
 /* returns a LIST of paths that holds:
  * - each path is related with some other path
@@ -451,8 +444,7 @@ is_related_to(const char *, const char *);
  * @param int          : inotify file descriptor
  * @param LIST *       : list of watched resources
  */
-void
-remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
+void remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
 
 /* given a symbolic link unwatch a directory from the watch list
  *
@@ -460,16 +452,14 @@ remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
  * @param int     : inotify file descriptor
  * @param LIST *  : list of watched resources
  */
-void
-unwatch_symlink(char *, int, LIST *);
+void unwatch_symlink(char *, int, LIST *);
 
 /* start monitoring of inotify event on watched resources
  *
  * @param int          : inotify file descriptor
  * @param LIST *       : list of watched resources
  */
-int
-monitor(int, LIST *);
+int monitor(int, LIST *);
 
 /* COMMAND EXECUTION HANDLER
  *
@@ -515,6 +505,5 @@ int event_handler_moved_to(struct inotify_event *, char *, int, LIST *);
  *
  * @param int : signal identifier
  */
-void
-signal_callback_handler(int);
+void signal_callback_handler(int);
 #endif /* !__CWATCH_H */

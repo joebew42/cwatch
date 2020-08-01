@@ -1,7 +1,7 @@
 /* list.c
  * A simple double-linked-list data-structure and manipulation functions
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2012, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
@@ -39,16 +39,19 @@ LIST *list_init()
 
 LIST_NODE *list_push(LIST *list, void *data)
 {
-    LIST_NODE *node = (LIST_NODE *) malloc(sizeof(LIST_NODE));
+    LIST_NODE *node = (LIST_NODE *)malloc(sizeof(LIST_NODE));
     if (node == NULL)
         return NULL;
 
     node->data = data;
     node->next = node->prev = NULL;
 
-    if (list->first == NULL) {
+    if (list->first == NULL)
+    {
         list->first = list->last = node;
-    } else {
+    }
+    else
+    {
         node->prev = list->last;
         list->last->next = node;
         list->last = node;
@@ -66,9 +69,12 @@ void *list_pop(LIST *list)
 
     LIST_NODE *node = list->first;
 
-    if (list->first == list->last) {
+    if (list->first == list->last)
+    {
         list->first = list->last = NULL;
-    } else {
+    }
+    else
+    {
         list->first = node->next;
         list->first->prev = NULL;
     }
@@ -103,7 +109,8 @@ int list_size(LIST *list)
 
     int size = 0;
     LIST_NODE *node = list->first;
-    while (node != NULL) {
+    while (node != NULL)
+    {
         node = node->next;
         ++size;
     }
@@ -118,7 +125,8 @@ void list_free(LIST *list)
 
     LIST_NODE *node = list->first;
 
-    while (node) {
+    while (node)
+    {
         LIST_NODE *next = node->next;
         free(node);
         node = next;

@@ -1,7 +1,7 @@
 /* list.h
  * A simple double-linked-list data-structure and manipulation functions
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2012, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
@@ -34,18 +34,18 @@
 /* typedef struct list_node_t */
 typedef struct list_node_s
 {
-    void *data;
-    struct list_node_s *prev;
-    struct list_node_s *next;
+  void *data;
+  struct list_node_s *prev;
+  struct list_node_s *next;
 } LIST_NODE;
 /* } ListNode; */
 
 /* List data structure */
 typedef struct list
 {
-    /* Pointer to first and last node */
-    LIST_NODE *first;
-    LIST_NODE *last;
+  /* Pointer to first and last node */
+  LIST_NODE *first;
+  LIST_NODE *last;
 } LIST;
 
 /* initialize list data structure

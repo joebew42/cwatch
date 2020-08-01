@@ -1,7 +1,7 @@
 /* main.c
  * Monitor file system activity using the inotify linux kernel library
  *
- * Copyright (C) 2012, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2012, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch

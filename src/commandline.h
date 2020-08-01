@@ -1,7 +1,7 @@
 /* commandline.h
  * Command line parsing utility for cwatch
  *
- * Copyright (C) 2014, Giuseppe Leone <joebew42@gmail.com>,
+ * Copyright (C) 2014, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>
  *
  * This file is part of cwatch
