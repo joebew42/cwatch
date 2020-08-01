@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 
 #include "bstrlib.h"
-#include "list.h"
+#include "queue.h"
 
 #define PROGRAM_NAME "cwatch"
 #define PROGRAM_VERSION "1.2.3"
@@ -213,19 +213,19 @@ append_dir(const char *, const char *);
 char *
 append_file(const char *, const char *);
 
-/* searchs and returns the node of the specified path
+/* searchs and returns the element of the specified path
  *
  * @param  const char * : absolute path to find
- * @param  Queue *       : list of watched resources
+ * @param  Queue *       : queue of watched resources
  * @return QueueElement *
  */
 QueueElement *
 get_node_from_path(const char *, Queue *);
 
-/* searchs and returns the node of the specified watch descriptor
+/* searchs and returns the element of the specified watch descriptor
  *
  * @param  const int   : wd to find
- * @param  Queue *      : list of watched resources
+ * @param  Queue *      : queue of watched resources
  * @return QueueElement *
  */
 QueueElement *
@@ -240,20 +240,20 @@ get_node_from_wd(const int, Queue *);
 WD_DATA *
 create_wd_data(char *, int);
 
-/* searchs and returns the list_node from symlink path
+/* searchs and returns the element from symlink path
  *
  * @param  const char * : absolute path to find
- * @param  Queue *       : list of watched resources
+ * @param  Queue *       : queue of watched resources
  * @return QueueElement *
  */
 QueueElement *
 get_link_node_from_path(const char *, Queue *);
 
-/* checks if a path stored in the list of
+/* checks if a path stored in the queue of
  * watched resources is a symbolic link or not
  *
  * @param  char * : path
- * @param  Queue * : list of watched resources
+ * @param  Queue * : queue of watched resources
  * @return bool_t
  */
 bool_t
@@ -272,7 +272,7 @@ get_link_data_from_wd_data(const char *, const WD_DATA *);
 /* searchs and returns the link_data from symlink path
  *
  * @param  const char * : absolute path to find
- * @param  Queue *       : list of watched resources
+ * @param  Queue *       : queue of watched resources
  * @return LINK_DATA *
  */
 LINK_DATA *
@@ -287,11 +287,11 @@ get_link_data_from_path(const char *, Queue *);
 LINK_DATA *
 create_link_data(char *, WD_DATA *);
 
-/* checks whetever a string is contained in a list
+/* checks whetever a string is contained in a queue
  * as a substring
  *
  * @param char * : string to check
- * @param Queue * : list in which performs search
+ * @param Queue * : queue in which performs search
  * @return boolt_t
  */
 bool_t
@@ -363,7 +363,7 @@ int parse_command_line(int, char **);
  * @param  char *   : symbolic link that point to the path
  * @param  bool_t * : traverse directory recursively or not
  * @param  int      : inotify file descriptor
- * @param  Queue *   : list of watched resources
+ * @param  Queue *   : queue of watched resources
  * @return int      : -1 (An error occurred), 0 (Resource added correctly)
  */
 int watch_directory_tree(char *, char *, bool_t, int, Queue *);
@@ -373,8 +373,8 @@ int watch_directory_tree(char *, char *, bool_t, int, Queue *);
  * @param  char *      : absolute path of the directory to watch
  * @param  char *      : symbolic link that points to the absolute path
  * @param  int         : inotify file descriptor
- * @param  Queue *      : list of watched resources
- * @return QueueElement * : pointer of the node added in the watch list
+ * @param  Queue *      : queue of watched resources
+ * @return QueueElement * : pointer of the element added in the watch list
  */
 QueueElement *
 add_to_watch_list(char *, char *, int, Queue *);
@@ -383,25 +383,25 @@ add_to_watch_list(char *, char *, int, Queue *);
  *
  * @param char *  : absolute path of the resource to remove
  * @param int     : inotify file descriptor
- * @param Queue *  : list of watched resources
+ * @param Queue *  : queue of watched resources
  */
 void unwatch_path(char *, int, Queue *);
 
 /* searches for all symbolic links that are contained
- * in a path, and put them into another list
+ * in a path, and put them into another queue
  *
  * @param char * : path to check
- * @param Queue * : list of all watched resources
- * @param Queue * : list of symbolic links found
+ * @param Queue * : queue of all watched resources
+ * @param Queue * : queue of symbolic links found
  */
 void all_symlinks_contained_in(char *, Queue *, Queue *);
 
-/* from a given list of symbolic links,
+/* from a given queue of symbolic links,
  * extract all of them that are contained in a path
  *
  * @param char * : parent path to check against
- * @param Queue * : list of symbolic links to check
- * @param Queue * : list of symbolic links found
+ * @param Queue * : queue of symbolic links to check
+ * @param Queue * : queue of symbolic links found
  */
 void symlinks_contained_in(char *, Queue *, Queue *);
 
@@ -411,7 +411,7 @@ void symlinks_contained_in(char *, Queue *, Queue *);
  *
  * @param WD_DATA * : watch descriptor
  * @param int       : inotify file descriptor
- * @param Queue *    : list of watched resources
+ * @param Queue *    : queue of watched resources
  */
 void remove_unreachable_resources(WD_DATA *, int, Queue *);
 
@@ -420,7 +420,7 @@ void remove_unreachable_resources(WD_DATA *, int, Queue *);
  * - each path is referenced by a symbolic link
  *
  * @param const char * : path to inspect
- * @param Queue *       : list of referenced paths
+ * @param Queue *       : queue of referenced paths
  */
 Queue *
 common_referenced_paths_for(const char *, Queue *);
@@ -440,9 +440,9 @@ is_related_to(const char *, const char *);
  * from the root_path
  *
  * @param const char * : absolute path to remove
- * @param Queue *       : list of all path that are referenced by symbolic link
+ * @param Queue *       : queue of all path that are referenced by symbolic link
  * @param int          : inotify file descriptor
- * @param Queue *       : list of watched resources
+ * @param Queue *       : queue of watched resources
  */
 void remove_orphan_watched_resources(const char *, Queue *, int, Queue *);
 
@@ -450,14 +450,14 @@ void remove_orphan_watched_resources(const char *, Queue *, int, Queue *);
  *
  * @param char *  : symbolic link of the resource to remove
  * @param int     : inotify file descriptor
- * @param Queue *  : list of watched resources
+ * @param Queue *  : queue of watched resources
  */
 void unwatch_symlink(char *, int, Queue *);
 
 /* start monitoring of inotify event on watched resources
  *
  * @param int          : inotify file descriptor
- * @param Queue *       : list of watched resources
+ * @param Queue *       : queue of watched resources
  */
 int monitor(int, Queue *);
 
@@ -491,7 +491,7 @@ get_inotify_event(const uint32_t);
  * @param struct inotify_event * : inotify event
  * @param char *                 : the path of file or directory that triggered
  *                                 the event
- * @param Queue *                 : the list of all watched resources
+ * @param Queue *                 : the queue of all watched resources
  * @param int                    : file descriptor
  * @return int                   : -1 if errors occurs, 0 otherwise
  */

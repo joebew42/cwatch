@@ -13,8 +13,8 @@ Makefile
 /src/.deps/
 /src/cwatch
 
-/tests/check_list
-/tests/check_list.trs
+/tests/check_queue
+/tests/check_queue.trs
 /tests/check_cwatch
 /tests/check_cwatch.trs
 /tests/check_commandline

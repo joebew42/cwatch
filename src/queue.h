@@ -1,5 +1,5 @@
-/* list.h
- * A simple double-linked-list data-structure and manipulation functions
+/* queue.h
+ * A queue data-structure with its manipulation functions
  *
  * Copyright (C) 2012, Joe Bew <joebew42@gmail.com>,
  *                     Vincenzo Di Cicco <enzodicicco@gmail.com>

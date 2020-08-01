@@ -1,7 +1,6 @@
 ### TODO
 
-- the list is a queue, it should expose enqueue and dequeue methods rather than push and pop.
-  - rename `list` in `queue`
+- As part of the work we are doing in order to rename List into a Queue, we still have to rename all the occurrences that contains the `node`, with `element`. (e.g. "get_node_from_path" -> "get_element_from_path")
 - create_wd_data(path, wd);
   - Maybe the order of the arguments does not follow our convention? `wd` should always be the first argument?
   - fix the `WD_DATA` structure: path first and then wd

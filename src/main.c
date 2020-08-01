@@ -31,18 +31,18 @@ int main(int argc, char *argv[])
     if (parse_command_line(argc, argv) == 0)
     {
         int fd = inotify_init();
-        Queue *list_wd = queue_init();
+        Queue *queue_wd = queue_init();
 
         watch_descriptor_from = inotify_add_watch;
         remove_watch_descriptor = inotify_rm_watch;
 
-        if (watch_directory_tree(root_path, NULL, recursive_flag, fd, list_wd) == -1)
+        if (watch_directory_tree(root_path, NULL, recursive_flag, fd, queue_wd) == -1)
         {
             printf("An error occured while adding \"%s\" as watched resource!\n", root_path);
             return EXIT_FAILURE;
         }
 
-        return monitor(fd, list_wd);
+        return monitor(fd, queue_wd);
     }
 
     return EXIT_SUCCESS;
