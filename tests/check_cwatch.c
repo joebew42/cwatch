@@ -4,53 +4,49 @@
 #include "../src/cwatch.h"
 
 /* HELPER FUNCTIONS */
-void
-fill_with_paths(LIST *list, char **paths, int number_of_paths)
+void fill_with_paths(LIST *list, char **paths, int number_of_paths)
 {
     int i;
-    for (i = 0; i < number_of_paths; i++) {
-        list_push(list, (void *) paths[i]);
+    for (i = 0; i < number_of_paths; i++)
+    {
+        queue_enqueue(list, (void *)paths[i]);
     }
 }
 
-int
-inotify_add_watch_mock(int fd, const char *path, uint32_t mask)
+int inotify_add_watch_mock(int fd, const char *path, uint32_t mask)
 {
     static int wd = 1;
     return wd++;
 }
 
-int
-inotify_rm_watch_mock(int fd, int wd)
+int inotify_rm_watch_mock(int fd, int wd)
 {
     return 0;
 }
 /* END HELPER FUNCTIONS */
 
-void
-setup(void)
+void setup(void)
 {
     watch_descriptor_from = inotify_add_watch_mock;
     remove_watch_descriptor = inotify_rm_watch_mock;
 }
 
-void
-teardown(void)
+void teardown(void)
 {
     /* PASS */
 }
 
 START_TEST(test_cases_for_append_dir)
 {
-    ck_assert_str_eq("",   append_dir("", ""));
-    ck_assert_str_eq("/",  append_dir("", "/"));
-    ck_assert_str_eq("/",  append_dir("", "//"));
+    ck_assert_str_eq("", append_dir("", ""));
+    ck_assert_str_eq("/", append_dir("", "/"));
+    ck_assert_str_eq("/", append_dir("", "//"));
     ck_assert_str_eq("a/", append_dir("", "a"));
 
     ck_assert_str_eq("/", append_dir("/", ""));
     ck_assert_str_eq("/", append_dir("/", "//"));
 
-    ck_assert_str_eq("a/",   append_dir("a", ""));
+    ck_assert_str_eq("a/", append_dir("a", ""));
     ck_assert_str_eq("a/b/", append_dir("a", "b"));
     ck_assert_str_eq("a/b/", append_dir("a", "/b"));
     ck_assert_str_eq("a/b/", append_dir("a", "b/"));
@@ -74,9 +70,9 @@ END_TEST
 
 START_TEST(test_cases_for_append_file)
 {
-    ck_assert_str_eq("",   append_file("", ""));
-    ck_assert_str_eq("file",  append_file("", "file"));
-    ck_assert_str_eq("a/file",  append_file("a", "file"));
+    ck_assert_str_eq("", append_file("", ""));
+    ck_assert_str_eq("file", append_file("", "file"));
+    ck_assert_str_eq("a/file", append_file("a", "file"));
     ck_assert_str_eq("./a/file", append_file("./a", "file"));
 
     ck_assert_str_eq("/file", append_file("///", "file"));
@@ -154,8 +150,7 @@ START_TEST(returns_true_if_a_path_is_listed_as_child)
     char *paths[] = {
         "/usr/opt/path1",
         "/usr/opt/path1/child",
-        "/usr/opt/path3"
-    };
+        "/usr/opt/path3"};
 
     LIST *list = list_init();
     fill_with_paths(list, paths, 3);
@@ -176,8 +171,7 @@ START_TEST(returns_false_if_a_path_is_not_listed_as_child)
     char *paths[] = {
         "/usr/opt/path1",
         "/usr/opt/path2",
-        "/usr/opt/path3"
-    };
+        "/usr/opt/path3"};
 
     LIST *list = list_init();
     fill_with_paths(list, paths, 3);
@@ -325,20 +319,20 @@ END_TEST
 
 START_TEST(get_a_link_data_from_wd_data)
 {
-   int fd = 1;
-   LIST *list_wd = list_init();
+    int fd = 1;
+    LIST *list_wd = list_init();
 
-   char *real_path = "/home/cwatch/";
-   char *symlink = "/home/symlink";
+    char *real_path = "/home/cwatch/";
+    char *symlink = "/home/symlink";
 
-   add_to_watch_list(real_path, symlink, fd, list_wd);
-   WD_DATA *wd_data = list_wd->first->data;
+    add_to_watch_list(real_path, symlink, fd, list_wd);
+    WD_DATA *wd_data = list_wd->first->data;
 
-   LINK_DATA *link_data = get_link_data_from_wd_data(symlink, wd_data);
+    LINK_DATA *link_data = get_link_data_from_wd_data(symlink, wd_data);
 
-   ck_assert_ptr_eq(link_data->path, symlink);
+    ck_assert_ptr_eq(link_data->path, symlink);
 
-   list_free(list_wd);
+    list_free(list_wd);
 }
 END_TEST
 
@@ -408,8 +402,8 @@ START_TEST(find_symlinks_that_are_contained_in_some_path)
     LINK_DATA *symlink_in = create_link_data("/home/cwatch/symlink_in", NULL);
     LINK_DATA *symlink_out = create_link_data("/home/symlink_out", NULL);
 
-    list_push(symlinks_to_check, (void *) symlink_in);
-    list_push(symlinks_to_check, (void *) symlink_out);
+    queue_enqueue(symlinks_to_check, (void *)symlink_in);
+    queue_enqueue(symlinks_to_check, (void *)symlink_out);
 
     symlinks_contained_in(path, symlinks_to_check, symlinks_found);
 
@@ -437,10 +431,10 @@ START_TEST(find_all_symlinks_that_are_contained_in_some_path)
 
     ck_assert_int_eq(list_size(symlinks_found), 2);
 
-    char *symlink_one_path = (char *) list_pop(symlinks_found);
+    char *symlink_one_path = (char *)list_pop(symlinks_found);
     ck_assert_str_eq(symlink_one_path, "/home/cwatch/symlink_one");
 
-    char *symlink_two_path = (char *) list_pop(symlinks_found);
+    char *symlink_two_path = (char *)list_pop(symlinks_found);
     ck_assert_str_eq(symlink_two_path, "/home/cwatch/symlink_two");
 
     list_free(list_wd);
@@ -485,7 +479,7 @@ START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
     unwatch_symlink(path_of_symlink, fd, list_wd);
 
     LIST_NODE *node = get_node_from_path(real_path, list_wd);
-    WD_DATA *wd_data = (WD_DATA*) node->data;
+    WD_DATA *wd_data = (WD_DATA *)node->data;
 
     ck_assert_int_eq(list_size(wd_data->links), 0);
 
@@ -575,7 +569,7 @@ START_TEST(remove_unreachable_resources_not_in_root_path)
 
     ck_assert_int_eq(list_size(links), 0);
 
-    WD_DATA *wd_data = (WD_DATA *) get_node_from_path(outside_path, list_wd)->data;
+    WD_DATA *wd_data = (WD_DATA *)get_node_from_path(outside_path, list_wd)->data;
     remove_unreachable_resources(wd_data, fd, list_wd);
 
     ck_assert_int_eq(list_size(list_wd), 0);
@@ -635,6 +629,6 @@ int main(void)
     srunner_set_fork_status(sr, CK_NOFORK);
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
-    srunner_free (sr);
-    return(number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    srunner_free(sr);
+    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

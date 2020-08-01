@@ -37,7 +37,7 @@ LIST *list_init()
     return list;
 }
 
-LIST_NODE *list_push(LIST *list, void *data)
+LIST_NODE *queue_enqueue(LIST *list, void *data)
 {
     LIST_NODE *node = (LIST_NODE *)malloc(sizeof(LIST_NODE));
     if (node == NULL)

@@ -60,7 +60,7 @@ LIST *list_init();
  * @param  void *    : a void pointer
  * @return LIST_NODE : return the pointer of the node added
  */
-LIST_NODE *list_push(LIST *, void *);
+LIST_NODE *queue_enqueue(LIST *, void *);
 
 /* remove and return the first element of the list
  *

@@ -764,7 +764,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
 
     /* Temporary list to perform a BFS directory traversing */
     LIST *list = list_init();
-    list_push(list, (void *)real_path);
+    queue_enqueue(list, (void *)real_path);
 
     DIR *dir_stream;
     struct dirent *dir;
@@ -795,7 +795,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
 
                 /* Continue directory traversing */
                 add_to_watch_list(path_to_watch, NULL, fd, list_wd);
-                list_push(list, (void *)path_to_watch);
+                queue_enqueue(list, (void *)path_to_watch);
             }
             else if (dir->d_type == DT_LNK && nosymlink_flag == FALSE)
             {
@@ -813,7 +813,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
 
                     /* Continue directory traversing */
                     add_to_watch_list(real_path, symlink, fd, list_wd);
-                    list_push(list, (void *)real_path);
+                    queue_enqueue(list, (void *)real_path);
                 }
             }
         }
@@ -848,7 +848,7 @@ add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
 
         if (wd_data != NULL)
         {
-            node = list_push(list_wd, (void *)wd_data);
+            node = queue_enqueue(list_wd, (void *)wd_data);
             log_message("WATCHING: (fd:%d,wd:%d)\t\t\"%s\"", fd, wd_data->wd, real_path);
         }
     }
@@ -861,7 +861,7 @@ add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
 
         if (link_data != NULL)
         {
-            list_push(wd_data->links, (void *)link_data);
+            queue_enqueue(wd_data->links, (void *)link_data);
             log_message("ADDED SYMBOLIC LINK:\t\t\"%s\" -> \"%s\"", symlink, real_path);
         }
     }
@@ -910,7 +910,7 @@ void symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_f
         LINK_DATA *link_data = (LINK_DATA *)link_node->data;
         if (is_child_of(path, link_data->path) == TRUE)
         {
-            list_push(symlinks_found, (void *)link_data->path);
+            queue_enqueue(symlinks_found, (void *)link_data->path);
         }
         link_node = link_node->next;
     }
@@ -945,7 +945,7 @@ common_referenced_paths_for(const char *path, LIST *list_wd)
 
         if (wd_data->links->first != NULL && is_related_to(path, wd_data->path) && !is_listed_as_child(wd_data->path, referenced_paths))
         {
-            list_push(referenced_paths, (void *)wd_data->path);
+            queue_enqueue(referenced_paths, (void *)wd_data->path);
         }
         node = node->next;
     }
@@ -987,7 +987,7 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list, in
 void unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
 {
     LIST *symlinks_to_remove = list_init();
-    list_push(symlinks_to_remove, (void *)path_of_symlink);
+    queue_enqueue(symlinks_to_remove, (void *)path_of_symlink);
 
     while (symlinks_to_remove->first != NULL)
     {

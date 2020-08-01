@@ -10,11 +10,12 @@ void add_items_to(LIST *list, const int number_of_items)
         return;
 
     int i;
-    for (i = 0; i < number_of_items; ++i) {
-        int *item = (int *) malloc(sizeof(int));
+    for (i = 0; i < number_of_items; ++i)
+    {
+        int *item = (int *)malloc(sizeof(int));
         *item = i;
 
-        list_push(list, (void *) item);
+        queue_enqueue(list, (void *)item);
     }
 }
 /* end of helper functions */
@@ -62,7 +63,7 @@ START_TEST(pop_one_item)
     add_items_to(list, 2);
 
     int expected = 0;
-    int *actual = (int *) list_pop(list);
+    int *actual = (int *)list_pop(list);
 
     ck_assert_int_eq(*actual, expected);
 }
@@ -119,5 +120,5 @@ int main(void)
     srunner_run_all(sr, CK_NORMAL);
     number_failed = srunner_ntests_failed(sr);
     srunner_free(sr);
-    return(number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
