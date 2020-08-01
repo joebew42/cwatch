@@ -37,50 +37,48 @@ typedef struct queue_node_t
   struct queue_node_t *next;
 } QueueNode;
 
-/* List data structure */
-typedef struct list
+typedef struct queue_t
 {
-  /* Pointer to first and last node */
   QueueNode *first;
   QueueNode *last;
-} LIST;
+} Queue;
 
 /* initialize list data structure
  *
  * @return list * : a pointer to the new allocated list structure
  */
-LIST *queue_init();
+Queue *queue_init();
 
 /* push an element at the end of list
  *
- * @param  LIST *    : a LIST pointer
+ * @param  Queue *    : a Queue pointer
  * @param  void *    : a void pointer
  * @return QueueNode : return the pointer of the node added
  */
-QueueNode *queue_enqueue(LIST *, void *);
+QueueNode *queue_enqueue(Queue *, void *);
 
 /* remove and return the first element of the list
  *
- * @param  LIST *  : a LIST pointer
+ * @param  Queue *  : a Queue pointer
  * @return void *  : a VOID pointer to destination data pointer
  */
-void *queue_dequeue(LIST *);
+void *queue_dequeue(Queue *);
 
 /* remove a node from list
  *
- * @param LIST *      : a pointer to the list
+ * @param Queue *      : a pointer to the list
  * @param QueueNode * : a to the list_node to remove
  */
-void queue_remove(LIST *, QueueNode *);
+void queue_remove(Queue *, QueueNode *);
 
 /* returns the size of a list
  *
- * @param  LIST * : list
+ * @param  Queue * : list
  * @return int    : number of elements
  */
-int queue_size(LIST *);
+int queue_size(Queue *);
 
 /* deallocates list data structure */
-void queue_free(LIST *);
+void queue_free(Queue *);
 
 #endif /* !__LIST_H */

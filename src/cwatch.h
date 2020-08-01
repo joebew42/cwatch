@@ -88,9 +88,9 @@ typedef enum
 /* used to store information about watched resource */
 typedef struct wd_data_s
 {
-    int wd;      /* inotify watch descriptor */
-    char *path;  /* absolute real path of the directory */
-    LIST *links; /* list of symlinks that point to this resource */
+    int wd;       /* inotify watch descriptor */
+    char *path;   /* absolute real path of the directory */
+    Queue *links; /* list of symlinks that point to this resource */
 } WD_DATA;
 
 /* used to store information about symbolic link */
@@ -107,7 +107,7 @@ struct event_t
 {
     char *name;
     uint32_t mask;
-    int (*handler)(struct inotify_event *, char *, int, LIST *);
+    int (*handler)(struct inotify_event *, char *, int, Queue *);
 };
 
 char *root_path;              /* root path that cwatch is monitoring */
@@ -216,20 +216,20 @@ append_file(const char *, const char *);
 /* searchs and returns the node of the specified path
  *
  * @param  const char * : absolute path to find
- * @param  LIST *       : list of watched resources
+ * @param  Queue *       : list of watched resources
  * @return QueueNode *
  */
 QueueNode *
-get_node_from_path(const char *, LIST *);
+get_node_from_path(const char *, Queue *);
 
 /* searchs and returns the node of the specified watch descriptor
  *
  * @param  const int   : wd to find
- * @param  LIST *      : list of watched resources
+ * @param  Queue *      : list of watched resources
  * @return QueueNode *
  */
 QueueNode *
-get_node_from_wd(const int, LIST *);
+get_node_from_wd(const int, Queue *);
 
 /* creates a wd_data
  *
@@ -243,21 +243,21 @@ create_wd_data(char *, int);
 /* searchs and returns the list_node from symlink path
  *
  * @param  const char * : absolute path to find
- * @param  LIST *       : list of watched resources
+ * @param  Queue *       : list of watched resources
  * @return QueueNode *
  */
 QueueNode *
-get_link_node_from_path(const char *, LIST *);
+get_link_node_from_path(const char *, Queue *);
 
 /* checks if a path stored in the list of
  * watched resources is a symbolic link or not
  *
  * @param  char * : path
- * @param  LIST * : list of watched resources
+ * @param  Queue * : list of watched resources
  * @return bool_t
  */
 bool_t
-is_symlink(char *, LIST *);
+is_symlink(char *, Queue *);
 
 /* searchs and returns the link_data from symlink path
  * of a specified WD_DATA
@@ -272,11 +272,11 @@ get_link_data_from_wd_data(const char *, const WD_DATA *);
 /* searchs and returns the link_data from symlink path
  *
  * @param  const char * : absolute path to find
- * @param  LIST *       : list of watched resources
+ * @param  Queue *       : list of watched resources
  * @return LINK_DATA *
  */
 LINK_DATA *
-get_link_data_from_path(const char *, LIST *);
+get_link_data_from_path(const char *, Queue *);
 
 /* creates a LINK_DATA
  *
@@ -291,11 +291,11 @@ create_link_data(char *, WD_DATA *);
  * as a substring
  *
  * @param char * : string to check
- * @param LIST * : list in which performs search
+ * @param Queue * : list in which performs search
  * @return boolt_t
  */
 bool_t
-is_listed_as_child(char *, LIST *);
+is_listed_as_child(char *, Queue *);
 
 /* returns TRUE if the second path is a child of the second one
  * FALSE otherwise
@@ -363,47 +363,47 @@ int parse_command_line(int, char **);
  * @param  char *   : symbolic link that point to the path
  * @param  bool_t * : traverse directory recursively or not
  * @param  int      : inotify file descriptor
- * @param  LIST *   : list of watched resources
+ * @param  Queue *   : list of watched resources
  * @return int      : -1 (An error occurred), 0 (Resource added correctly)
  */
-int watch_directory_tree(char *, char *, bool_t, int, LIST *);
+int watch_directory_tree(char *, char *, bool_t, int, Queue *);
 
-/* add a directory into watch LIST
+/* add a directory into watch Queue
  *
  * @param  char *      : absolute path of the directory to watch
  * @param  char *      : symbolic link that points to the absolute path
  * @param  int         : inotify file descriptor
- * @param  LIST *      : list of watched resources
+ * @param  Queue *      : list of watched resources
  * @return QueueNode * : pointer of the node added in the watch list
  */
 QueueNode *
-add_to_watch_list(char *, char *, int, LIST *);
+add_to_watch_list(char *, char *, int, Queue *);
 
 /* given a real path unwatch a directory from the watch list
  *
  * @param char *  : absolute path of the resource to remove
  * @param int     : inotify file descriptor
- * @param LIST *  : list of watched resources
+ * @param Queue *  : list of watched resources
  */
-void unwatch_path(char *, int, LIST *);
+void unwatch_path(char *, int, Queue *);
 
 /* searches for all symbolic links that are contained
  * in a path, and put them into another list
  *
  * @param char * : path to check
- * @param LIST * : list of all watched resources
- * @param LIST * : list of symbolic links found
+ * @param Queue * : list of all watched resources
+ * @param Queue * : list of symbolic links found
  */
-void all_symlinks_contained_in(char *, LIST *, LIST *);
+void all_symlinks_contained_in(char *, Queue *, Queue *);
 
 /* from a given list of symbolic links,
  * extract all of them that are contained in a path
  *
  * @param char * : parent path to check against
- * @param LIST * : list of symbolic links to check
- * @param LIST * : list of symbolic links found
+ * @param Queue * : list of symbolic links to check
+ * @param Queue * : list of symbolic links found
  */
-void symlinks_contained_in(char *, LIST *, LIST *);
+void symlinks_contained_in(char *, Queue *, Queue *);
 
 /* if there is no other symbolic links that point to the
  * watched resource and the watched resource is not a child
@@ -411,19 +411,19 @@ void symlinks_contained_in(char *, LIST *, LIST *);
  *
  * @param WD_DATA * : watch descriptor
  * @param int       : inotify file descriptor
- * @param LIST *    : list of watched resources
+ * @param Queue *    : list of watched resources
  */
-void remove_unreachable_resources(WD_DATA *, int, LIST *);
+void remove_unreachable_resources(WD_DATA *, int, Queue *);
 
-/* returns a LIST of paths that holds:
+/* returns a Queue of paths that holds:
  * - each path is related with some other path
  * - each path is referenced by a symbolic link
  *
  * @param const char * : path to inspect
- * @param LIST *       : list of referenced paths
+ * @param Queue *       : list of referenced paths
  */
-LIST *
-common_referenced_paths_for(const char *, LIST *);
+Queue *
+common_referenced_paths_for(const char *, Queue *);
 
 /* returns TRUE if a path is related to another,
  * FALSE, otherwise
@@ -440,26 +440,26 @@ is_related_to(const char *, const char *);
  * from the root_path
  *
  * @param const char * : absolute path to remove
- * @param LIST *       : list of all path that are referenced by symbolic link
+ * @param Queue *       : list of all path that are referenced by symbolic link
  * @param int          : inotify file descriptor
- * @param LIST *       : list of watched resources
+ * @param Queue *       : list of watched resources
  */
-void remove_orphan_watched_resources(const char *, LIST *, int, LIST *);
+void remove_orphan_watched_resources(const char *, Queue *, int, Queue *);
 
 /* given a symbolic link unwatch a directory from the watch list
  *
  * @param char *  : symbolic link of the resource to remove
  * @param int     : inotify file descriptor
- * @param LIST *  : list of watched resources
+ * @param Queue *  : list of watched resources
  */
-void unwatch_symlink(char *, int, LIST *);
+void unwatch_symlink(char *, int, Queue *);
 
 /* start monitoring of inotify event on watched resources
  *
  * @param int          : inotify file descriptor
- * @param LIST *       : list of watched resources
+ * @param Queue *       : list of watched resources
  */
-int monitor(int, LIST *);
+int monitor(int, Queue *);
 
 /* COMMAND EXECUTION HANDLER
  *
@@ -491,15 +491,15 @@ get_inotify_event(const uint32_t);
  * @param struct inotify_event * : inotify event
  * @param char *                 : the path of file or directory that triggered
  *                                 the event
- * @param LIST *                 : the list of all watched resources
+ * @param Queue *                 : the list of all watched resources
  * @param int                    : file descriptor
  * @return int                   : -1 if errors occurs, 0 otherwise
  */
-int event_handler_undefined(struct inotify_event *, char *, int, LIST *);
-int event_handler_create(struct inotify_event *, char *, int, LIST *);
-int event_handler_delete(struct inotify_event *, char *, int, LIST *);
-int event_handler_moved_from(struct inotify_event *, char *, int, LIST *);
-int event_handler_moved_to(struct inotify_event *, char *, int, LIST *);
+int event_handler_undefined(struct inotify_event *, char *, int, Queue *);
+int event_handler_create(struct inotify_event *, char *, int, Queue *);
+int event_handler_delete(struct inotify_event *, char *, int, Queue *);
+int event_handler_moved_from(struct inotify_event *, char *, int, Queue *);
+int event_handler_moved_to(struct inotify_event *, char *, int, Queue *);
 
 /* handler function called when a signal occurs
  *

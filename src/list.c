@@ -26,9 +26,9 @@
 
 #include "list.h"
 
-LIST *queue_init()
+Queue *queue_init()
 {
-    LIST *list = malloc(sizeof(LIST));
+    Queue *list = malloc(sizeof(Queue));
     if (list == NULL)
         return NULL;
 
@@ -37,7 +37,7 @@ LIST *queue_init()
     return list;
 }
 
-QueueNode *queue_enqueue(LIST *list, void *data)
+QueueNode *queue_enqueue(Queue *list, void *data)
 {
     QueueNode *node = (QueueNode *)malloc(sizeof(QueueNode));
     if (node == NULL)
@@ -60,7 +60,7 @@ QueueNode *queue_enqueue(LIST *list, void *data)
     return node;
 }
 
-void *queue_dequeue(LIST *list)
+void *queue_dequeue(Queue *list)
 {
     if (list->first == NULL)
         return NULL;
@@ -84,7 +84,7 @@ void *queue_dequeue(LIST *list)
     return data;
 }
 
-void queue_remove(LIST *list, QueueNode *node)
+void queue_remove(Queue *list, QueueNode *node)
 {
     if (list->first == NULL)
         return;
@@ -102,7 +102,7 @@ void queue_remove(LIST *list, QueueNode *node)
     free(node);
 }
 
-int queue_size(LIST *list)
+int queue_size(Queue *list)
 {
     if (list == NULL || list->first == NULL)
         return 0;
@@ -118,7 +118,7 @@ int queue_size(LIST *list)
     return size;
 }
 
-void queue_free(LIST *list)
+void queue_free(Queue *list)
 {
     if (list == NULL)
         return;

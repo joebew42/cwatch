@@ -346,7 +346,7 @@ append_file(const char *path, const char *file)
 }
 
 QueueNode *
-get_node_from_path(const char *path, LIST *list_wd)
+get_node_from_path(const char *path, Queue *list_wd)
 {
     QueueNode *node = list_wd->first;
     while (node)
@@ -361,7 +361,7 @@ get_node_from_path(const char *path, LIST *list_wd)
 }
 
 QueueNode *
-get_node_from_wd(const int wd, LIST *list_wd)
+get_node_from_wd(const int wd, Queue *list_wd)
 {
     QueueNode *node = list_wd->first;
     while (node)
@@ -391,7 +391,7 @@ create_wd_data(char *real_path, int wd)
 }
 
 QueueNode *
-get_link_node_from_path(const char *symlink, LIST *list_wd)
+get_link_node_from_path(const char *symlink, Queue *list_wd)
 {
     QueueNode *node = list_wd->first;
     WD_DATA *wd_data;
@@ -420,7 +420,7 @@ get_link_node_from_path(const char *symlink, LIST *list_wd)
 }
 
 bool_t
-is_symlink(char *path, LIST *list_wd)
+is_symlink(char *path, Queue *list_wd)
 {
     return (NULL != get_link_node_from_path(path, list_wd));
 }
@@ -449,7 +449,7 @@ get_link_data_from_wd_data(const char *symlink, const WD_DATA *wd_data)
 }
 
 LINK_DATA *
-get_link_data_from_path(const char *symlink, LIST *list_wd)
+get_link_data_from_path(const char *symlink, Queue *list_wd)
 {
     QueueNode *node = list_wd->first;
     WD_DATA *wd_data;
@@ -486,7 +486,7 @@ create_link_data(char *symlink, WD_DATA *wd_data)
 }
 
 bool_t
-is_listed_as_child(char *string, LIST *list)
+is_listed_as_child(char *string, Queue *list)
 {
     if (list == NULL || list->first == NULL)
         return FALSE;
@@ -752,7 +752,7 @@ int parse_command_line(int argc, char *argv[])
     return 0;
 }
 
-int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, LIST *list_wd)
+int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int fd, Queue *list_wd)
 {
     /* Add initial path to the watch list */
     QueueNode *node = add_to_watch_list(real_path, symlink, fd, list_wd);
@@ -763,7 +763,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
         return 0;
 
     /* Temporary list to perform a BFS directory traversing */
-    LIST *list = queue_init();
+    Queue *list = queue_init();
     queue_enqueue(list, (void *)real_path);
 
     DIR *dir_stream;
@@ -825,7 +825,7 @@ int watch_directory_tree(char *real_path, char *symlink, bool_t recursive, int f
 }
 
 QueueNode *
-add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
+add_to_watch_list(char *real_path, char *symlink, int fd, Queue *list_wd)
 {
     QueueNode *node = get_node_from_path(real_path, list_wd);
 
@@ -869,7 +869,7 @@ add_to_watch_list(char *real_path, char *symlink, int fd, LIST *list_wd)
     return node;
 }
 
-void unwatch_path(char *absolute_path, int fd, LIST *list_wd)
+void unwatch_path(char *absolute_path, int fd, Queue *list_wd)
 {
     QueueNode *node = get_node_from_path(absolute_path, list_wd);
     if (NULL == node)
@@ -887,7 +887,7 @@ void unwatch_path(char *absolute_path, int fd, LIST *list_wd)
     queue_remove(list_wd, node);
 }
 
-void all_symlinks_contained_in(char *path, LIST *list_wd, LIST *symlinks_found)
+void all_symlinks_contained_in(char *path, Queue *list_wd, Queue *symlinks_found)
 {
     QueueNode *node = list_wd->first;
 
@@ -902,7 +902,7 @@ void all_symlinks_contained_in(char *path, LIST *list_wd, LIST *symlinks_found)
     }
 }
 
-void symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_found)
+void symlinks_contained_in(char *path, Queue *symlinks_to_check, Queue *symlinks_found)
 {
     QueueNode *link_node = symlinks_to_check->first;
     while (link_node)
@@ -916,14 +916,14 @@ void symlinks_contained_in(char *path, LIST *symlinks_to_check, LIST *symlinks_f
     }
 }
 
-void remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
+void remove_unreachable_resources(WD_DATA *wd_data, int fd, Queue *list_wd)
 {
     // TODO EXTRACT THIS CONTROL IN is_orphan
     // wd_data->links->first == NULL && !is_child_of(root_path, wd_data->path)
     if (wd_data->links->first != NULL || is_child_of(root_path, wd_data->path) == TRUE)
         return;
 
-    LIST *referenced_paths = common_referenced_paths_for(wd_data->path, list_wd);
+    Queue *referenced_paths = common_referenced_paths_for(wd_data->path, list_wd);
     if (NULL != referenced_paths)
     {
         remove_orphan_watched_resources(wd_data->path, referenced_paths, fd, list_wd);
@@ -931,10 +931,10 @@ void remove_unreachable_resources(WD_DATA *wd_data, int fd, LIST *list_wd)
     queue_free(referenced_paths);
 }
 
-LIST *
-common_referenced_paths_for(const char *path, LIST *list_wd)
+Queue *
+common_referenced_paths_for(const char *path, Queue *list_wd)
 {
-    LIST *referenced_paths = queue_init();
+    Queue *referenced_paths = queue_init();
     QueueNode *node;
     WD_DATA *wd_data;
 
@@ -963,7 +963,7 @@ is_related_to(const char *path, const char *path_to_check)
     return FALSE;
 }
 
-void remove_orphan_watched_resources(const char *path, LIST *references_list, int fd, LIST *list_wd)
+void remove_orphan_watched_resources(const char *path, Queue *references_list, int fd, Queue *list_wd)
 {
     QueueNode *node;
     WD_DATA *wd_data;
@@ -984,9 +984,9 @@ void remove_orphan_watched_resources(const char *path, LIST *references_list, in
     }
 }
 
-void unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
+void unwatch_symlink(char *path_of_symlink, int fd, Queue *list_wd)
 {
-    LIST *symlinks_to_remove = queue_init();
+    Queue *symlinks_to_remove = queue_init();
     queue_enqueue(symlinks_to_remove, (void *)path_of_symlink);
 
     while (symlinks_to_remove->first != NULL)
@@ -1012,7 +1012,7 @@ void unwatch_symlink(char *path_of_symlink, int fd, LIST *list_wd)
     queue_free(symlinks_to_remove);
 }
 
-int monitor(int fd, LIST *list_wd)
+int monitor(int fd, Queue *list_wd)
 {
     /* Initialize patterns that will be replaced */
     COMMAND_PATTERN_ROOT = bfromcstr("%r");
@@ -1167,12 +1167,12 @@ get_inotify_event(const uint32_t event_mask)
  * EVENT HANDLER IMPLEMENTATION
  */
 
-int event_handler_undefined(struct inotify_event *event, char *path, int fd, LIST *list_wd)
+int event_handler_undefined(struct inotify_event *event, char *path, int fd, Queue *list_wd)
 {
     return 0;
 }
 
-int event_handler_create(struct inotify_event *event, char *path, int fd, LIST *list_wd)
+int event_handler_create(struct inotify_event *event, char *path, int fd, Queue *list_wd)
 {
     /* Return 0 if recurively monitoring is disabled */
     if (recursive_flag == FALSE)
@@ -1196,7 +1196,7 @@ int event_handler_create(struct inotify_event *event, char *path, int fd, LIST *
     return 0;
 }
 
-int event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *list_wd)
+int event_handler_delete(struct inotify_event *event, char *path, int fd, Queue *list_wd)
 {
     /* Check if it is a folder. If yes unwatch it */
     if (event->mask & IN_ISDIR)
@@ -1220,12 +1220,12 @@ int event_handler_delete(struct inotify_event *event, char *path, int fd, LIST *
     return 0;
 }
 
-int event_handler_moved_from(struct inotify_event *event, char *path, int fd, LIST *list_wd)
+int event_handler_moved_from(struct inotify_event *event, char *path, int fd, Queue *list_wd)
 {
     return event_handler_delete(event, path, fd, list_wd);
 }
 
-int event_handler_moved_to(struct inotify_event *event, char *path, int fd, LIST *list_wd)
+int event_handler_moved_to(struct inotify_event *event, char *path, int fd, Queue *list_wd)
 {
     if (strncmp(path, root_path, strlen(root_path)) == 0) /* TODO: replace with is_child_of */
         return event_handler_create(event, path, fd, list_wd);

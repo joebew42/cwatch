@@ -4,7 +4,7 @@
 #include "../src/cwatch.h"
 
 /* HELPER FUNCTIONS */
-void fill_with_paths(LIST *list, char **paths, int number_of_paths)
+void fill_with_paths(Queue *list, char **paths, int number_of_paths)
 {
     int i;
     for (i = 0; i < number_of_paths; i++)
@@ -152,7 +152,7 @@ START_TEST(returns_true_if_a_path_is_listed_as_child)
         "/usr/opt/path1/child",
         "/usr/opt/path3"};
 
-    LIST *list = queue_init();
+    Queue *list = queue_init();
     fill_with_paths(list, paths, 3);
 
     bool_t expected = TRUE;
@@ -173,7 +173,7 @@ START_TEST(returns_false_if_a_path_is_not_listed_as_child)
         "/usr/opt/path2",
         "/usr/opt/path3"};
 
-    LIST *list = queue_init();
+    Queue *list = queue_init();
     fill_with_paths(list, paths, 3);
 
     bool_t expected = FALSE;
@@ -224,7 +224,7 @@ START_TEST(adds_a_directory_to_the_watch_list)
     uint32_t event_mask = 0;
 
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = NULL;
@@ -240,7 +240,7 @@ END_TEST
 START_TEST(get_a_node_from_path)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = NULL;
@@ -259,7 +259,7 @@ END_TEST
 START_TEST(get_a_node_from_wd)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = NULL;
@@ -284,7 +284,7 @@ START_TEST(adds_a_directory_that_is_reached_by_symlink_to_the_watch_list)
     uint32_t event_mask = 0;
 
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/symlink_to_cwatch";
@@ -300,7 +300,7 @@ END_TEST
 START_TEST(get_a_link_node_from_path)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/symlink";
@@ -320,7 +320,7 @@ END_TEST
 START_TEST(get_a_link_data_from_wd_data)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/symlink";
@@ -339,7 +339,7 @@ END_TEST
 START_TEST(get_a_link_data_from_path)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/symlink";
@@ -357,7 +357,7 @@ END_TEST
 START_TEST(return_true_if_path_is_a_symbolic_link)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/symlink";
@@ -379,7 +379,7 @@ END_TEST
 START_TEST(unwatch_a_directory_from_the_watch_list)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
 
@@ -396,8 +396,8 @@ END_TEST
 START_TEST(find_symlinks_that_are_contained_in_some_path)
 {
     char *path = "/home/cwatch/";
-    LIST *symlinks_to_check = queue_init();
-    LIST *symlinks_found = queue_init();
+    Queue *symlinks_to_check = queue_init();
+    Queue *symlinks_found = queue_init();
 
     LINK_DATA *symlink_in = create_link_data("/home/cwatch/symlink_in", NULL);
     LINK_DATA *symlink_out = create_link_data("/home/symlink_out", NULL);
@@ -420,8 +420,8 @@ START_TEST(find_all_symlinks_that_are_contained_in_some_path)
 
     int fd = 1;
 
-    LIST *list_wd = queue_init();
-    LIST *symlinks_found = queue_init();
+    Queue *list_wd = queue_init();
+    Queue *symlinks_found = queue_init();
 
     add_to_watch_list("/home/user/directory/", "/home/cwatch/symlink_one", fd, list_wd);
     add_to_watch_list("/home/user/directory/subdirectory", "/home/cwatch/symlink_two", fd, list_wd);
@@ -448,7 +448,7 @@ START_TEST(find_common_referenced_paths_of_a_path)
 
     int fd = 1;
 
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     add_to_watch_list("/home/user/directory/", NULL, fd, list_wd);
     add_to_watch_list("/home/user/directory/a/", "/home/cwatch/symlink_one", fd, list_wd);
@@ -456,7 +456,7 @@ START_TEST(find_common_referenced_paths_of_a_path)
     add_to_watch_list("/home/user/directory/b/", "/home/cwatch/symlink_three", fd, list_wd);
     add_to_watch_list("/home/user/directory/b/bb", "/home/cwatch/symlink_four", fd, list_wd);
 
-    LIST *referenced_paths = common_referenced_paths_for("/home/user/directory/", list_wd);
+    Queue *referenced_paths = common_referenced_paths_for("/home/user/directory/", list_wd);
 
     ck_assert_int_eq(queue_size(referenced_paths), 2);
 
@@ -467,7 +467,7 @@ END_TEST
 START_TEST(unwatch_a_symbolic_link_from_the_watch_list)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *path_of_symlink = "/home/cwatch/symlink_to_cwatch";
@@ -490,7 +490,7 @@ END_TEST
 START_TEST(unwatch_an_outside_directory_removing_a_symlink_inside)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *outside_dir = "/home/outside/";
@@ -514,7 +514,7 @@ END_TEST
 START_TEST(remove_orphan_resources_from_a_tree_with_symlink_outside)
 {
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *real_path = "/home/cwatch/";
     char *symlink = "/home/cwatch/symlink_to_pointed/";
@@ -528,7 +528,7 @@ START_TEST(remove_orphan_resources_from_a_tree_with_symlink_outside)
     add_to_watch_list("/home/cwatch/to_be_removed/inside/pointed/", symlink, fd, list_wd);
     add_to_watch_list("/home/cwatch/to_be_removed/inside/pointed/sub_pointed/", NULL, fd, list_wd);
 
-    LIST *referenced_resources = common_referenced_paths_for("/home/cwatch/to_be_removed", list_wd);
+    Queue *referenced_resources = common_referenced_paths_for("/home/cwatch/to_be_removed", list_wd);
     remove_orphan_watched_resources(real_path, referenced_resources, fd, list_wd);
 
     /*
@@ -549,7 +549,7 @@ START_TEST(remove_unreachable_resources_not_in_root_path)
     uint32_t event_mask = 0;
 
     int fd = 1;
-    LIST *list_wd = queue_init();
+    Queue *list_wd = queue_init();
 
     char *root_path = "/home/cwatch";
 
@@ -563,7 +563,7 @@ START_TEST(remove_unreachable_resources_not_in_root_path)
     ck_assert_int_eq(queue_size(list_wd), 3);
 
     LINK_DATA *link_data = get_link_data_from_path(symlink, list_wd);
-    LIST *links = link_data->wd_data->links;
+    Queue *links = link_data->wd_data->links;
 
     queue_remove(links, links->first);
 

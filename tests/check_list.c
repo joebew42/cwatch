@@ -4,7 +4,7 @@
 #include "../src/list.h"
 
 /* helper functions */
-void add_items_to(LIST *list, const int number_of_items)
+void add_items_to(Queue *list, const int number_of_items)
 {
     if (number_of_items < 1 || NULL == list)
         return;
@@ -20,7 +20,7 @@ void add_items_to(LIST *list, const int number_of_items)
 }
 /* end of helper functions */
 
-LIST *list;
+Queue *list;
 
 void setup(void)
 {
