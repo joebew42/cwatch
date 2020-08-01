@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef __LIST_H
-#define __LIST_H
+#ifndef __QUEUE_H
+#define __QUEUE_H
 
 /*
   TODO: struct and typedef naming conventions
@@ -81,4 +81,4 @@ int queue_size(Queue *);
 /* deallocates queue */
 void queue_free(Queue *);
 
-#endif /* !__LIST_H */
+#endif /* !__QUEUE_H */
