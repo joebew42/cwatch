@@ -73,12 +73,12 @@
  *             count of the events
  */
 
-extern bstring COMMAND_PATTERN_ROOT;
-extern bstring COMMAND_PATTERN_PATH;
-extern bstring COMMAND_PATTERN_FILE;
-extern bstring COMMAND_PATTERN_EVENT;
-extern bstring COMMAND_PATTERN_REGEX;
-extern bstring COMMAND_PATTERN_COUNT;
+extern const_bstring COMMAND_PATTERN_ROOT;
+extern const_bstring COMMAND_PATTERN_PATH;
+extern const_bstring COMMAND_PATTERN_FILE;
+extern const_bstring COMMAND_PATTERN_EVENT;
+extern const_bstring COMMAND_PATTERN_REGEX;
+extern const_bstring COMMAND_PATTERN_COUNT;
 
 typedef enum
 {
