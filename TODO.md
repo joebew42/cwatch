@@ -1,5 +1,7 @@
 ### TODO
 
+- Move the Trello board to this file
+- Improve the build system (e.g: 1. use a build script 2. move the compiled binary to a build/ folder)
 - Is there a better way to initialize const_bstring rather than forcing a cast? (e.g:const_bstring COMMAND_PATTERN_ROOT = (const_bstring) "%r")
 - Refactor global variables (it is likely that there are hidden collaborators)
 - Is it possible to test different compilers with Travis? (e.g: the current build breaks with gcc10)
