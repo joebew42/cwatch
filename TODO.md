@@ -1,5 +1,6 @@
 ### TODO
 
+- Refactor global variables (it is likely that there are hidden collaborators)
 - Is it possible to test different compilers with Travis? (e.g: the current build breaks with gcc10)
 - As part of the work we are doing in order to rename List into a Queue, we still have to rename all the occurrences that contains the `node`, with `element`. (e.g. "get_node_from_path" -> "get_element_from_path")
 - create_wd_data(path, wd);
