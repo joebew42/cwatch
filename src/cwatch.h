@@ -72,12 +72,13 @@
  * _COUNT (%n) when cwatch execute the command, will be replaced with the
  *             count of the events
  */
-bstring COMMAND_PATTERN_ROOT;
-bstring COMMAND_PATTERN_PATH;
-bstring COMMAND_PATTERN_FILE;
-bstring COMMAND_PATTERN_EVENT;
-bstring COMMAND_PATTERN_REGEX;
-bstring COMMAND_PATTERN_COUNT;
+
+extern const_bstring COMMAND_PATTERN_ROOT;
+extern const_bstring COMMAND_PATTERN_PATH;
+extern const_bstring COMMAND_PATTERN_FILE;
+extern const_bstring COMMAND_PATTERN_EVENT;
+extern const_bstring COMMAND_PATTERN_REGEX;
+extern const_bstring COMMAND_PATTERN_COUNT;
 
 typedef enum
 {
@@ -110,23 +111,23 @@ struct event_t
     int (*handler)(struct inotify_event *, char *, int, Queue *);
 };
 
-char *root_path;              /* root path that cwatch is monitoring */
-bstring command;              /* the command to be execute, defined by -c option*/
-bstring format;               /* a string containing the output format defined by -F option */
-bstring tmp_command;          /* temporary command used by execute_command */
-struct bstrList *split_event; /* list of events parsed from command line */
-uint32_t event_mask;          /* the resulting event_mask */
-regex_t *exclude_regex;       /* the posix regular expression defined by -x option */
-regex_t *user_catch_regex;    /* the posix regular expression defined by -X option */
-regmatch_t p_match[2];        /* store the matched regular expression by -X option */
+extern char *root_path;              /* root path that cwatch is monitoring */
+extern bstring command;              /* the command to be execute, defined by -c option*/
+extern bstring format;               /* a string containing the output format defined by -F option */
+extern bstring tmp_command;          /* temporary command used by execute_command */
+extern struct bstrList *split_event; /* list of events parsed from command line */
+extern uint32_t event_mask;          /* the resulting event_mask */
+extern regex_t *exclude_regex;       /* the posix regular expression defined by -x option */
+extern regex_t *user_catch_regex;    /* the posix regular expression defined by -X option */
+extern regmatch_t p_match[2];        /* store the matched regular expression by -X option */
 
-int exec_c;         /* the number of times command is executed */
-char exec_cstr[10]; /* used as conversion of exec_c to cstring */
+extern int exec_c;         /* the number of times command is executed */
+extern char exec_cstr[10]; /* used as conversion of exec_c to cstring */
 
-bool_t nosymlink_flag;
-bool_t recursive_flag;
-bool_t verbose_flag;
-bool_t syslog_flag;
+extern bool_t nosymlink_flag;
+extern bool_t recursive_flag;
+extern bool_t verbose_flag;
+extern bool_t syslog_flag;
 
 /* function pointer to inotify_add_watch
  *
@@ -135,7 +136,7 @@ bool_t syslog_flag;
  * @param  uint32_t     : event mask
  * @return int          : watch descriptor
  */
-int (*watch_descriptor_from)(int, const char *, uint32_t);
+extern int (*watch_descriptor_from)(int, const char *, uint32_t);
 
 /* function pointer to inotify_rm_watch
  *
@@ -143,7 +144,7 @@ int (*watch_descriptor_from)(int, const char *, uint32_t);
  * @param  int          : watch descriptor
  * @return int          : 0 if success, -1 otherwise
  */
-int (*remove_watch_descriptor)(int, int);
+extern int (*remove_watch_descriptor)(int, int);
 
 /* print the version of the program and exit */
 void print_version();
@@ -473,7 +474,7 @@ int monitor(int, Queue *);
  * @param  char *  : the path where event occured
  * @return int    : -1 in case of error, 0 otherwise
  */
-int (*execute_command)(char *, char *, char *);
+extern int (*execute_command)(char *, char *, char *);
 int execute_command_inline(char *, char *, char *);
 int execute_command_embedded(char *, char *, char *);
 

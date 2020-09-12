@@ -24,6 +24,36 @@
 
 #include "cwatch.h"
 
+/* Initialize patterns that will be replaced */
+const_bstring COMMAND_PATTERN_ROOT = (const_bstring) "%r";
+const_bstring COMMAND_PATTERN_PATH = (const_bstring) "%p";
+const_bstring COMMAND_PATTERN_FILE = (const_bstring) "%f";
+const_bstring COMMAND_PATTERN_EVENT = (const_bstring) "%e";
+const_bstring COMMAND_PATTERN_REGEX = (const_bstring) "%x";
+const_bstring COMMAND_PATTERN_COUNT = (const_bstring) "%n";
+
+char *root_path;
+bstring command;
+bstring format;
+bstring tmp_command;
+struct bstrList *split_event;
+uint32_t event_mask;
+regex_t *exclude_regex;
+regex_t *user_catch_regex;
+regmatch_t p_match[2];
+
+int exec_c;
+char exec_cstr[10];
+
+bool_t nosymlink_flag;
+bool_t recursive_flag;
+bool_t verbose_flag;
+bool_t syslog_flag;
+
+int (*execute_command)(char *, char *, char *);
+int (*watch_descriptor_from)(int, const char *, uint32_t);
+int (*remove_watch_descriptor)(int, int);
+
 /* Command line long options */
 static struct option long_options[] =
     {
@@ -1014,14 +1044,6 @@ void unwatch_symlink(char *path_of_symlink, int fd, Queue *queue_wd)
 
 int monitor(int fd, Queue *queue_wd)
 {
-    /* Initialize patterns that will be replaced */
-    COMMAND_PATTERN_ROOT = bfromcstr("%r");
-    COMMAND_PATTERN_PATH = bfromcstr("%p");
-    COMMAND_PATTERN_FILE = bfromcstr("%f");
-    COMMAND_PATTERN_EVENT = bfromcstr("%e");
-    COMMAND_PATTERN_REGEX = bfromcstr("%x");
-    COMMAND_PATTERN_COUNT = bfromcstr("%n");
-
     /* Initialize the exec count */
     exec_c = 0;
 
@@ -1236,13 +1258,6 @@ int event_handler_moved_to(struct inotify_event *event, char *path, int fd, Queu
 void signal_callback_handler(int signum)
 {
     printf("Cleaning...\n");
-
-    bdestroy(COMMAND_PATTERN_ROOT);
-    bdestroy(COMMAND_PATTERN_PATH);
-    bdestroy(COMMAND_PATTERN_FILE);
-    bdestroy(COMMAND_PATTERN_EVENT);
-    bdestroy(COMMAND_PATTERN_REGEX);
-    bdestroy(COMMAND_PATTERN_COUNT);
 
     /* TODO how to free??? queue_free(queue_wd); */
     exit(signum);
